@@ -1,12 +1,15 @@
 package main
 
 import (
+	"fmt"
 	"senkou-catalyst-be/config"
 	"senkou-catalyst-be/routes"
+	"senkou-catalyst-be/utils"
+
+	_ "senkou-catalyst-be/docs"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/swagger"
-	_ "senkou-catalyst-be/docs" // penting: import untuk dokumentasi Swag
 )
 
 // @title Fiber API with Service-Repository
@@ -20,12 +23,9 @@ func main() {
 	app := fiber.New()
 	config.ConnectDB()
 
-	// Endpoint Swagger
 	app.Get("/swagger/*", swagger.HandlerDefault)
 
-	// Routes
 	routes.UserRoutes(app)
 
-	// Jalankan server
-	app.Listen(":3000")
+	app.Listen(fmt.Sprintf(":%s", utils.GetEnv("APP_PORT", "8080")))
 }
