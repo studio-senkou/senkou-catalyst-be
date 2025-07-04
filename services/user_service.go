@@ -3,8 +3,6 @@ package services
 import (
 	"senkou-catalyst-be/models"
 	"senkou-catalyst-be/repositories"
-
-	"github.com/google/uuid"
 )
 
 type UserService interface {
@@ -25,6 +23,5 @@ func (s *userService) GetAll() ([]models.User, error) {
 }
 
 func (s *userService) Create(user models.User) (models.User, error) {
-	user.ID = uuid.New().String()
 	return s.repo.Create(user)
 }

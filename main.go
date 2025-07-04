@@ -27,5 +27,9 @@ func main() {
 
 	routes.UserRoutes(app)
 
-	app.Listen(fmt.Sprintf(":%s", utils.GetEnv("APP_PORT", "8080")))
+	err := app.Listen(fmt.Sprintf(":%s", utils.GetEnv("APP_PORT", "8080")))
+
+	if err != nil {
+		panic(fmt.Sprintf("Failed to start server: %v", err))
+	}
 }
