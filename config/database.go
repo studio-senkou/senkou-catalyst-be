@@ -3,7 +3,7 @@ package config
 import (
 	"fmt"
 	"log"
-	"senkou-catalyst-be/models"
+	"senkou-catalyst-be/database"
 	"senkou-catalyst-be/utils"
 
 	"gorm.io/driver/postgres"
@@ -35,20 +35,7 @@ func ConnectDB() {
 		log.Fatal("Connection failed:", err)
 	}
 
-	migrationError := db.AutoMigrate(
-		&models.User{},
-		&models.Merchant{},
-		&models.Category{},
-		&models.Product{},
-		&models.Subscription{},
-		&models.SubscriptionPlan{},
-		&models.UserSubscription{},
-		&models.PredefinedCategory{},
-	)
-
-	if migrationError != nil {
-		log.Fatal("Migration failed:", migrationError)
-	}
+	database.Migrate(db)
 
 	DB = db
 }
