@@ -27,7 +27,7 @@ var JWTProtected fiber.Handler = func(c *fiber.Ctx) error {
 	}
 
 	var authToken string
-	
+
 	_, err := fmt.Sscanf(token, "Bearer %s", &authToken)
 
 	if err != nil || authToken == "" {
@@ -45,7 +45,7 @@ var JWTProtected fiber.Handler = func(c *fiber.Ctx) error {
 		})
 	}
 
-	c.Locals("user_id", claims["payload"])
+	c.Locals("userID", claims["payload"])
 
 	return c.Next()
 }

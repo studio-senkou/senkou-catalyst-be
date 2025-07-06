@@ -143,8 +143,9 @@ func (h *AuthController) RefreshToken(c *fiber.Ctx) error {
 // @Failure 500 {object} map[string]string "Internal server error"
 // @Router /auth/logout [delete]
 func (h *AuthController) Logout(c *fiber.Ctx) error {
-	userIDStr := fmt.Sprintf("%v", c.Locals("user_id"))
+	userIDStr := fmt.Sprintf("%v", c.Locals("userID"))
 	userID, err := strconv.ParseUint(userIDStr, 10, 64)
+
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"message": "Failed to parse user ID",

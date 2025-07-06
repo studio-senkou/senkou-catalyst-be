@@ -1,5 +1,12 @@
 basePath: /
 definitions:
+  dtos.CreateMerchantRequestDTO:
+    properties:
+      name:
+        type: string
+    required:
+    - name
+    type: object
   dtos.LoginRequestDTO:
     properties:
       email:
@@ -28,6 +35,32 @@ definitions:
         type: string
     required:
     - refresh_token
+    type: object
+  fiber.Map:
+    additionalProperties: true
+    type: object
+  gorm.DeletedAt:
+    properties:
+      time:
+        type: string
+      valid:
+        description: Valid is true if Time is not NULL
+        type: boolean
+    type: object
+  models.Merchant:
+    properties:
+      created_at:
+        type: string
+      deleted_at:
+        $ref: '#/definitions/gorm.DeletedAt'
+      id:
+        type: string
+      name:
+        type: string
+      owner_id:
+        type: integer
+      updated_at:
+        type: string
     type: object
   models.User:
     properties:
@@ -127,6 +160,105 @@ paths:
       summary: Refresh access token
       tags:
       - Auth
+  /merchants:
+    get:
+      description: Retrieve all merchants associated with the user
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/fiber.Map'
+            - properties:
+                data:
+                  allOf:
+                  - $ref: '#/definitions/fiber.Map'
+                  - properties:
+                      merchants:
+                        items:
+                          $ref: '#/definitions/models.Merchant'
+                        type: array
+                    type: object
+                message:
+                  type: string
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            allOf:
+            - $ref: '#/definitions/fiber.Map'
+            - properties:
+                message:
+                  type: string
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/fiber.Map'
+            - properties:
+                error:
+                  type: string
+                message:
+                  type: string
+              type: object
+      security:
+      - BearerAuth: []
+      summary: Get User Merchants
+      tags:
+      - Merchant
+    post:
+      consumes:
+      - application/json
+      description: Create a merchant account for the user
+      parameters:
+      - description: Create merchant request
+        in: body
+        name: dtos.CreateMerchantRequestDTO
+        required: true
+        schema:
+          $ref: '#/definitions/dtos.CreateMerchantRequestDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/fiber.Map'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.Merchant'
+                message:
+                  type: string
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/fiber.Map'
+            - properties:
+                error:
+                  type: string
+                message:
+                  type: string
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/fiber.Map'
+            - properties:
+                error:
+                  type: string
+                message:
+                  type: string
+              type: object
+      security:
+      - BearerAuth: []
+      summary: Create Merchant
+      tags:
+      - Merchant
   /users:
     get:
       produces:
