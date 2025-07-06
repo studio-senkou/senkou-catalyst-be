@@ -148,3 +148,113 @@ func (h *MerchantController) GetUserMerchants(c *fiber.Ctx) error {
 		"message": "Merchants retrieved successfully",
 	})
 }
+
+func (h *MerchantController) GetMerchantByID(c *fiber.Ctx) error {
+	merchantID := c.Params("id")
+
+	if merchantID == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"message": "Invalid merchant ID",
+		})
+	}
+
+	merchant, err := h.merchantService.GetMerchantByID(merchantID)
+
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"message": "Internal server error",
+			"error":   err.Error(),
+		})
+	}
+
+	if merchant == nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"message": "Merchant not found",
+		})
+	}
+
+	return c.JSON(fiber.Map{
+		"data":    merchant,
+		"message": "Merchant retrieved successfully",
+	})
+}
+
+func (h *MerchantController) UpdateMerchant(c *fiber.Ctx) error {
+	merchantID := c.Params("id")
+
+	if merchantID == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"message": "Invalid merchant ID",
+		})
+	}
+
+	updateMerchantRequestDTO := new(dtos.UpdateMerchantRequestDTO)
+
+	if err := utils.Validate(c, updateMerchantRequestDTO); err != nil {
+		if vErr, ok := err.(*utils.ValidationError); ok {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"message": "Validation failed",
+				"errors":  vErr.Errors,
+			})
+		}
+
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"message": "Internal server error",
+			"error":   err.Error(),
+		})
+	}
+
+	merchant, err := h.merchantService.UpdateMerchantByID(merchantID, updateMerchantRequestDTO)
+
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"message": "Failed to update merchant",
+			"error":   err.Error(),
+		})
+	}
+
+	if merchant == nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"message": "Failed to update merchant",
+			"error":   "Merchant update returned nil",
+		})
+	}
+
+	return c.JSON(fiber.Map{
+		"data": fiber.Map{
+			"merchant": merchant,
+		},
+		"message": "Merchant updated successfully",
+	})
+}
+
+func (h *MerchantController) DeleteMerchant(c *fiber.Ctx) error {
+	merchantID := c.Params("id")
+
+	if merchantID == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"message": "Invalid merchant ID",
+		})
+	}
+
+	merchant, _ := h.merchantService.GetMerchantByID(merchantID)
+
+	if merchant == nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"message": "Cannot remove merchant, Your merchant was not found",
+		})
+	}
+
+	err := h.merchantService.DeleteMerchantByID(merchantID)
+
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"message": "Failed to delete merchant",
+			"error":   err.Error(),
+		})
+	}
+
+	return c.JSON(fiber.Map{
+		"message": "Merchant deleted successfully",
+	})
+}
