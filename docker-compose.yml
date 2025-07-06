@@ -1,9 +1,26 @@
-version: "3.9"
-
 services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: senkou-catalyst-app
+    restart: unless-stopped
+    environment:
+      - APP_PORT=5555
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USERNAME=${DB_USERNAME:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-}
+      - DB_NAME=${DB_NAME:-senkou_catalyst}
+      - JWT_SECRET=${JWT_SECRET:-}
+    depends_on:
+      - postgres
+    networks:
+      - catalyst-network
+
   postgres:
     image: postgres:17-alpine
-    container_name: senkou-catalyst-be-postgres
+    container_name: senkou-catalyst-postgres
     restart: unless-stopped
     ports:
       - "${DB_PORT:-5432}:5432"
@@ -11,8 +28,23 @@ services:
       - POSTGRES_USER=${DB_USERNAME:-postgres}
       - POSTGRES_PASSWORD=${DB_PASSWORD:-}
       - POSTGRES_DB=${DB_NAME:-senkou_catalyst}
+    networks:
+      - catalyst-network
     volumes:
       - postgres_data:/var/lib/postgresql/data
+
+  cloudflare:
+    image: cloudflare/cloudflared:latest
+    container_name: senkou-catalyst-cloudflare
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run --token ${TUNNEL_TOKEN:-}
+    networks:
+      - catalyst-network
+
+networks:
+  catalyst-network:
+    name: catalyst-network
+    driver: bridge
 
 volumes:
   postgres_data:
