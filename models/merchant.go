@@ -13,5 +13,5 @@ type Merchant struct {
 	Owner     User           `json:"-"          gorm:"foreignKey:OwnerID;references:ID"`
 	CreatedAt time.Time      `json:"created_at" gorm:"type:timestamp;default:CURRENT_TIMESTAMP"`
 	UpdatedAt time.Time      `json:"updated_at" gorm:"type:timestamp;default:CURRENT_TIMESTAMP"`
-	DeletedAt gorm.DeletedAt `json:"deleted_at,omitempty" gorm:"type:timestamp;index"`
+	DeletedAt gorm.DeletedAt `json:"-"          gorm:"type:timestamp;index"`
 }
