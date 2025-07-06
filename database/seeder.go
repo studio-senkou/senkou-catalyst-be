@@ -19,8 +19,8 @@ func Seed(db *gorm.DB) {
 	}
 
 	db.FirstOrCreate(&models.User{
-		Name:     "Catalyst Admin",
-		Email:    "studio.senkou@gmail.com",
+		Name:     utils.GetEnv("ADMIN_NAME", "Catalyst Admin"),
+		Email:    utils.GetEnv("ADMIN_EMAIL", "studio.senkou@example.com"),
 		Password: adminPassword,
 		Role:     "admin",
 	})

@@ -20,7 +20,9 @@ import (
 
 // @schemes http
 func main() {
-	app := fiber.New()
+	appConfig := config.InitFiberConfig()
+	app := fiber.New(*appConfig)
+
 	config.ConnectDB()
 
 	app.Get("/swagger/*", swagger.HandlerDefault)
@@ -32,6 +34,7 @@ func main() {
 	})
 
 	routes.UserRoutes(app)
+	routes.AuthRoutes(app)
 
 	err := app.Listen(fmt.Sprintf(":%s", utils.GetEnv("APP_PORT", "8080")))
 

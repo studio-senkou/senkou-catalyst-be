@@ -1,13 +1,15 @@
 package services
 
 import (
+	"errors"
 	"senkou-catalyst-be/models"
 	"senkou-catalyst-be/repositories"
 )
 
 type UserService interface {
-	GetAll() (*[]models.User, error)
 	Create(user models.User) (*models.User, error)
+	GetAll() (*[]models.User, error)
+	VerifyCredentials(email, password string) (uint, error)
 }
 
 type userService struct {
@@ -26,7 +28,7 @@ func (s *userService) Create(user models.User) (*models.User, error) {
 	}
 
 	user.Password = hashedPassword
-	
+
 	return s.repo.Create(&user)
 }
 
@@ -34,3 +36,16 @@ func (s *userService) GetAll() (*[]models.User, error) {
 	return s.repo.FindAll()
 }
 
+func (s *userService) VerifyCredentials(email, password string) (uint, error) {
+	user, err := s.repo.FindByEmail(email)
+
+	if err != nil {
+		return 0, err
+	}
+
+	if !user.CheckPassword(password) {
+		return 0, errors.New("invalid email or password")
+	}
+
+	return uint(user.ID), nil
+}

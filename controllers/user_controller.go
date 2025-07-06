@@ -26,7 +26,7 @@ func NewUserController(service services.UserService) *UserController {
 // @Router /users [post]
 func (h *UserController) CreateUser(c *fiber.Ctx) error {
 	registerUserDTO := new(dtos.RegisterUserDTO)
-	
+
 	if err := utils.Validate(c, registerUserDTO); err != nil {
 		if vErr, ok := err.(*utils.ValidationError); ok {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
@@ -34,24 +34,28 @@ func (h *UserController) CreateUser(c *fiber.Ctx) error {
 				"errors":  vErr.Errors,
 			})
 		}
+
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"message": "Internal server error",
+			"error":   err.Error(),
+		})
 	}
-	
+
 	newUser, err := h.service.Create(models.User{
-		Name:                 registerUserDTO.Name,
-		Email:                registerUserDTO.Email,
-		Password:             []byte(registerUserDTO.Password),
+		Name:     registerUserDTO.Name,
+		Email:    registerUserDTO.Email,
+		Password: []byte(registerUserDTO.Password),
 	})
 
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{
 			"message": "Failed to create user",
-			"error": err.Error(),
+			"error":   err.Error(),
 		})
 	}
-	
+
 	return c.JSON(newUser)
 }
-
 
 // @Summary Get all users
 // @Tags Users
@@ -65,4 +69,3 @@ func (h *UserController) GetUsers(c *fiber.Ctx) error {
 	}
 	return c.JSON(users)
 }
-

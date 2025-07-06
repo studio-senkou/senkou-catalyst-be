@@ -3,18 +3,18 @@ package routes
 import (
 	"senkou-catalyst-be/config"
 	"senkou-catalyst-be/controllers"
-	"senkou-catalyst-be/platform/middlewares"
 	"senkou-catalyst-be/repositories"
 	"senkou-catalyst-be/services"
 
 	"github.com/gofiber/fiber/v2"
 )
 
-func UserRoutes(app *fiber.App) {
+func AuthRoutes(app *fiber.App) {
+	authRepo := repositories.NewAuthRepository(config.DB)
+	authService := services.NewAuthService(&authRepo)
 	userRepo := repositories.NewUserRepository(config.DB)
 	userService := services.NewUserService(userRepo)
-	userController := controllers.NewUserController(userService)
+	authController := controllers.NewAuthController(authService, userService)
 
-	app.Get("/users", middlewares.JWTProtected, userController.GetUsers)
-	app.Post("/users", userController.CreateUser)
+	app.Post("/auth/login", authController.Login)
 }
