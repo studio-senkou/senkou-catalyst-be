@@ -9,7 +9,7 @@ import (
 type AuthRepository interface {
 	StoreSession(userID uint, token string) error
 	FindSessionByToken(token string) (*models.UserHasToken, error)
-	DeleteSessionByToken(token string) error
+	DeleteUserSession(userID uint) error
 }
 
 type authRepository struct {
@@ -38,6 +38,6 @@ func (r *authRepository) FindSessionByToken(token string) (*models.UserHasToken,
 	return &session, nil
 }
 
-func (r *authRepository) DeleteSessionByToken(token string) error {
-	return r.db.Where("token = ?", token).Delete(&models.UserHasToken{}).Error
+func (r *authRepository) DeleteUserSession(userID uint) error {
+	return r.db.Where("user_id = ?", userID).Delete(&models.UserHasToken{}).Error
 }

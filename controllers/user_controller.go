@@ -18,6 +18,7 @@ func NewUserController(service services.UserService) *UserController {
 }
 
 // @Summary Create user
+// @Description Create a new user with the provided details
 // @Tags Users
 // @Accept json
 // @Produce json

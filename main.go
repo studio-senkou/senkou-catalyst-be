@@ -12,13 +12,13 @@ import (
 	"github.com/gofiber/swagger"
 )
 
-// @title Fiber API with Service-Repository
-// @version 1.0
-// @description Fiber REST API using service-repo pattern
-// @host localhost:3000
+// @Title Catalyst API Swagger
+// @Version 1.0
+// @Description This is the API documentation for the Catalyst application.
+// @Contact.name Catalyst Team
+// @Host localhost:8080
 // @BasePath /
-
-// @schemes http
+// @Schemes http
 func main() {
 	appConfig := config.InitFiberConfig()
 	app := fiber.New(*appConfig)

@@ -1,6 +1,8 @@
 package utils
 
 import (
+	"fmt"
+	"senkou-catalyst-be/dtos"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -16,7 +18,7 @@ func init() {
 	}
 }
 
-func GenerateToken(payload any, expiry time.Time) (string, error) {
+func GenerateToken(payload any, expiry time.Time) (*dtos.GeneratedToken, error) {
 	claims := jwt.MapClaims{
 		"payload": payload,
 		"exp":     expiry.Unix(),
@@ -24,7 +26,16 @@ func GenerateToken(payload any, expiry time.Time) (string, error) {
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
-	return token.SignedString(jwtSecret)
+	signedToken, err := token.SignedString(jwtSecret)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &dtos.GeneratedToken{
+		Token:     signedToken,
+		ExpiresAt: fmt.Sprintf("%d", expiry.Unix()),
+	}, err
 }
 
 func ValidateToken(token string) (jwt.MapClaims, error) {

@@ -1,14 +1,130 @@
 {
+    "schemes": [
+        "http"
+    ],
     "swagger": "2.0",
     "info": {
-        "description": "Fiber REST API using service-repo pattern",
-        "title": "Fiber API with Service-Repository",
-        "contact": {},
+        "description": "This is the API documentation for the Catalyst application.",
+        "title": "Catalyst API Swagger",
+        "contact": {
+            "name": "Catalyst Team"
+        },
         "version": "1.0"
     },
-    "host": "localhost:3000",
+    "host": "localhost:8080",
     "basePath": "/",
     "paths": {
+        "/auth/login": {
+            "post": {
+                "description": "Login user with email and password to receive access and refresh tokens",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Login user",
+                "parameters": [
+                    {
+                        "description": "Request to authenticate",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dtos.LoginRequestDTO"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Login successful response",
+                        "schema": {
+                            "$ref": "#/definitions/dtos.LoginResponseDTO"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/logout": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Logout user by invalidating their session",
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Logout user",
+                "responses": {
+                    "200": {
+                        "description": "Logout successful response",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/refresh": {
+            "put": {
+                "description": "Refresh access token using a valid refresh token",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Refresh access token",
+                "parameters": [
+                    {
+                        "description": "Request to refresh access token",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dtos.RefreshTokenRequestDTO"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Token refreshed successfully",
+                        "schema": {
+                            "$ref": "#/definitions/dtos.LoginResponseDTO"
+                        }
+                    },
+                    "400": {
+                        "description": "Validation failed",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/users": {
             "get": {
                 "produces": [
@@ -31,6 +147,7 @@
                 }
             },
             "post": {
+                "description": "Create a new user with the provided details",
                 "consumes": [
                     "application/json"
                 ],
@@ -64,6 +181,50 @@
         }
     },
     "definitions": {
+        "dtos.LoginRequestDTO": {
+            "type": "object",
+            "required": [
+                "email",
+                "password"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string",
+                    "minLength": 8
+                }
+            }
+        },
+        "dtos.LoginResponseDTO": {
+            "type": "object",
+            "properties": {
+                "access_token": {
+                    "type": "string"
+                },
+                "access_token_expiry": {
+                    "type": "string"
+                },
+                "refresh_token": {
+                    "type": "string"
+                },
+                "refresh_token_expiry": {
+                    "type": "string"
+                }
+            }
+        },
+        "dtos.RefreshTokenRequestDTO": {
+            "type": "object",
+            "required": [
+                "refresh_token"
+            ],
+            "properties": {
+                "refresh_token": {
+                    "type": "string"
+                }
+            }
+        },
         "models.User": {
             "type": "object",
             "properties": {
@@ -74,12 +235,10 @@
                     "type": "string"
                 },
                 "id": {
-                    "type": "string"
+                    "type": "integer"
                 },
                 "name": {
-                    "type": "string"
-                },
-                "password": {
+                    "description": "MerchantID string         `json:\"merchant_id\"  gorm:\"type:char(32);unique\"`\nMerchant   *Merchant      `json:\"merchant\"     gorm:\"foreignKey:MerchantID;references:ID\"`",
                     "type": "string"
                 },
                 "role": {

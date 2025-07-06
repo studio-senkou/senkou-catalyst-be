@@ -15,6 +15,6 @@ func UserRoutes(app *fiber.App) {
 	userService := services.NewUserService(userRepo)
 	userController := controllers.NewUserController(userService)
 
-	app.Get("/users", middlewares.JWTProtected, userController.GetUsers)
 	app.Post("/users", userController.CreateUser)
+	app.Get("/users", middlewares.JWTProtected, userController.GetUsers)
 }

@@ -1,5 +1,34 @@
 basePath: /
 definitions:
+  dtos.LoginRequestDTO:
+    properties:
+      email:
+        type: string
+      password:
+        minLength: 8
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  dtos.LoginResponseDTO:
+    properties:
+      access_token:
+        type: string
+      access_token_expiry:
+        type: string
+      refresh_token:
+        type: string
+      refresh_token_expiry:
+        type: string
+    type: object
+  dtos.RefreshTokenRequestDTO:
+    properties:
+      refresh_token:
+        type: string
+    required:
+    - refresh_token
+    type: object
   models.User:
     properties:
       created_at:
@@ -7,23 +36,97 @@ definitions:
       email:
         type: string
       id:
-        type: string
+        type: integer
       name:
-        type: string
-      password:
+        description: |-
+          MerchantID string         `json:"merchant_id"  gorm:"type:char(32);unique"`
+          Merchant   *Merchant      `json:"merchant"     gorm:"foreignKey:MerchantID;references:ID"`
         type: string
       role:
         type: string
       updated_at:
         type: string
     type: object
-host: localhost:3000
+host: localhost:8080
 info:
-  contact: {}
-  description: Fiber REST API using service-repo pattern
-  title: Fiber API with Service-Repository
+  contact:
+    name: Catalyst Team
+  description: This is the API documentation for the Catalyst application.
+  title: Catalyst API Swagger
   version: "1.0"
 paths:
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Login user with email and password to receive access and refresh
+        tokens
+      parameters:
+      - description: Request to authenticate
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dtos.LoginRequestDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Login successful response
+          schema:
+            $ref: '#/definitions/dtos.LoginResponseDTO'
+      summary: Login user
+      tags:
+      - Auth
+  /auth/logout:
+    delete:
+      description: Logout user by invalidating their session
+      responses:
+        "200":
+          description: Logout successful response
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Logout user
+      tags:
+      - Auth
+  /auth/refresh:
+    put:
+      consumes:
+      - application/json
+      description: Refresh access token using a valid refresh token
+      parameters:
+      - description: Request to refresh access token
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dtos.RefreshTokenRequestDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Token refreshed successfully
+          schema:
+            $ref: '#/definitions/dtos.LoginResponseDTO'
+        "400":
+          description: Validation failed
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Refresh access token
+      tags:
+      - Auth
   /users:
     get:
       produces:
@@ -41,6 +144,7 @@ paths:
     post:
       consumes:
       - application/json
+      description: Create a new user with the provided details
       parameters:
       - description: User
         in: body
@@ -58,4 +162,6 @@ paths:
       summary: Create user
       tags:
       - Users
+schemes:
+- http
 swagger: "2.0"

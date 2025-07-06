@@ -22,7 +22,7 @@ var JWTProtected fiber.Handler = func(c *fiber.Ctx) error {
 
 	if token == "" {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"message": "Authorization header is missing",
+			"message": "You are not authorized to access this resource",
 		})
 	}
 
@@ -45,7 +45,7 @@ var JWTProtected fiber.Handler = func(c *fiber.Ctx) error {
 		})
 	}
 
-	c.Locals("payload", claims["payload"])
+	c.Locals("user_id", claims["payload"])
 
 	return c.Next()
 }

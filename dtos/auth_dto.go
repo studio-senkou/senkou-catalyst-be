@@ -14,3 +14,25 @@ func (dto *LoginRequestDTO) ErrorMessages() map[string]string {
 	}
 
 }
+
+type GeneratedToken struct {
+	Token     string `json:"token"`
+	ExpiresAt string `json:"token_expiry"`
+}
+
+type LoginResponseDTO struct {
+	AccessToken        string `json:"access_token"`
+	AccessTokenExpiry  string `json:"access_token_expiry"`
+	RefreshToken       string `json:"refresh_token"`
+	RefreshTokenExpiry string `json:"refresh_token_expiry"`
+}
+
+type RefreshTokenRequestDTO struct {
+	RefreshToken string `json:"refresh_token" validate:"required"`
+}
+
+func (dto *RefreshTokenRequestDTO) ErrorMessages() map[string]string {
+	return map[string]string{
+		"RefreshToken.required": "Refresh token is required",
+	}
+}
