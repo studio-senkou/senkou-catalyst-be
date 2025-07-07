@@ -149,6 +149,17 @@ func (h *MerchantController) GetUserMerchants(c *fiber.Ctx) error {
 	})
 }
 
+// Get merchant by ID
+// @Summary Get Merchant by ID
+// @Description Retrieve a merchant by its ID
+// @Tags Merchant
+// @Security BearerAuth
+// @Param id path string true "Merchant ID"
+// @Success 200 {object} fiber.Map{data=models.Merchant,message=string}
+// @Failure 400 {object} fiber.Map{message=string}
+// @Failure 404 {object} fiber.Map{message=string}
+// @Failure 500 {object} fiber.Map{message=string,error=string}
+// @Router /merchants/{id} [get]
 func (h *MerchantController) GetMerchantByID(c *fiber.Ctx) error {
 	merchantID := c.Params("id")
 
@@ -179,6 +190,18 @@ func (h *MerchantController) GetMerchantByID(c *fiber.Ctx) error {
 	})
 }
 
+// Update merchant
+// @Summary Update Merchant
+// @Description Update a merchant's details
+// @Tags Merchant
+// @Security BearerAuth
+// @Param id path string true "Merchant ID"
+// @Param dtos.UpdateMerchantRequestDTO body dtos.UpdateMerchantRequestDTO true "Update Merchant request"
+// @Success 200 {object} fiber.Map{data=fiber.Map{merchant=models.Merchant},message=string}
+// @Failure 400 {object} fiber.Map{message=string,errors=[]string}
+// @Failure 404 {object} fiber.Map{message=string}
+// @Failure 500 {object} fiber.Map{message=string,error=string}
+// @Router /merchants/{id} [put]
 func (h *MerchantController) UpdateMerchant(c *fiber.Ctx) error {
 	merchantID := c.Params("id")
 
@@ -228,6 +251,17 @@ func (h *MerchantController) UpdateMerchant(c *fiber.Ctx) error {
 	})
 }
 
+// Delete merchant
+// @Summary Delete Merchant
+// @Description Delete a merchant by its ID
+// @Tags Merchant
+// @Security BearerAuth
+// @Param id path string true "Merchant ID"
+// @Success 200 {object} fiber.Map{message=string}
+// @Failure 400 {object} fiber.Map{message=string}
+// @Failure 404 {object} fiber.Map{message=string}
+// @Failure 500 {object} fiber.Map{message=string,error=string}
+// @Router /merchants/{id} [delete]
 func (h *MerchantController) DeleteMerchant(c *fiber.Ctx) error {
 	merchantID := c.Params("id")
 
