@@ -28,6 +28,7 @@ func NewCategoryController(categoryService services.CategoryService) CategoryCon
 // @Tags Categories
 // @Accept json
 // @Produce json
+// @Security BearerAuth
 // @Param merchantID path string true "Merchant ID"
 // @Param CreateCategoryDTO body dtos.CreateCategoryDTO true "Create Category DTO"
 // @Success 200 {object} fiber.Map{data=fiber.Map{category=models.Category}}

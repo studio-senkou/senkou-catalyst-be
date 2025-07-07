@@ -512,6 +512,8 @@ paths:
                 message:
                   type: string
               type: object
+      security:
+      - BearerAuth: []
       summary: Create a new category
       tags:
       - Categories

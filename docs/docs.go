@@ -644,6 +644,11 @@ const docTemplate = `{
         },
         "/merchants/{merchantID}/categories": {
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Create a new category for a merchant",
                 "consumes": [
                     "application/json"
