@@ -1,4 +1,4 @@
-.PHONY=auth-secret
+.PHONY=auth-secret rebuild
 
 auth-secret:
 	@echo "" >> .env
@@ -9,3 +9,4 @@ rebuild:
 	@docker compose down
 	@docker compose build --no-cache
 	@docker compose up -d
+	@docker image prune -f
