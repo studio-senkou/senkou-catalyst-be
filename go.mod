@@ -5,7 +5,7 @@ go 1.24.3
 require (
 	github.com/gofiber/fiber/v2 v2.52.8
 	github.com/gofiber/swagger v1.1.1
-	github.com/google/uuid v1.6.0 // indirect
+	github.com/google/uuid v1.6.0
 	github.com/joho/godotenv v1.5.1
 	github.com/swaggo/swag v1.16.4
 	gorm.io/driver/postgres v1.6.0
