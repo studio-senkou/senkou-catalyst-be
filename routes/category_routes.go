@@ -17,4 +17,6 @@ func CategoryRoutes(app *fiber.App) {
 
 	app.Post("/merchants/:merchantID/categories", middlewares.JWTProtected, categoryController.CreateCategory)
 	app.Get("/merchants/:merchantID/categories", middlewares.JWTProtected, categoryController.GetCategories)
+	app.Put("/merchants/:merchantID/categories/:categoryID", middlewares.JWTProtected, categoryController.UpdateCategory)
+	app.Delete("/merchants/:merchantID/categories/:categoryID", middlewares.JWTProtected, categoryController.DeleteCategory)
 }

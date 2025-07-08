@@ -8,17 +8,12 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-type CategoryController interface {
-	CreateCategory(c *fiber.Ctx) error
-	GetCategories(c *fiber.Ctx) error
-}
-
-type categoryController struct {
+type CategoryController struct {
 	categoryService services.CategoryService
 }
 
 func NewCategoryController(categoryService services.CategoryService) CategoryController {
-	return &categoryController{
+	return CategoryController{
 		categoryService: categoryService,
 	}
 }
@@ -36,7 +31,7 @@ func NewCategoryController(categoryService services.CategoryService) CategoryCon
 // @Failure 400 {object} fiber.Map{message=string, errors=[]string}
 // @Failure 500 {object} fiber.Map{message=string, error=string}
 // @Router /merchants/{merchantID}/categories [post]
-func (h *categoryController) CreateCategory(c *fiber.Ctx) error {
+func (h *CategoryController) CreateCategory(c *fiber.Ctx) error {
 	merchantID := c.Params("merchantID")
 
 	if merchantID == "" {
@@ -84,7 +79,18 @@ func (h *categoryController) CreateCategory(c *fiber.Ctx) error {
 	})
 }
 
-func (h *categoryController) GetCategories(c *fiber.Ctx) error {
+// Get all categories for a merchant
+// @Summary Get all categories for a merchant
+// @Description Retrieve all categories associated with a specific merchant
+// @Tags Categories
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} fiber.Map{data=fiber.Map{categories=[]models.Category}}
+// @Failure 400 {object} fiber.Map{message=string}
+// @Failure 500 {object} fiber.Map{message=string, error=string}
+// @Router /merchants/{merchantID}/categories [get]
+func (h *CategoryController) GetCategories(c *fiber.Ctx) error {
 	merchantID := c.Params("merchantID")
 
 	if merchantID == "" {
@@ -110,13 +116,31 @@ func (h *categoryController) GetCategories(c *fiber.Ctx) error {
 	})
 }
 
-func (h *categoryController) UpdateCategory(c *fiber.Ctx) error {
+// Update category
+// @Summary Update a category
+// @Description Update an existing category for a merchant
+// @Tags Categories
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param merchantID path string true "Merchant ID"
+// @Param categoryID path string true "Category ID"
+func (h *CategoryController) UpdateCategory(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusNotImplemented).JSON(fiber.Map{
 		"message": "Update category functionality is not implemented yet",
 	})
 }
 
-func (h *categoryController) DeleteCategory(c *fiber.Ctx) error {
+// Delete category
+// @Summary Delete a category
+// @Description Delete an existing category for a merchant
+// @Tags Categories
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param merchantID path string true "Merchant ID"
+// @Param categoryID path string true "Category ID"
+func (h *CategoryController) DeleteCategory(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusNotImplemented).JSON(fiber.Map{
 		"message": "Delete category functionality is not implemented yet",
 	})
