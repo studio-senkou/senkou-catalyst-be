@@ -16,4 +16,5 @@ func CategoryRoutes(app *fiber.App) {
 	categoryController := controllers.NewCategoryController(categoryService)
 
 	app.Post("/merchants/:merchantID/categories", middlewares.JWTProtected, categoryController.CreateCategory)
+	app.Get("/merchants/:merchantID/categories", middlewares.JWTProtected, categoryController.GetCategories)
 }

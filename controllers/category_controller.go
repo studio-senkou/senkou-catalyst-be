@@ -10,6 +10,7 @@ import (
 
 type CategoryController interface {
 	CreateCategory(c *fiber.Ctx) error
+	GetCategories(c *fiber.Ctx) error
 }
 
 type categoryController struct {
@@ -80,5 +81,43 @@ func (h *categoryController) CreateCategory(c *fiber.Ctx) error {
 			"category": category,
 		},
 		"message": "Category created successfully",
+	})
+}
+
+func (h *categoryController) GetCategories(c *fiber.Ctx) error {
+	merchantID := c.Params("merchantID")
+
+	if merchantID == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"message": "Merchant ID is required",
+		})
+	}
+
+	categories, err := h.categoryService.GetAllCategoriesByMerchantID(merchantID)
+
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"message": "Failed to retrieve categories",
+			"error":   err.Error(),
+		})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"message": "Categories retrieved successfully",
+		"data": fiber.Map{
+			"categories": categories,
+		},
+	})
+}
+
+func (h *categoryController) UpdateCategory(c *fiber.Ctx) error {
+	return c.Status(fiber.StatusNotImplemented).JSON(fiber.Map{
+		"message": "Update category functionality is not implemented yet",
+	})
+}
+
+func (h *categoryController) DeleteCategory(c *fiber.Ctx) error {
+	return c.Status(fiber.StatusNotImplemented).JSON(fiber.Map{
+		"message": "Delete category functionality is not implemented yet",
 	})
 }
