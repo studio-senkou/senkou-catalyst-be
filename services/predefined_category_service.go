@@ -9,6 +9,7 @@ import (
 
 type PredefinedCategoryService interface {
 	StoreCategory(pdCategory *dtos.CreatePDCategoryDTO) error
+	GetPredefinedCategoryByName(name string) (*models.PredefinedCategory, error)
 }
 
 type predefinedCategoryService struct {
@@ -37,4 +38,17 @@ func (s *predefinedCategoryService) StoreCategory(pdCategory *dtos.CreatePDCateg
 	}
 
 	return nil
+}
+
+func (s *predefinedCategoryService) GetPredefinedCategoryByName(name string) (*models.PredefinedCategory, error) {
+	category, err := s.pcRepository.FindByName(name)
+	if err != nil {
+		return nil, err
+	}
+
+	if category == nil {
+		return nil, errors.New("predefined category not found")
+	}
+
+	return category, nil
 }

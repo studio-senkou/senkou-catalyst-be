@@ -1,6 +1,9 @@
 package middlewares
 
 import (
+	"senkou-catalyst-be/config"
+	"senkou-catalyst-be/models"
+
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -17,6 +20,13 @@ func RoleMiddleware(roles ...string) func(c *fiber.Ctx) error {
 			})
 		}
 
-		return nil
+		var user models.User
+		if err := config.DB.Select("role").Where("id = ?", userID).First(&user).Error; err != nil {
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+				"message": "You are not authorized to access this resource",
+			})
+		}
+
+		return c.Next()
 	}
 }

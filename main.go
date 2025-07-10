@@ -37,6 +37,7 @@ func main() {
 	routes.AuthRoutes(app)
 	routes.MerchantRoutes(app)
 	routes.CategoryRoutes(app)
+	routes.PredefinedCategoryRoutes(app)
 
 	err := app.Listen(fmt.Sprintf(":%s", utils.GetEnv("APP_PORT", "8080")))
 
