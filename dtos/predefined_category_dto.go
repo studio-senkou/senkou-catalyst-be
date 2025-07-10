@@ -16,3 +16,9 @@ func (dto *CreatePDCategoryDTO) ErrorMessages() map[string]string {
 		"image_url.url":      "Image URL must be a valid URL",
 	}
 }
+
+type UpdatePDCategoryDTO struct {
+	Name        string `json:"name"        validate:"omitempty,min=3,max=100"`
+	Description string `json:"description" validate:"omitempty,max=255"`
+	ImageURL    string `json:"image_url"   validate:"omitempty,url"`
+}

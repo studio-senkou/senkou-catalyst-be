@@ -10,8 +10,8 @@ type PredefinedCategoryRepository interface {
 	StoreCategory(pdCategory *models.PredefinedCategory) error
 	FindByName(name string) (*models.PredefinedCategory, error)
 	FindAll() (*[]models.PredefinedCategory, error)
-	UpdateByID(pcID uint, updatedName string) error
-	RemoveByID(pcID uint) error
+	UpdateByID(pcID uint32, updatedCategory *models.PredefinedCategory) error
+	RemoveByID(pcID uint32) error
 }
 
 type predefinedCategoryRepository struct {
@@ -24,55 +24,50 @@ func NewPredefinedCategoryRepository(db *gorm.DB) PredefinedCategoryRepository {
 	}
 }
 
+// Store a new predefined category
+// This function requires a predefined category model to be passed in, which contains the detail of the category.
 func (r *predefinedCategoryRepository) StoreCategory(pdCategory *models.PredefinedCategory) error {
 	return r.DB.Create(pdCategory).Error
 }
 
+// Find a predefined category by its name
+// This function requires the name of the category to be passed in.
+// It returns the category if foudn or an error if the operation fails.
 func (r *predefinedCategoryRepository) FindByName(name string) (*models.PredefinedCategory, error) {
-	var category models.PredefinedCategory
+	category := new(models.PredefinedCategory)
 
-	err := r.DB.Where("name = ?", name).First(&category).Error
-
-	if err != nil {
+	if err := r.DB.Select("id", "name", "description", "image_url").
+		Where("name = ?", name).
+		First(category).Error; err != nil {
 		return nil, err
 	}
 
-	return &category, nil
+	return category, nil
 }
 
+// Find all predefined categories
+// This function retrieves all predefined categories from the database
+// It returns a slice of predefined categories or an error if the operation fails.
 func (r *predefinedCategoryRepository) FindAll() (*[]models.PredefinedCategory, error) {
 	var categories []models.PredefinedCategory
 
-	err := r.DB.Find(&categories).Error
-
-	if err != nil {
+	if err := r.DB.Select("id", "name", "description", "image_url").Find(&categories).Error; err != nil {
 		return nil, err
 	}
 
 	return &categories, nil
 }
 
-func (r *predefinedCategoryRepository) UpdateByID(pcID uint, updatedName string) error {
-	var category models.PredefinedCategory
-
-	err := r.DB.Where("id = ?", pcID).First(&category).Error
-	
-	if err != nil {
-		return err
-	}
-
-	category.Name = updatedName
-	
-	return r.DB.Save(&category).Error
+// Update a predefined category by its ID
+// This function requires the ID of the category and the updated data to be passed in.
+// It returns an error if the operation fails.
+func (r *predefinedCategoryRepository) UpdateByID(pcID uint32, updatedCategory *models.PredefinedCategory) error {
+	return r.DB.Model(&models.PredefinedCategory{}).Where("id = ?", pcID).Updates(updatedCategory).Error
 }
 
-func (r *predefinedCategoryRepository) RemoveByID(pcID uint) error {
-	var category models.PredefinedCategory
-
-	err := r.DB.Where("id = ?", pcID).First(&category).Error
-	if err != nil {
-		return err
-	}
-
-	return r.DB.Delete(&category).Error
+// Remove a predefined category by its ID
+// This function requires the ID of the category to be passed in
+// It returns an error if the operation fails.
+func (r *predefinedCategoryRepository) RemoveByID(pcID uint32) error {
+	return r.DB.Delete(&models.PredefinedCategory{}, pcID).Error
 }

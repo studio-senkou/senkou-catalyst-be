@@ -16,7 +16,7 @@ func MerchantRoutes(app *fiber.App) {
 	merchantController := controllers.NewMerchantController(merchantService)
 
 	app.Post("/merchants", middlewares.JWTProtected, merchantController.CreateMerchant)
-	app.Get("/merchants", middlewares.JWTProtected, merchantController.GetUserMerchants)
+	app.Get("/merchants", middlewares.JWTProtected, middlewares.RoleMiddleware("admin"), merchantController.GetUserMerchants)
 	app.Get("/merchants/:id", middlewares.JWTProtected, merchantController.GetMerchantByID)
 	app.Put("/merchants/:id", middlewares.JWTProtected, merchantController.UpdateMerchant)
 	app.Delete("/merchants/:id", middlewares.JWTProtected, merchantController.DeleteMerchant)

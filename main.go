@@ -23,6 +23,9 @@ func main() {
 	appConfig := config.InitFiberConfig()
 	app := fiber.New(*appConfig)
 
+	// Middlewares
+	app.Use(config.InitLogger())
+
 	config.ConnectDB()
 
 	app.Get("/swagger/*", swagger.HandlerDefault)
