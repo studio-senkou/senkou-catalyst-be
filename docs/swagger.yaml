@@ -45,6 +45,15 @@ definitions:
     required:
     - refresh_token
     type: object
+  dtos.UpdateCategoryDTO:
+    properties:
+      name:
+        maxLength: 100
+        minLength: 3
+        type: string
+    required:
+    - name
+    type: object
   dtos.UpdateMerchantRequestDTO:
     properties:
       name:
@@ -103,8 +112,7 @@ host: localhost:8080
 info:
   contact:
     name: Catalyst Team
-  description: 'This is the API documentation for the Catalyst application.<style>.models
-    {display: none !important}</style>'
+  description: This is the API documentation for the Catalyst application.
   title: Catalyst API Swagger
   version: "1.0"
 paths:
@@ -564,6 +572,137 @@ paths:
       security:
       - BearerAuth: []
       summary: Create a new category
+      tags:
+      - Categories
+  /merchants/{merchantID}/categories/{categoryID}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete an existing category for a merchant
+      parameters:
+      - description: Merchant ID
+        in: path
+        name: merchantID
+        required: true
+        type: string
+      - description: Category ID
+        in: path
+        name: categoryID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/fiber.Map'
+            - properties:
+                message:
+                  type: string
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/fiber.Map'
+            - properties:
+                error:
+                  type: string
+                message:
+                  type: string
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/fiber.Map'
+            - properties:
+                error:
+                  type: string
+                message:
+                  type: string
+              type: object
+      security:
+      - BearerAuth: []
+      summary: Delete a category
+      tags:
+      - Categories
+    put:
+      consumes:
+      - application/json
+      description: Update an existing category for a merchant
+      parameters:
+      - description: Merchant ID
+        in: path
+        name: merchantID
+        required: true
+        type: string
+      - description: Category ID
+        in: path
+        name: categoryID
+        required: true
+        type: string
+      - description: Update Category DTO
+        in: body
+        name: UpdateCategoryDTO
+        required: true
+        schema:
+          $ref: '#/definitions/dtos.UpdateCategoryDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/fiber.Map'
+            - properties:
+                data:
+                  allOf:
+                  - $ref: '#/definitions/fiber.Map'
+                  - properties:
+                      category:
+                        $ref: '#/definitions/models.Category'
+                    type: object
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/fiber.Map'
+            - properties:
+                errors:
+                  items:
+                    type: string
+                  type: array
+                message:
+                  type: string
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            allOf:
+            - $ref: '#/definitions/fiber.Map'
+            - properties:
+                message:
+                  type: string
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/fiber.Map'
+            - properties:
+                error:
+                  type: string
+                message:
+                  type: string
+              type: object
+      security:
+      - BearerAuth: []
+      summary: Update a category
       tags:
       - Categories
   /users:

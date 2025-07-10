@@ -12,7 +12,7 @@ type CategoryRepository interface {
 	FindCategoryByID(id string) (*models.Category, error)
 	FindAllCategoriesByMerchantID(merchantID string) ([]models.Category, error)
 	UpdateCategory(category *models.Category) (*models.Category, error)
-	DeleteCategory(id string) error
+	DeleteCategory(id uint32) error
 }
 
 type categoryRepository struct {
@@ -82,7 +82,7 @@ func (categoryRepo *categoryRepository) UpdateCategory(category *models.Category
 // Delete a category by its ID
 // This function requires the ID of the category to be passed in.
 // It returns an error if the operation fails.
-func (categoryRepo *categoryRepository) DeleteCategory(id string) error {
+func (categoryRepo *categoryRepository) DeleteCategory(id uint32) error {
 	var category models.Category
 	if err := categoryRepo.db.Where("id = ?", id).First(&category).Error; err != nil {
 		return err

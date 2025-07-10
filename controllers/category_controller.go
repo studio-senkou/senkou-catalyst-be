@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"senkou-catalyst-be/dtos"
+	"senkou-catalyst-be/models"
 	"senkou-catalyst-be/services"
 	"senkou-catalyst-be/utils"
 
@@ -125,9 +126,65 @@ func (h *CategoryController) GetCategories(c *fiber.Ctx) error {
 // @Security BearerAuth
 // @Param merchantID path string true "Merchant ID"
 // @Param categoryID path string true "Category ID"
+// @Param UpdateCategoryDTO body dtos.UpdateCategoryDTO true "Update Category DTO"
+// @Success 200 {object} fiber.Map{data=fiber.Map{category=models.Category}}
+// @Failure 400 {object} fiber.Map{message=string,errors=[]string}
+// @Failure 404 {object} fiber.Map{message=string}
+// @Failure 500 {object} fiber.Map{message=string,error=string}
+// @Router /merchants/{merchantID}/categories/{categoryID} [put]
 func (h *CategoryController) UpdateCategory(c *fiber.Ctx) error {
-	return c.Status(fiber.StatusNotImplemented).JSON(fiber.Map{
-		"message": "Update category functionality is not implemented yet",
+	merchantID := c.Params("merchantID")
+	categoryID := c.Params("categoryID")
+
+	if merchantID == "" || categoryID == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"message": "Merchant ID and Category ID are required",
+		})
+	}
+
+	parsedCategoryID, err := utils.StrToUint(categoryID)
+
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"message": "Invalid Category ID",
+			"error":   err.Error(),
+		})
+	}
+
+	updateCategoryDTO := new(dtos.UpdateCategoryDTO)
+
+	if err := utils.Validate(c, updateCategoryDTO); err != nil {
+		if vErr, ok := err.(*utils.ValidationError); ok {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"message": "Validation failed",
+				"errors":  vErr.Errors,
+			})
+		}
+
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"message": "Internal server error",
+			"error":   err.Error(),
+		})
+	}
+
+	updatedCategory, err := h.categoryService.UpdateCategory(&models.Category{
+		ID:         uint32(parsedCategoryID),
+		Name:       updateCategoryDTO.Name,
+		MerchantID: merchantID,
+	})
+
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"message": "Failed to update category",
+			"error":   err.Error(),
+		})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"data": fiber.Map{
+			"category": updatedCategory,
+		},
+		"message": "Category updated successfully",
 	})
 }
 
@@ -140,8 +197,37 @@ func (h *CategoryController) UpdateCategory(c *fiber.Ctx) error {
 // @Security BearerAuth
 // @Param merchantID path string true "Merchant ID"
 // @Param categoryID path string true "Category ID"
+// @Success 200 {object} fiber.Map{message=string}
+// @Failure 400 {object} fiber.Map{message=string,error=string}
+// @Failure 500 {object} fiber.Map{message=string,error=string}
+// @Router /merchants/{merchantID}/categories/{categoryID} [delete]
 func (h *CategoryController) DeleteCategory(c *fiber.Ctx) error {
-	return c.Status(fiber.StatusNotImplemented).JSON(fiber.Map{
-		"message": "Delete category functionality is not implemented yet",
+	merchantID := c.Params("merchantID")
+	categoryID := c.Params("categoryID")
+
+	if merchantID == "" || categoryID == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"message": "Merchant ID and Category ID are required",
+		})
+	}
+
+	parsedCategoryID, err := utils.StrToUint(categoryID)
+
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"message": "Invalid Category ID",
+			"error":   err.Error(),
+		})
+	}
+
+	if err := h.categoryService.DeleteCategory(uint32(parsedCategoryID)); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"message": "Failed to delete category",
+			"error":   err.Error(),
+		})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"message": "Category deleted successfully",
 	})
 }

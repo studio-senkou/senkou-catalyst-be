@@ -12,7 +12,7 @@ type CategoryService interface {
 	GetCategoryByID(id string) (*models.Category, error)
 	GetAllCategoriesByMerchantID(merchantID string) ([]models.Category, error)
 	UpdateCategory(category *models.Category) (*models.Category, error)
-	DeleteCategory(id string) error
+	DeleteCategory(id uint32) error
 }
 
 type categoryService struct {
@@ -92,7 +92,7 @@ func (s *categoryService) UpdateCategory(category *models.Category) (*models.Cat
 // This function deletes a category by its ID.
 // It requires the ID of the category to be passed in.
 // It returns an error if the operation fails.
-func (s *categoryService) DeleteCategory(id string) error {
+func (s *categoryService) DeleteCategory(id uint32) error {
 	err := s.categoryRepository.DeleteCategory(id)
 	if err != nil {
 		return err
