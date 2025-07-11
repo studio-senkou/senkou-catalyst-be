@@ -5,6 +5,7 @@ import (
 	"senkou-catalyst-be/dtos"
 	"senkou-catalyst-be/services"
 	"senkou-catalyst-be/utils"
+	"senkou-catalyst-be/utils/throw"
 	"strconv"
 
 	"github.com/gofiber/fiber/v2"
@@ -37,15 +38,13 @@ func (h *AuthController) Login(c *fiber.Ctx) error {
 
 	if err := utils.Validate(c, loginRequestDTO); err != nil {
 		if vErr, ok := err.(*utils.ValidationError); ok {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-				"message": "Validation failed",
-				"errors":  vErr.Errors,
+			return throw.BadRequest(c, "Validation failed", map[string]interface{}{
+				"errors": vErr.Errors,
 			})
 		}
 
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"message": "Internal server error",
-			"error":   err.Error(),
+		return throw.InternalError(c, "Internal server error", map[string]interface{}{
+			"error": err.Error(),
 		})
 	}
 

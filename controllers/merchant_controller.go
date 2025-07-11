@@ -5,6 +5,7 @@ import (
 	"senkou-catalyst-be/dtos"
 	"senkou-catalyst-be/services"
 	"senkou-catalyst-be/utils"
+	"senkou-catalyst-be/utils/throw"
 	"strconv"
 
 	"github.com/gofiber/fiber/v2"
@@ -37,24 +38,27 @@ func (h *MerchantController) CreateMerchant(c *fiber.Ctx) error {
 	userID, err := strconv.ParseUint(userIDStr, 10, 64)
 
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"message": "Failed to parse user ID",
-			"error":   err.Error(),
+		// return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+		// 	"message": "Failed to parse user ID",
+		// 	"error":   err.Error(),
+		// })
+		return throw.InternalError(c, "Failed to parse user ID", map[string]any{
+			"error": err.Error(),
 		})
 	}
 
 	merchants, err := h.merchantService.GetUserMerchants(uint(userID))
 
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"message": "Internal server error",
+		return throw.InternalError(c, "Internal server error", map[string]any{
+			"user_id": userIDStr,
 			"error":   err.Error(),
 		})
 	}
 
 	if merchants != nil && len(*merchants) > 0 {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"message": "You already have a merchant",
+		return throw.BadRequest(c, "You already have a merchant", map[string]any{
+			"user_id": userIDStr,
 			"error":   "You can only have one merchant per user",
 		})
 	}
@@ -63,14 +67,11 @@ func (h *MerchantController) CreateMerchant(c *fiber.Ctx) error {
 
 	if err := utils.Validate(c, createMerchantRequestDTO); err != nil {
 		if vErr, ok := err.(*utils.ValidationError); ok {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-				"message": "Validation failed",
-				"errors":  vErr.Errors,
-			})
+			return throw.ValidationError(c, "Validation failed", vErr.Errors)
 		}
 
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"message": "Internal server error",
+		return throw.InternalError(c, "Internal server error", map[string]any{
+			"request": createMerchantRequestDTO,
 			"error":   err.Error(),
 		})
 	}
@@ -78,25 +79,24 @@ func (h *MerchantController) CreateMerchant(c *fiber.Ctx) error {
 	userMerchants, _ := h.merchantService.GetUserMerchants(uint(userID))
 
 	if userMerchants != nil && len(*userMerchants) > 0 {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"message": "You already have a merchant",
-			"error":   "You can only have one merchant per user",
+		return throw.BadRequest(c, "You already have a merchant", map[string]any{
+			"user_id":  userIDStr,
+			"merchant": (*userMerchants)[0].Name,
+			"error":    "You can only have one merchant per user",
 		})
 	}
 
 	merchant, err := h.merchantService.CreateMerchant(createMerchantRequestDTO, uint(userID))
 
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"message": "Failed to create merchant",
-			"error":   err.Error(),
+		return throw.InternalError(c, "Failed to create merchant", map[string]any{
+			"error": err.Error(),
 		})
 	}
 
 	if merchant == nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"message": "Failed to create merchant",
-			"error":   "Merchant creation returned nil",
+		return throw.InternalError(c, "Failed to create merchant", map[string]any{
+			"error": "Merchant creation returned nil",
 		})
 	}
 
@@ -120,8 +120,8 @@ func (h *MerchantController) GetUserMerchants(c *fiber.Ctx) error {
 	userID, err := strconv.ParseUint(userIDStr, 10, 64)
 
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"message": "Failed to parse user ID",
+		return throw.InternalError(c, "Failed to parse user ID", map[string]any{
+			"user_id": userIDStr,
 			"error":   err.Error(),
 		})
 	}
@@ -129,16 +129,14 @@ func (h *MerchantController) GetUserMerchants(c *fiber.Ctx) error {
 	merchants, err := h.merchantService.GetUserMerchants(uint(userID))
 
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"message": "Internal server error",
+		return throw.InternalError(c, "Internal server error", map[string]any{
+			"user_id": userIDStr,
 			"error":   err.Error(),
 		})
 	}
 
 	if merchants == nil || len(*merchants) == 0 {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-			"message": "You have no merchants",
-		})
+		return throw.NotFound(c, "You have no merchants")
 	}
 
 	return c.JSON(fiber.Map{
@@ -164,24 +162,19 @@ func (h *MerchantController) GetMerchantByID(c *fiber.Ctx) error {
 	merchantID := c.Params("id")
 
 	if merchantID == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"message": "Invalid merchant ID",
-		})
+		return throw.BadRequest(c, "Invalid merchant ID", nil)
 	}
 
 	merchant, err := h.merchantService.GetMerchantByID(merchantID)
 
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"message": "Internal server error",
-			"error":   err.Error(),
+		return throw.InternalError(c, "Internal server error", map[string]any{
+			"error": err.Error(),
 		})
 	}
 
 	if merchant == nil {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-			"message": "Merchant not found",
-		})
+		return throw.NotFound(c, "Merchant not found")
 	}
 
 	return c.JSON(fiber.Map{
@@ -206,40 +199,32 @@ func (h *MerchantController) UpdateMerchant(c *fiber.Ctx) error {
 	merchantID := c.Params("id")
 
 	if merchantID == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"message": "Invalid merchant ID",
-		})
+		return throw.BadRequest(c, "Invalid merchant ID", nil)
 	}
 
 	updateMerchantRequestDTO := new(dtos.UpdateMerchantRequestDTO)
 
 	if err := utils.Validate(c, updateMerchantRequestDTO); err != nil {
 		if vErr, ok := err.(*utils.ValidationError); ok {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-				"message": "Validation failed",
-				"errors":  vErr.Errors,
-			})
+			return throw.ValidationError(c, "Validation failed", vErr.Errors)
 		}
 
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"message": "Internal server error",
-			"error":   err.Error(),
+		return throw.InternalError(c, "Internal server error", map[string]any{
+			"error": err.Error(),
 		})
 	}
 
 	merchant, err := h.merchantService.UpdateMerchantByID(merchantID, updateMerchantRequestDTO)
 
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"message": "Failed to update merchant",
-			"error":   err.Error(),
+		return throw.InternalError(c, "Failed to update merchant", map[string]any{
+			"error": err.Error(),
 		})
 	}
 
 	if merchant == nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"message": "Failed to update merchant",
-			"error":   "Merchant update returned nil",
+		return throw.InternalError(c, "Failed to update merchant", map[string]any{
+			"error": "Merchant update returned nil",
 		})
 	}
 
@@ -266,25 +251,20 @@ func (h *MerchantController) DeleteMerchant(c *fiber.Ctx) error {
 	merchantID := c.Params("id")
 
 	if merchantID == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"message": "Invalid merchant ID",
-		})
+		return throw.BadRequest(c, "Invalid merchant ID", nil)
 	}
 
 	merchant, _ := h.merchantService.GetMerchantByID(merchantID)
 
 	if merchant == nil {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-			"message": "Cannot remove merchant, Your merchant was not found",
-		})
+		return throw.NotFound(c, "Cannot remove merchant, Your merchant was not found")
 	}
 
 	err := h.merchantService.DeleteMerchantByID(merchantID)
 
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"message": "Failed to delete merchant",
-			"error":   err.Error(),
+		return throw.InternalError(c, "Failed to delete merchant", map[string]any{
+			"error": err.Error(),
 		})
 	}
 

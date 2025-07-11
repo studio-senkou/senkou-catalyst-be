@@ -4,6 +4,7 @@ import (
 	"senkou-catalyst-be/dtos"
 	"senkou-catalyst-be/services"
 	"senkou-catalyst-be/utils"
+	"senkou-catalyst-be/utils/throw"
 	"strconv"
 
 	"github.com/gofiber/fiber/v2"
@@ -36,29 +37,23 @@ func (h *PredefinedCategoryController) StoreCategory(c *fiber.Ctx) error {
 
 	if err := utils.Validate(c, categoryPDDTO); err != nil {
 		if vErr, ok := err.(*utils.ValidationError); ok {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-				"message": "Validation failed",
-				"errors":  vErr.Errors,
-			})
+			return throw.ValidationError(c, "Validation failed", vErr.Errors)
 		}
 
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"message": "Internal server error",
-			"error":   err.Error(),
+		return throw.InternalError(c, "Internal server error", map[string]any{
+			"error": err.Error(),
 		})
 	}
 
 	if existingCategory, _ := h.pdService.GetPredefinedCategoryByName(categoryPDDTO.Name); existingCategory != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"message": "Predefined category already exists",
-			"error":   "You cannot create a predefined category with the same name",
+		return throw.BadRequest(c, "Predefined category already exists", map[string]any{
+			"error": "You cannot create a predefined category with the same name",
 		})
 	}
 
 	if err := h.pdService.StoreCategory(categoryPDDTO); err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"message": "Failed to create predefined category",
-			"error":   err.Error(),
+		return throw.InternalError(c, "Failed to create predefined category", map[string]any{
+			"error": err.Error(),
 		})
 	}
 
@@ -81,9 +76,8 @@ func (h *PredefinedCategoryController) GetPredefinedCategories(c *fiber.Ctx) err
 	predefinedCategories, err := h.pdService.GetAllPredefinedCategories()
 
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"message": "Failed to retrieve predefined categories",
-			"error":   err.Error(),
+		return throw.InternalError(c, "Failed to retrieve predefined categories", map[string]any{
+			"error": err.Error(),
 		})
 	}
 
@@ -113,18 +107,16 @@ func (h *PredefinedCategoryController) UpdatePredefinedCategory(c *fiber.Ctx) er
 	pcID := c.Params("pcID")
 
 	if pcID == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"message": "Predefined Category ID is required",
-			"error":   "Invalid request parameters",
+		return throw.BadRequest(c, "Predefined Category ID is required", map[string]any{
+			"error": "Invalid request parameters",
 		})
 	}
 
 	parsedPCID, err := strconv.ParseUint(pcID, 10, 32)
 
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"message": "Invalid Predefined Category ID",
-			"error":   err.Error(),
+		return throw.BadRequest(c, "Invalid Predefined Category ID", map[string]any{
+			"error": err.Error(),
 		})
 	}
 
@@ -132,25 +124,20 @@ func (h *PredefinedCategoryController) UpdatePredefinedCategory(c *fiber.Ctx) er
 
 	if err := utils.Validate(c, updatePDCategoryDTO); err != nil {
 		if vErr, ok := err.(*utils.ValidationError); ok {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-				"message": "Validation failed",
-				"errors":  vErr.Errors,
-			})
+			return throw.ValidationError(c, "Validation failed", vErr.Errors)
 		}
 
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"message": "Internal server error",
-			"error":   err.Error(),
+		return throw.InternalError(c, "Internal server error", map[string]any{
+			"error": err.Error(),
 		})
 	}
 
 	if err := h.pdService.UpdatePredefinedCategory(updatePDCategoryDTO, uint32(parsedPCID)); err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"message": "Failed to update predefined category",
-			"error":   err.Error(),
+		return throw.InternalError(c, "Failed to update predefined category", map[string]any{
+			"error": err.Error(),
 		})
 	}
-	
+
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"message": "Successfully update predefined category",
 	})
@@ -173,40 +160,33 @@ func (h *PredefinedCategoryController) DeletePredefinedCategory(c *fiber.Ctx) er
 	pcID := c.Params("pcID")
 
 	if pcID == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"message": "Predefined Category ID is required",
-			"error":   "Invalid request parameters",
+		return throw.BadRequest(c, "Predefined Category ID is required", map[string]any{
+			"error": "Invalid request parameters",
 		})
 	}
 
 	parsedPCID, err := strconv.ParseUint(pcID, 10, 32)
 
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"message": "Invalid Predefined Category ID",
-			"error":   err.Error(),
+		return throw.BadRequest(c, "Invalid Predefined Category ID", map[string]any{
+			"error": err.Error(),
 		})
 	}
 
 	// Check if the predefined category exists before attempting to delete
 	if _, err := h.pdService.GetPredefinedCategoryByName(pcID); err != nil {
 		if err.Error() == "record not found" {
-			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-				"message": "Predefined category not found",
-			})
+			return throw.NotFound(c, "Predefined category not found")
 		}
 
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"message": "Failed to retrieve predefined category",
-			"error":   err.Error(),
+		return throw.InternalError(c, "Failed to retrieve predefined category", map[string]any{
+			"error": err.Error(),
 		})
-
 	}
-	
+
 	if err := h.pdService.DeletePredefinedCategory(uint32(parsedPCID)); err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"message": "Failed to delete predefined category",
-			"error":   err.Error(),
+		return throw.InternalError(c, "Failed to delete predefined category", map[string]any{
+			"error": err.Error(),
 		})
 	}
 

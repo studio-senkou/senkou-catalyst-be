@@ -5,6 +5,7 @@ import (
 	"senkou-catalyst-be/models"
 	"senkou-catalyst-be/services"
 	"senkou-catalyst-be/utils"
+	"senkou-catalyst-be/utils/throw"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -36,8 +37,8 @@ func (h *CategoryController) CreateCategory(c *fiber.Ctx) error {
 	merchantID := c.Params("merchantID")
 
 	if merchantID == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"message": "Merchant ID is required",
+		return throw.BadRequest(c, "Merchant ID is required", map[string]any{
+			"Merchant ID": merchantID + " not found",
 		})
 	}
 
@@ -45,30 +46,27 @@ func (h *CategoryController) CreateCategory(c *fiber.Ctx) error {
 
 	if err := utils.Validate(c, createCategoryDTO); err != nil {
 		if vErr, ok := err.(*utils.ValidationError); ok {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-				"message": "Validation failed",
-				"errors":  vErr.Errors,
+			return throw.BadRequest(c, "Validation failed", map[string]any{
+				"errors": vErr.Errors,
 			})
 		}
 
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"message": "Internal server error",
-			"error":   err.Error(),
+		return throw.InternalError(c, "Internal server error", map[string]any{
+			"error": err.Error(),
 		})
 	}
 
 	if category, _ := h.categoryService.GetCategoryByName(createCategoryDTO.Name, merchantID); category != nil {
-		return c.Status(fiber.StatusConflict).JSON(fiber.Map{
-			"message": "Category already exists",
+		return throw.BadRequest(c, "Category already exists", map[string]any{
+			"category": createCategoryDTO.Name,
 		})
 	}
 
 	category, err := h.categoryService.CreateNewCategory(createCategoryDTO, merchantID)
 
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"message": "Failed to create category",
-			"error":   err.Error(),
+		return throw.InternalError(c, "Failed to create category", map[string]any{
+			"error": err.Error(),
 		})
 	}
 
@@ -95,17 +93,16 @@ func (h *CategoryController) GetCategories(c *fiber.Ctx) error {
 	merchantID := c.Params("merchantID")
 
 	if merchantID == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"message": "Merchant ID is required",
+		return throw.BadRequest(c, "Merchant ID is required", map[string]any{
+			"Merchant ID": merchantID + " not found",
 		})
 	}
 
 	categories, err := h.categoryService.GetAllCategoriesByMerchantID(merchantID)
 
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"message": "Failed to retrieve categories",
-			"error":   err.Error(),
+		return throw.InternalError(c, "Failed to retrieve categories", map[string]any{
+			"error": err.Error(),
 		})
 	}
 
@@ -145,9 +142,8 @@ func (h *CategoryController) UpdateCategory(c *fiber.Ctx) error {
 	parsedCategoryID, err := utils.StrToUint(categoryID)
 
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"message": "Invalid Category ID",
-			"error":   err.Error(),
+		return throw.BadRequest(c, "Invalid Category ID", map[string]any{
+			"error": err.Error(),
 		})
 	}
 
@@ -155,15 +151,13 @@ func (h *CategoryController) UpdateCategory(c *fiber.Ctx) error {
 
 	if err := utils.Validate(c, updateCategoryDTO); err != nil {
 		if vErr, ok := err.(*utils.ValidationError); ok {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-				"message": "Validation failed",
-				"errors":  vErr.Errors,
+			return throw.BadRequest(c, "Validation failed", map[string]any{
+				"errors": vErr.Errors,
 			})
 		}
 
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"message": "Internal server error",
-			"error":   err.Error(),
+		return throw.InternalError(c, "Internal server error", map[string]any{
+			"error": err.Error(),
 		})
 	}
 
@@ -174,9 +168,8 @@ func (h *CategoryController) UpdateCategory(c *fiber.Ctx) error {
 	})
 
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"message": "Failed to update category",
-			"error":   err.Error(),
+		return throw.InternalError(c, "Failed to update category", map[string]any{
+			"error": err.Error(),
 		})
 	}
 
@@ -206,25 +199,22 @@ func (h *CategoryController) DeleteCategory(c *fiber.Ctx) error {
 	categoryID := c.Params("categoryID")
 
 	if merchantID == "" || categoryID == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"message": "Merchant ID and Category ID are required",
+		return throw.BadRequest(c, "Merchant ID and Category ID are required", map[string]any{
+			"merchantID": merchantID,
+			"categoryID": categoryID,
 		})
 	}
 
 	parsedCategoryID, err := utils.StrToUint(categoryID)
 
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"message": "Invalid Category ID",
-			"error":   err.Error(),
+		return throw.BadRequest(c, "Invalid Category ID", map[string]any{
+			"error": err.Error(),
 		})
 	}
 
 	if err := h.categoryService.DeleteCategory(uint32(parsedCategoryID)); err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"message": "Failed to delete category",
-			"error":   err.Error(),
-		})
+		return throw.DatabaseError(c, "Failed to delete category", "DELETE")
 	}
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{

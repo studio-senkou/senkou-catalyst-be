@@ -5,6 +5,7 @@ import (
 	"senkou-catalyst-be/models"
 	"senkou-catalyst-be/services"
 	"senkou-catalyst-be/utils"
+	"senkou-catalyst-be/utils/throw"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -30,15 +31,11 @@ func (h *UserController) CreateUser(c *fiber.Ctx) error {
 
 	if err := utils.Validate(c, registerUserDTO); err != nil {
 		if vErr, ok := err.(*utils.ValidationError); ok {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-				"message": "Validation failed",
-				"errors":  vErr.Errors,
-			})
+			return throw.ValidationError(c, "Validation failed", vErr.Errors)
 		}
 
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"message": "Internal server error",
-			"error":   err.Error(),
+		return throw.InternalError(c, "Internal server error", map[string]any{
+			"error": err.Error(),
 		})
 	}
 
@@ -49,9 +46,8 @@ func (h *UserController) CreateUser(c *fiber.Ctx) error {
 	})
 
 	if err != nil {
-		return c.Status(500).JSON(fiber.Map{
-			"message": "Failed to create user",
-			"error":   err.Error(),
+		return throw.InternalError(c, "Failed to create user", map[string]any{
+			"error": err.Error(),
 		})
 	}
 
