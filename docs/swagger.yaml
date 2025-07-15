@@ -31,6 +31,29 @@ definitions:
     - image_url
     - name
     type: object
+  dtos.CreateProductDTO:
+    properties:
+      affiliate_url:
+        type: string
+      category_id:
+        type: integer
+      description:
+        maxLength: 500
+        type: string
+      merchant_id:
+        type: string
+      price:
+        minimum: 0
+        type: number
+      title:
+        maxLength: 150
+        type: string
+    required:
+    - affiliate_url
+    - merchant_id
+    - price
+    - title
+    type: object
   dtos.LoginRequestDTO:
     properties:
       email:
@@ -88,6 +111,24 @@ definitions:
         minLength: 3
         type: string
     type: object
+  dtos.UpdateProductDTO:
+    properties:
+      affiliate_url:
+        type: string
+      category_id:
+        type: integer
+      description:
+        maxLength: 500
+        type: string
+      id:
+        type: string
+      price:
+        minimum: 0
+        type: number
+      title:
+        maxLength: 150
+        type: string
+    type: object
   fiber.Map:
     additionalProperties: true
     type: object
@@ -132,6 +173,27 @@ definitions:
       updated_at:
         type: string
     type: object
+  models.Product:
+    properties:
+      affiliate_url:
+        type: string
+      category_id:
+        type: integer
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      merchant_id:
+        type: string
+      price:
+        type: number
+      title:
+        type: string
+      updated_at:
+        type: string
+    type: object
   models.User:
     properties:
       created_at:
@@ -140,10 +202,11 @@ definitions:
         type: string
       id:
         type: integer
+      merchants:
+        items:
+          $ref: '#/definitions/models.Merchant'
+        type: array
       name:
-        description: |-
-          MerchantID string         `json:"merchant_id"  gorm:"type:char(32);unique"`
-          Merchant   *Merchant      `json:"merchant"     gorm:"foreignKey:MerchantID;references:ID"`
         type: string
       role:
         type: string
@@ -747,6 +810,131 @@ paths:
       summary: Update a category
       tags:
       - Categories
+  /merchants/{merchantID}/products:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve all products associated with a specific merchant ID
+      parameters:
+      - description: Merchant ID
+        in: path
+        name: merchantID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/fiber.Map'
+            - properties:
+                data:
+                  allOf:
+                  - $ref: '#/definitions/fiber.Map'
+                  - properties:
+                      products:
+                        items:
+                          $ref: '#/definitions/models.Product'
+                        type: array
+                    type: object
+                message:
+                  type: string
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/fiber.Map'
+            - properties:
+                details: {}
+                error:
+                  type: string
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            allOf:
+            - $ref: '#/definitions/fiber.Map'
+            - properties:
+                details: {}
+                error:
+                  type: string
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/fiber.Map'
+            - properties:
+                details: {}
+                error:
+                  type: string
+              type: object
+      summary: Get products by merchant ID
+      tags:
+      - Products
+    post:
+      consumes:
+      - application/json
+      description: Create a new product for a merchant
+      parameters:
+      - description: Merchant ID
+        in: path
+        name: merchantID
+        required: true
+        type: string
+      - description: Product data
+        in: body
+        name: product
+        required: true
+        schema:
+          $ref: '#/definitions/dtos.CreateProductDTO'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/fiber.Map'
+            - properties:
+                data:
+                  allOf:
+                  - $ref: '#/definitions/fiber.Map'
+                  - properties:
+                      product:
+                        $ref: '#/definitions/models.Product'
+                    type: object
+                message:
+                  type: string
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/fiber.Map'
+            - properties:
+                details: {}
+                error:
+                  type: string
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/fiber.Map'
+            - properties:
+                details: {}
+                error:
+                  type: string
+              type: object
+      security:
+      - BearerAuth: []
+      summary: Create a new product
+      tags:
+      - Products
   /predefined-categories:
     get:
       consumes:
@@ -954,6 +1142,237 @@ paths:
       summary: Update a predefined category
       tags:
       - Predefined Categories
+  /products:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve all products from the database
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/fiber.Map'
+            - properties:
+                data:
+                  allOf:
+                  - $ref: '#/definitions/fiber.Map'
+                  - properties:
+                      products:
+                        items:
+                          $ref: '#/definitions/models.Product'
+                        type: array
+                    type: object
+                message:
+                  type: string
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/fiber.Map'
+            - properties:
+                details: {}
+                error:
+                  type: string
+              type: object
+      security:
+      - BearerAuth: []
+      summary: Get all products
+      tags:
+      - Products
+  /products/{productID}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a product by its ID
+      parameters:
+      - description: Product ID
+        in: path
+        name: productID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/fiber.Map'
+            - properties:
+                message:
+                  type: string
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/fiber.Map'
+            - properties:
+                details: {}
+                error:
+                  type: string
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            allOf:
+            - $ref: '#/definitions/fiber.Map'
+            - properties:
+                details: {}
+                error:
+                  type: string
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/fiber.Map'
+            - properties:
+                details: {}
+                error:
+                  type: string
+              type: object
+      security:
+      - BearerAuth: []
+      summary: Delete a product
+      tags:
+      - Products
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a product by its ID
+      parameters:
+      - description: Product ID
+        in: path
+        name: productID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/fiber.Map'
+            - properties:
+                data:
+                  allOf:
+                  - $ref: '#/definitions/fiber.Map'
+                  - properties:
+                      product:
+                        $ref: '#/definitions/models.Product'
+                    type: object
+                message:
+                  type: string
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/fiber.Map'
+            - properties:
+                details: {}
+                error:
+                  type: string
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            allOf:
+            - $ref: '#/definitions/fiber.Map'
+            - properties:
+                details: {}
+                error:
+                  type: string
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/fiber.Map'
+            - properties:
+                details: {}
+                error:
+                  type: string
+              type: object
+      summary: Get a product by ID
+      tags:
+      - Products
+    put:
+      consumes:
+      - application/json
+      description: Update an existing product by its ID
+      parameters:
+      - description: Product ID
+        in: path
+        name: productID
+        required: true
+        type: string
+      - description: Updated product data
+        in: body
+        name: product
+        required: true
+        schema:
+          $ref: '#/definitions/dtos.UpdateProductDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/fiber.Map'
+            - properties:
+                data:
+                  allOf:
+                  - $ref: '#/definitions/fiber.Map'
+                  - properties:
+                      product:
+                        $ref: '#/definitions/models.Product'
+                    type: object
+                message:
+                  type: string
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/fiber.Map'
+            - properties:
+                details: {}
+                error:
+                  type: string
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            allOf:
+            - $ref: '#/definitions/fiber.Map'
+            - properties:
+                details: {}
+                error:
+                  type: string
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/fiber.Map'
+            - properties:
+                details: {}
+                error:
+                  type: string
+              type: object
+      security:
+      - BearerAuth: []
+      summary: Update a product
+      tags:
+      - Products
   /users:
     get:
       produces:
@@ -987,6 +1406,53 @@ paths:
           schema:
             $ref: '#/definitions/models.User'
       summary: Create user
+      tags:
+      - Users
+  /users/me:
+    get:
+      consumes:
+      - application/json
+      description: Get details of a specific user by ID
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/fiber.Map'
+            - properties:
+                data:
+                  allOf:
+                  - $ref: '#/definitions/fiber.Map'
+                  - properties:
+                      user:
+                        $ref: '#/definitions/models.User'
+                    type: object
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/fiber.Map'
+            - properties:
+                message:
+                  type: string
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/fiber.Map'
+            - properties:
+                ' error':
+                  type: string
+                message:
+                  type: string
+              type: object
+      security:
+      - BearerAuth: []
+      summary: Get user detail
       tags:
       - Users
 schemes:

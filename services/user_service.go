@@ -9,17 +9,23 @@ import (
 type UserService interface {
 	Create(user models.User) (*models.User, error)
 	GetAll() (*[]models.User, error)
+	GetUserDetail(userID uint32) (*models.User, error)
 	VerifyCredentials(email, password string) (uint, error)
+	VerifyIsAnAdministrator(userID uint32) (bool, error)
 }
 
 type userService struct {
-	repo repositories.UserRepository
+	UserRepository repositories.UserRepository
 }
 
-func NewUserService(repo repositories.UserRepository) UserService {
-	return &userService{repo}
+func NewUserService(userRepository repositories.UserRepository) UserService {
+	return &userService{
+		UserRepository: userRepository,
+	}
 }
 
+// Create a new user in the database
+// Returns the created user or an error if any
 func (s *userService) Create(user models.User) (*models.User, error) {
 	hashedPassword, err := user.HashPassword()
 
@@ -29,15 +35,17 @@ func (s *userService) Create(user models.User) (*models.User, error) {
 
 	user.Password = hashedPassword
 
-	return s.repo.Create(&user)
+	return s.UserRepository.Create(&user)
 }
 
+// Get all users from the database
+// Returns a slice of User models or an error if the operation fails
 func (s *userService) GetAll() (*[]models.User, error) {
-	return s.repo.FindAll()
+	return s.UserRepository.FindAll()
 }
 
 func (s *userService) VerifyCredentials(email, password string) (uint, error) {
-	user, err := s.repo.FindByEmail(email)
+	user, err := s.UserRepository.FindByEmail(email)
 
 	if err != nil {
 		return 0, err
@@ -48,4 +56,28 @@ func (s *userService) VerifyCredentials(email, password string) (uint, error) {
 	}
 
 	return uint(user.ID), nil
+}
+
+// Get user detail by its ID
+// Returns the user model or an error if any
+func (s *userService) GetUserDetail(userID uint32) (*models.User, error) {
+	user, err := s.UserRepository.FindByID(userID)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return user, nil
+}
+
+// Verify if the user is an administrator
+// Returns true if the user is an administrator, false otherwise, or an error if any
+func (s *userService) VerifyIsAnAdministrator(userID uint32) (bool, error) {
+	user, err := s.UserRepository.FindByID(userID)
+
+	if err != nil {
+		return false, err
+	}
+
+	return user.Role == "admin", nil
 }

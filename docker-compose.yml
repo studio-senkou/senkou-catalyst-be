@@ -20,7 +20,7 @@ services:
 
   postgres:
     image: postgres:17-alpine
-    container_name: senkou-catalyst-postgres
+    container_name: senkou-catalyst-postgres-prod
     restart: unless-stopped
     ports:
       - "${DB_PORT:-5432}:5432"
@@ -31,7 +31,7 @@ services:
     networks:
       - catalyst-network
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data_prod:/var/lib/postgresql/data
 
   cloudflare:
     image: cloudflare/cloudflared:latest
@@ -47,5 +47,5 @@ networks:
     driver: bridge
 
 volumes:
-  postgres_data:
+  postgres_data_prod:
     driver: local

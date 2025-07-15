@@ -2,7 +2,9 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"senkou-catalyst-be/config"
+	"senkou-catalyst-be/container"
 	"senkou-catalyst-be/routes"
 	"senkou-catalyst-be/utils"
 
@@ -28,6 +30,12 @@ func main() {
 
 	config.ConnectDB()
 
+	// Wire Dependency Injection
+	deps, err := container.InitializeContainer()
+	if err != nil {
+		log.Fatalf("Failed to initialize dependencies: %v", err)
+	}
+
 	app.Get("/swagger/*", swagger.HandlerDefault)
 
 	app.Get("/", func(c *fiber.Ctx) error {
@@ -36,13 +44,18 @@ func main() {
 		})
 	})
 
-	routes.UserRoutes(app)
-	routes.AuthRoutes(app)
-	routes.MerchantRoutes(app)
-	routes.CategoryRoutes(app)
-	routes.PredefinedCategoryRoutes(app)
+	routes.UserRoutes(app, deps.UserController)
+	routes.AuthRoutes(app, deps.AuthController)
+	routes.MerchantRoutes(app, deps.MerchantController)
+	routes.CategoryRoutes(app, deps.CategoryController)
+	routes.PredefinedCategoryRoutes(app, deps.PredefinedCategoryController)
+	routes.ProductRoutes(app, routes.ProductRouteDependencies{
+		ProductController: deps.ProductController,
+		UserService:       deps.UserService,
+		ProductService:    deps.ProductService,
+	})
 
-	err := app.Listen(fmt.Sprintf(":%s", utils.GetEnv("APP_PORT", "8080")))
+	err = app.Listen(fmt.Sprintf(":%s", utils.GetEnv("APP_PORT", "8080")))
 
 	if err != nil {
 		panic(fmt.Sprintf("Failed to start server: %v", err))

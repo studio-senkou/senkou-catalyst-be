@@ -1,0 +1,8 @@
+{
+    "files.readonlyInclude": {
+        "**/wire_gen.go": true
+    },
+    "gopls": {
+        "build.buildFlags": ["-tags=wireInject"]
+    }
+}

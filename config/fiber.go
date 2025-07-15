@@ -21,16 +21,22 @@ type ErrorResponse struct {
 }
 
 type ErrorDetail struct {
-	Code    int            `json:"-"`
+	Code    int            `json:"code"`
 	Type    string         `json:"-"`
 	Message string         `json:"message"`
 	Details map[string]any `json:"details,omitempty"`
 }
 
 func SendLog(errMsg string) {
-	discordWebhookURL := utils.GetEnv("DISCORD_WEBHOOK_URL", "")
+	webhookEnabled := utils.GetEnv("WEBHOOK_ENABLED", "false") == "true"
 
-	if discordWebhookURL == "" {
+	if !webhookEnabled {
+		return
+	}
+
+	webhookURL := utils.GetEnv("WEBHOOK_URL", "")
+
+	if webhookURL == "" {
 		return
 	}
 
@@ -42,11 +48,11 @@ func SendLog(errMsg string) {
 		"color":       getColorByErrorType(errorResponse.Error.Type),
 		"description": "An error occurred in the application",
 		"fields": []map[string]any{
-			{
-				"name":   "Error Type",
-				"value":  errorResponse.Error.Type,
-				"inline": true,
-			},
+			// {
+			// 	"name":   "Error Type",
+			// 	"value":  errorResponse.Error.Type,
+			// 	"inline": true,
+			// },
 			{
 				"name":   "Status Code",
 				"value":  errorResponse.Error.Code,
@@ -85,7 +91,7 @@ func SendLog(errMsg string) {
 	}
 
 	go func() {
-		response, postErr := http.Post(discordWebhookURL, "application/json", bytes.NewBuffer(payloadBytes))
+		response, postErr := http.Post(webhookURL, "application/json", bytes.NewBuffer(payloadBytes))
 		if postErr != nil {
 			log.Printf("Failed to send webhook log: %v", postErr)
 			return
@@ -122,9 +128,14 @@ func InitFiberConfig() *fiber.Config {
 				}
 
 				if validationErr, ok := err.(*errors.ValidationError); ok {
-					response.Error.Details = map[string]any{
-						"fields": validationErr.Fields,
-					}
+					// For validation errors, return a simplified response
+					return c.Status(appErr.Code()).JSON(map[string]any{
+						"success": false,
+						"error": map[string]any{
+							"message": appErr.Error(),
+							"fields":  validationErr.Fields,
+						},
+					})
 				}
 
 				if appErr.Code() >= 500 {

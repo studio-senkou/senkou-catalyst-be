@@ -39,3 +39,11 @@ func ConnectDB() {
 
 	DB = db
 }
+
+// Wire provider function
+func GetDB() *gorm.DB {
+	if DB == nil {
+		ConnectDB()
+	}
+	return DB
+}

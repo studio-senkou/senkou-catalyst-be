@@ -9,9 +9,9 @@ import (
 type Product struct {
 	ID           string         `json:"id"            gorm:"type:uuid;primaryKey"`
 	MerchantID   string         `json:"merchant_id"   gorm:"type:text;not null"`
-	Merchant     Merchant       `json:"merchant"      gorm:"foreignKey:MerchantID;references:ID"`
-	CategoryID   uint32         `json:"category_id"   gorm:"type:int;not null"`
-	Category     Category       `json:"category"      gorm:"foreignKey:CategoryID;references:ID"`
+	Merchant     Merchant       `json:"-"      gorm:"foreignKey:MerchantID;references:ID"`
+	CategoryID   *uint32        `json:"category_id"   gorm:"type:int;default:null"`
+	Category     *Category      `json:"-"      gorm:"foreignKey:CategoryID;references:ID"`
 	Title        string         `json:"title"         gorm:"type:varchar(150);not null"`
 	Price        float64        `json:"price"         gorm:"type:decimal(10,2);not null"`
 	Description  string         `json:"description"   gorm:"type:text"`

@@ -1,0 +1,24 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: senkou-catalyst-postgres-dev
+    restart: unless-stopped
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    environment:
+      - POSTGRES_USER=${DB_USERNAME:-postgres}
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-}
+      - POSTGRES_DB=${DB_NAME:-senkou_catalyst}
+    volumes:
+      - postgres_data_dev:/var/lib/postgresql/data
+    networks:
+      - catalyst-dev-network
+
+networks:
+  catalyst-dev-network:
+    name: catalyst-dev-network
+    driver: bridge
+
+volumes:
+  postgres_data_dev:
+    driver: local

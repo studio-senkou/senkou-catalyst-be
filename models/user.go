@@ -9,9 +9,8 @@ import (
 )
 
 type User struct {
-	ID uint32 `json:"id"           gorm:"type:int;primaryKey"`
-	// MerchantID string         `json:"merchant_id"  gorm:"type:char(32);unique"`
-	// Merchant   *Merchant      `json:"merchant"     gorm:"foreignKey:MerchantID;references:ID"`
+	ID        uint32         `json:"id"           gorm:"type:int;primaryKey"`
+	Merchants []*Merchant    `json:"merchants"     gorm:"foreignKey:OwnerID;references:ID"`
 	Name      string         `json:"name"         gorm:"type:varchar(100);not null"`
 	Email     string         `json:"email"        gorm:"type:varchar(100);unique;not null"`
 	Password  []byte         `json:"-"            gorm:"type:varchar(255);not null"`
