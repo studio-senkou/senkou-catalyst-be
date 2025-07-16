@@ -16,7 +16,6 @@ import (
 
 // Injectors from wire.go:
 
-// Wire functions for controllers
 func InitializeUserController() (*controllers.UserController, error) {
 	db := config.GetDB()
 	userRepository := repositories.NewUserRepository(db)
@@ -68,7 +67,15 @@ func InitializeAuthController() (*controllers.AuthController, error) {
 	return authController, nil
 }
 
-// Initialize services for middleware
+func InitializeSubscriptionController() (*controllers.SubscriptionController, error) {
+	db := config.GetDB()
+	subscriptionRepository := repositories.NewSubscriptionRepository(db)
+	subscriptionPlanRepository := repositories.NewSubscriptionPlanRepository(db)
+	subscriptionService := services.NewSubscriptionService(subscriptionRepository, subscriptionPlanRepository)
+	subscriptionController := controllers.NewSubscriptionController(subscriptionService)
+	return subscriptionController, nil
+}
+
 func InitializeUserService() (services.UserService, func(), error) {
 	db := config.GetDB()
 	userRepository := repositories.NewUserRepository(db)
@@ -86,7 +93,6 @@ func InitializeProductService() (services.ProductService, func(), error) {
 	}, nil
 }
 
-// Initialize Container with all dependencies
 func InitializeContainer() (*Container, error) {
 	db := config.GetDB()
 	userRepository := repositories.NewUserRepository(db)
@@ -107,22 +113,24 @@ func InitializeContainer() (*Container, error) {
 	authRepository := repositories.NewAuthRepository(db)
 	authService := services.NewAuthService(authRepository)
 	authController := controllers.NewAuthController(authService, userService)
-	container := NewContainer(userController, merchantController, productController, categoryController, predefinedCategoryController, authController, userService, productService)
+	subscriptionRepository := repositories.NewSubscriptionRepository(db)
+	subscriptionPlanRepository := repositories.NewSubscriptionPlanRepository(db)
+	subscriptionService := services.NewSubscriptionService(subscriptionRepository, subscriptionPlanRepository)
+	subscriptionController := controllers.NewSubscriptionController(subscriptionService)
+	container := NewContainer(userController, merchantController, productController, categoryController, predefinedCategoryController, authController, subscriptionController, userService, productService)
 	return container, nil
 }
 
 // wire.go:
 
-// Provider Sets
 var DatabaseSet = wire.NewSet(config.GetDB)
 
-var RepositorySet = wire.NewSet(repositories.NewUserRepository, repositories.NewMerchantRepository, repositories.NewProductRepository, repositories.NewCategoryRepository, repositories.NewPredefinedCategoryRepository, repositories.NewAuthRepository)
+var RepositorySet = wire.NewSet(repositories.NewUserRepository, repositories.NewMerchantRepository, repositories.NewProductRepository, repositories.NewCategoryRepository, repositories.NewPredefinedCategoryRepository, repositories.NewAuthRepository, repositories.NewSubscriptionRepository, repositories.NewSubscriptionPlanRepository)
 
-var ServiceSet = wire.NewSet(services.NewUserService, services.NewMerchantService, services.NewProductService, services.NewCategoryService, services.NewPredefinedCategoryService, services.NewAuthService)
+var ServiceSet = wire.NewSet(services.NewUserService, services.NewMerchantService, services.NewProductService, services.NewCategoryService, services.NewPredefinedCategoryService, services.NewAuthService, services.NewSubscriptionService)
 
-var ControllerSet = wire.NewSet(controllers.NewUserController, controllers.NewMerchantController, controllers.NewProductController, controllers.NewCategoryController, controllers.NewPredefinedCategoryController, controllers.NewAuthController)
+var ControllerSet = wire.NewSet(controllers.NewUserController, controllers.NewMerchantController, controllers.NewProductController, controllers.NewCategoryController, controllers.NewPredefinedCategoryController, controllers.NewAuthController, controllers.NewSubscriptionController)
 
-// NewContainer creates a new container with all dependencies
 func NewContainer(
 	userController *controllers.UserController,
 	merchantController *controllers.MerchantController,
@@ -130,6 +138,7 @@ func NewContainer(
 	categoryController *controllers.CategoryController,
 	predefinedCategoryController *controllers.PredefinedCategoryController,
 	authController *controllers.AuthController,
+	subscriptionController *controllers.SubscriptionController,
 	userService services.UserService,
 	productService services.ProductService,
 ) *Container {
@@ -140,6 +149,7 @@ func NewContainer(
 		CategoryController:           categoryController,
 		PredefinedCategoryController: predefinedCategoryController,
 		AuthController:               authController,
+		SubscriptionController:       subscriptionController,
 		UserService:                  userService,
 		ProductService:               productService,
 	}

@@ -54,6 +54,36 @@ definitions:
     - price
     - title
     type: object
+  dtos.CreateSubscriptionDTO:
+    properties:
+      description:
+        maxLength: 500
+        type: string
+      duration:
+        minimum: 1
+        type: integer
+      name:
+        maxLength: 100
+        type: string
+      price:
+        minimum: 0
+        type: number
+    required:
+    - duration
+    - name
+    - price
+    type: object
+  dtos.CreateSubscriptionPlanDTO:
+    properties:
+      name:
+        maxLength: 100
+        type: string
+      value:
+        type: string
+    required:
+    - name
+    - value
+    type: object
   dtos.LoginRequestDTO:
     properties:
       email:
@@ -194,6 +224,23 @@ definitions:
       updated_at:
         type: string
     type: object
+  models.Subscription:
+    properties:
+      created_at:
+        type: string
+      description:
+        type: string
+      duration:
+        type: integer
+      id:
+        type: integer
+      name:
+        type: string
+      price:
+        type: number
+      updated_at:
+        type: string
+    type: object
   models.User:
     properties:
       created_at:
@@ -218,7 +265,7 @@ info:
   contact:
     name: Catalyst Team
   description: This is the API documentation for the Catalyst application.
-  title: Catalyst API Swagger
+  title: Catalyst API Documentation
   version: "1.0"
 paths:
   /auth/login:
@@ -1373,6 +1420,64 @@ paths:
       summary: Update a product
       tags:
       - Products
+  /subscriptions/{planID}/plans:
+    post:
+      consumes:
+      - application/json
+      description: Create a new subscription plan for a subscription
+      parameters:
+      - description: Plan ID
+        in: path
+        name: planID
+        required: true
+        type: string
+      - description: Create subscription plan request object
+        in: body
+        name: CreateSubscriptionPlanDTO
+        required: true
+        schema:
+          $ref: '#/definitions/dtos.CreateSubscriptionPlanDTO'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/fiber.Map'
+            - properties:
+                message:
+                  type: string
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/fiber.Map'
+            - properties:
+                errors:
+                  items:
+                    type: string
+                  type: array
+                message:
+                  type: string
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/fiber.Map'
+            - properties:
+                error:
+                  type: string
+                message:
+                  type: string
+              type: object
+      security:
+      - BearerAuth: []
+      summary: Create a subscription plan
+      tags:
+      - Subscription
   /users:
     get:
       produces:
