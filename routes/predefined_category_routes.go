@@ -7,7 +7,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-func PredefinedCategoryRoutes(app *fiber.App, predefinedCategoryController *controllers.PredefinedCategoryController) {
+func InitPredefinedCategoryRoutes(app *fiber.App, predefinedCategoryController *controllers.PredefinedCategoryController) {
 	app.Get("/predefined-categories", predefinedCategoryController.GetPredefinedCategories)
 
 	pdRoute := app.Group("/predefined-categories", middlewares.JWTProtected, middlewares.RoleMiddleware("admin"))

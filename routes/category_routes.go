@@ -7,7 +7,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-func CategoryRoutes(app *fiber.App, categoryController *controllers.CategoryController) {
+func InitCategoryRoutes(app *fiber.App, categoryController *controllers.CategoryController) {
 	app.Post("/merchants/:merchantID/categories", middlewares.JWTProtected, categoryController.CreateCategory)
 	app.Get("/merchants/:merchantID/categories", middlewares.JWTProtected, categoryController.GetCategories)
 	app.Put("/merchants/:merchantID/categories/:categoryID", middlewares.JWTProtected, categoryController.UpdateCategory)

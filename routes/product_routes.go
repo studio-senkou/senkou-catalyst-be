@@ -14,7 +14,7 @@ type ProductRouteDependencies struct {
 	ProductService    services.ProductService
 }
 
-func ProductRoutes(app *fiber.App, deps ProductRouteDependencies) {
+func InitProductRoutes(app *fiber.App, deps ProductRouteDependencies) {
 	app.Post("/products", middlewares.JWTProtected, deps.ProductController.CreateProduct)
 	app.Get("/products", middlewares.JWTProtected, middlewares.RoleMiddleware("admin"), deps.ProductController.GetAllProducts)
 	app.Get("/products/:id", deps.ProductController.GetProductByID)

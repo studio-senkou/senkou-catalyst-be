@@ -7,7 +7,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-func MerchantRoutes(app *fiber.App, merchantController *controllers.MerchantController) {
+func InitMerchantRoutes(app *fiber.App, merchantController *controllers.MerchantController) {
 	app.Post("/merchants", middlewares.JWTProtected, merchantController.CreateMerchant)
 	app.Get("/merchants", middlewares.JWTProtected, middlewares.RoleMiddleware("admin"), merchantController.GetUserMerchants)
 	app.Get("/merchants/:id", middlewares.JWTProtected, merchantController.GetMerchantByID)
