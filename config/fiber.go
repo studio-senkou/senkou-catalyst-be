@@ -128,20 +128,19 @@ func InitFiberConfig() *fiber.Config {
 				}
 
 				if validationErr, ok := err.(*errors.ValidationError); ok {
-					// For validation errors, return a simplified response
 					return c.Status(appErr.Code()).JSON(map[string]any{
-						"success": false,
-						"error": map[string]any{
-							"message": appErr.Error(),
-							"fields":  validationErr.Fields,
-						},
+						"message": "Bad request",
+						"errors":  validationErr.Fields,
 					})
 				}
 
 				if appErr.Code() >= 500 {
 					sendErrorLog(response)
 				}
-				return c.Status(appErr.Code()).JSON(response)
+				return c.Status(appErr.Code()).JSON(map[string]any{
+					"message": "Internal server error",
+					"error":   appErr.Details(),
+				})
 			}
 
 			if fiberErr, ok := err.(*fiber.Error); ok {
@@ -153,13 +152,19 @@ func InitFiberConfig() *fiber.Config {
 					sendErrorLog(response)
 				}
 
-				return c.Status(fiberErr.Code).JSON(response)
+				return c.Status(fiberErr.Code).JSON(map[string]any{
+					"message": "Internal server error",
+					"error":   map[string]any{},
+				})
 			}
 
 			response.Error.Message = err.Error()
 
 			sendErrorLog(response)
-			return c.Status(fiber.StatusInternalServerError).JSON(response)
+			return c.Status(fiber.StatusInternalServerError).JSON(map[string]any{
+				"message": "Internal server error",
+				"error":   map[string]any{},
+			})
 		},
 	}
 }
