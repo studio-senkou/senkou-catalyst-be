@@ -42,6 +42,33 @@ func (s *SubscriptionService) CreateNewSubscription(request *dtos.CreateSubscrip
 	return subscription, nil
 }
 
+// Subscribe a user to a subscription
+// This function will subscribe a user to a subscription by userID and subID
+// It returns an error if the subscription does not exist or if the user could not be subscribed
+func (s *SubscriptionService) SubscribeUserToSubscription(userID, subID uint32) error {
+	subscription, err := s.SubscriptionRepository.FindByID(subID)
+	if err != nil || subscription == nil {
+		return errors.New("subscription not found")
+	}
+
+	if exist, err := s.SubscriptionRepository.VerifyUserHasActiveSubscription(userID, subID); err != nil || exist {
+		return errors.New("user already has an active subscription")
+	}
+
+	sub := &models.UserSubscription{
+		UserID:        userID,
+		SubID:         subID,
+		IsActive:      false,
+		PaymentStatus: "pending",
+	}
+
+	if err := s.SubscriptionRepository.SubscribeUser(sub); err != nil {
+		return errors.New("failed to subscribe user to subscription")
+	}
+
+	return nil
+}
+
 // Create a new subscription plan
 // This function will create a new subscription plan and return error if it already exists
 func (s *SubscriptionService) CreateSubscriptionPlan(request *dtos.CreateSubscriptionPlanDTO, subID uint32) error {

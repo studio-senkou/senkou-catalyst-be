@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"senkou-catalyst-be/models"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -25,6 +26,17 @@ func (r *SubscriptionRepository) StoreNewSubscription(subscription *models.Subsc
 	}
 
 	return subscription, nil
+}
+
+// Subscribe a user to a subscription
+// This function store relation between user and subscription
+// It returns an error if the subscription could not be created
+func (r *SubscriptionRepository) SubscribeUser(sub *models.UserSubscription) error {
+	if err := r.DB.Create(sub).Error; err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // Find all the subscriptions
@@ -71,4 +83,26 @@ func (r *SubscriptionRepository) DeleteSubscription(subscription *models.Subscri
 	}
 
 	return nil
+}
+
+func (r *SubscriptionRepository) VerifyUserHasActiveSubscription(userID, subID uint32) (bool, error) {
+	userSubscription := new(models.UserSubscription)
+
+	err := r.DB.Where("user_id = ? AND sub_id = ?", userID, subID).First(userSubscription).Error
+
+	if err != nil {
+		return false, err
+	}
+
+	// Check if the user subscription is not expired
+	if userSubscription.PaymentStatus == "declined" {
+		return false, nil
+	}
+
+	// Check if the user has an active subscription but already expired
+	if userSubscription.PaymentStatus == "settled" && userSubscription.IsActive && userSubscription.ExpiredAt.Before(time.Now()) {
+		return false, nil
+	}
+
+	return true, nil
 }

@@ -112,6 +112,48 @@ func (h *SubscriptionController) CreateSubscriptionPlan(c *fiber.Ctx) error {
 	})
 }
 
+// Subscribe to a subscription
+// @Summary Subscribe to a subscription
+// Description Subscribe a user to a subscription
+// @Tags Subscription
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param subID path string true "Subscription ID"
+// @Success 200 {object} fiber.Map{message=string}
+// @Failure 400 {object} fiber.Map{message=string,error=string}
+// @Failure 500 {object} fiber.Map{message=string,error=string}
+// @Router /subscriptions/{subID}/subscribe [post]
+func (h *SubscriptionController) SubscribeSubscription(c *fiber.Ctx) error {
+	userIDStr := fmt.Sprintf("%v", c.Locals("userID"))
+	userID, err := strconv.ParseUint(userIDStr, 10, 64)
+
+	if err != nil {
+		return throw.BadRequest(c, "Invalid user ID", map[string]any{
+			"error": "Invalid user ID",
+		})
+	}
+
+	subIDStr := fmt.Sprintf("%v", c.Params("subID"))
+	subID, err := strconv.ParseUint(subIDStr, 10, 64)
+
+	if err != nil {
+		return throw.BadRequest(c, "Invalid subscription ID", map[string]any{
+			"error": "Invalid subscription ID",
+		})
+	}
+
+	if err := h.SubscriptionService.SubscribeUserToSubscription(uint32(userID), uint32(subID)); err != nil {
+		return throw.InternalError(c, "Failed to subscribe user to subscription", map[string]any{
+			"error": err.Error(),
+		})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"message": "User subscribed to subscription successfully",
+	})
+}
+
 // Get all subscriptions
 // @Summary Get all subscriptions
 // @Description Retrieve all available subscriptions

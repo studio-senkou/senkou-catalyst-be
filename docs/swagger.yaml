@@ -1699,6 +1699,55 @@ paths:
       summary: Update a subscription
       tags:
       - Subscription
+  /subscriptions/{subID}/subscribe:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Subscription ID
+        in: path
+        name: subID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/fiber.Map'
+            - properties:
+                message:
+                  type: string
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/fiber.Map'
+            - properties:
+                error:
+                  type: string
+                message:
+                  type: string
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/fiber.Map'
+            - properties:
+                error:
+                  type: string
+                message:
+                  type: string
+              type: object
+      security:
+      - BearerAuth: []
+      summary: Subscribe to a subscription
+      tags:
+      - Subscription
   /users:
     get:
       produces:

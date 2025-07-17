@@ -13,4 +13,5 @@ func InitSubscriptionRoutes(app *fiber.App, subscriptionController *controllers.
 	app.Get("/subscriptions", subscriptionController.GetSubscriptions)
 	app.Put("/subscriptions/:subID", middlewares.JWTProtected, middlewares.RoleMiddleware("admin"), subscriptionController.UpdateSubscription)
 	app.Delete("/subscriptions/:subID", middlewares.JWTProtected, middlewares.RoleMiddleware("admin"), subscriptionController.DeleteSubscription)
+	app.Post("/subscriptions/:subID/subscribe", middlewares.JWTProtected, subscriptionController.SubscribeSubscription)
 }
