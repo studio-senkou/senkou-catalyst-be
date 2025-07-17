@@ -159,6 +159,23 @@ definitions:
         maxLength: 150
         type: string
     type: object
+  dtos.UpdateSubscriptionDTO:
+    properties:
+      description:
+        maxLength: 500
+        type: string
+      duration:
+        minimum: 1
+        type: integer
+      name:
+        maxLength: 100
+        type: string
+      price:
+        minimum: 0
+        type: number
+    required:
+    - name
+    type: object
   fiber.Map:
     additionalProperties: true
     type: object
@@ -1420,6 +1437,103 @@ paths:
       summary: Update a product
       tags:
       - Products
+  /subscriptions:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve all available subscriptions
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/fiber.Map'
+            - properties:
+                data:
+                  allOf:
+                  - $ref: '#/definitions/fiber.Map'
+                  - properties:
+                      subscriptions:
+                        items:
+                          $ref: '#/definitions/models.Subscription'
+                        type: array
+                    type: object
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/fiber.Map'
+            - properties:
+                error:
+                  type: string
+                message:
+                  type: string
+              type: object
+      summary: Get all subscriptions
+      tags:
+      - Subscription
+    post:
+      consumes:
+      - application/json
+      description: Create a new subscription packet
+      parameters:
+      - description: Create subscription request object
+        in: body
+        name: CreateSubscriptionDTO
+        required: true
+        schema:
+          $ref: '#/definitions/dtos.CreateSubscriptionDTO'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/fiber.Map'
+            - properties:
+                data:
+                  allOf:
+                  - $ref: '#/definitions/fiber.Map'
+                  - properties:
+                      subscription:
+                        $ref: '#/definitions/models.Subscription'
+                    type: object
+                message:
+                  type: string
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/fiber.Map'
+            - properties:
+                errors:
+                  items:
+                    type: string
+                  type: array
+                message:
+                  type: string
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/fiber.Map'
+            - properties:
+                error:
+                  type: string
+                message:
+                  type: string
+              type: object
+      security:
+      - BearerAuth: []
+      summary: Create a new subscription
+      tags:
+      - Subscription
   /subscriptions/{planID}/plans:
     post:
       consumes:
@@ -1476,6 +1590,113 @@ paths:
       security:
       - BearerAuth: []
       summary: Create a subscription plan
+      tags:
+      - Subscription
+  /subscriptions/{subID}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a subscription by its ID
+      parameters:
+      - description: Subscription ID
+        in: path
+        name: subID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+          schema:
+            allOf:
+            - $ref: '#/definitions/fiber.Map'
+            - properties:
+                message:
+                  type: string
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/fiber.Map'
+            - properties:
+                error:
+                  type: string
+                message:
+                  type: string
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/fiber.Map'
+            - properties:
+                error:
+                  type: string
+                message:
+                  type: string
+              type: object
+      security:
+      - BearerAuth: []
+      summary: Delete a subscription
+      tags:
+      - Subscription
+    put:
+      consumes:
+      - application/json
+      description: Update an existing subscription
+      parameters:
+      - description: Subscription ID
+        in: path
+        name: subID
+        required: true
+        type: string
+      - description: Update subscription request object
+        in: body
+        name: UpdateSubscriptionDTO
+        required: true
+        schema:
+          $ref: '#/definitions/dtos.UpdateSubscriptionDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/fiber.Map'
+            - properties:
+                message:
+                  type: string
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/fiber.Map'
+            - properties:
+                errors:
+                  items:
+                    type: string
+                  type: array
+                message:
+                  type: string
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/fiber.Map'
+            - properties:
+                error:
+                  type: string
+                message:
+                  type: string
+              type: object
+      security:
+      - BearerAuth: []
+      summary: Update a subscription
       tags:
       - Subscription
   /users:

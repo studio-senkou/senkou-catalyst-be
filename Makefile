@@ -6,7 +6,7 @@ export DISCORD_BOT_URL
 export DISCORD_CHANNEL_ID
 endif
 
-.PHONY=auth-secret rebuild rebuild-dev wire dev-up dev-down dev-logs prod-up prod-down prod-logs seed clean dev-status prod-status list-all test-discord
+.PHONY=auth-secret rebuild rebuild-dev wire dev-up dev-down dev-logs prod-up prod-down prod-logs seed clean dev-status prod-status list-all swagger test-discord
 
 auth-secret:
 	@echo "" >> .env
@@ -99,6 +99,11 @@ list-all:
 	@echo ""
 	@echo "=== All Volumes ==="
 	@docker volume ls | grep catalyst || echo "No catalyst volumes found"
+
+swagger:
+	@echo "Generating Swagger documentation..."
+	@swag init -g main.go -o ./docs --parseDependency --parseInternal
+	@echo "Swagger documentation generated successfully!"
 
 test-discord:
 	@echo "Testing Discord notification..."

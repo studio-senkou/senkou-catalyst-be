@@ -32,6 +32,7 @@ func NewSubscriptionController(subService *services.SubscriptionService) *Subscr
 // @Success 201 {object} fiber.Map{message=string,data=fiber.Map{subscription=models.Subscription}}
 // @Failure 400 {object} fiber.Map{message=string,errors=[]string}
 // @Failure 500 {object} fiber.Map{message=string,error=string}
+// @Router /subscriptions [post]
 func (h *SubscriptionController) CreateSubscription(c *fiber.Ctx) error {
 	createSubscriptionDTO := new(dtos.CreateSubscriptionDTO)
 
@@ -108,5 +109,112 @@ func (h *SubscriptionController) CreateSubscriptionPlan(c *fiber.Ctx) error {
 
 	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
 		"message": "Subscription plan created successfully",
+	})
+}
+
+// Get all subscriptions
+// @Summary Get all subscriptions
+// @Description Retrieve all available subscriptions
+// @Tags Subscription
+// @Accept json
+// @Produce json
+// @Success 200 {object} fiber.Map{data=fiber.Map{subscriptions=[]models.Subscription}}
+// @Failure 500 {object} fiber.Map{message=string,error=string}
+// @Router /subscriptions [get]
+func (h *SubscriptionController) GetSubscriptions(c *fiber.Ctx) error {
+	subscriptions, err := h.SubscriptionService.GetAllSubscriptions()
+
+	if err != nil {
+		return throw.InternalError(c, "Failed to retrieve subscriptions", map[string]any{
+			"error": err.Error(),
+		})
+	}
+
+	return c.JSON(fiber.Map{
+		"data": fiber.Map{
+			"subscriptions": subscriptions,
+		},
+		"message": "Subscriptions retrieved successfully",
+	})
+}
+
+// Update subscription
+// @Summary Update a subscription
+// @Description Update an existing subscription
+// @Tags Subscription
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param subID path string true "Subscription ID"
+// @Param UpdateSubscriptionDTO body dtos.UpdateSubscriptionDTO true "Update subscription request object"
+// @Success 200 {object} fiber.Map{message=string}
+// @Failure 400 {object} fiber.Map{message=string,errors=[]string}
+// @Failure 500 {object} fiber.Map{message=string,error=string}
+// @Router /subscriptions/{subID} [put]
+func (h *SubscriptionController) UpdateSubscription(c *fiber.Ctx) error {
+	subIDStr := fmt.Sprintf("%v", c.Params("subID"))
+	subID, err := strconv.ParseUint(subIDStr, 10, 32)
+
+	if err != nil {
+		return throw.BadRequest(c, "Invalid subscription ID", map[string]any{
+			"error": "Invalid subscription ID",
+		})
+	}
+
+	updateSubscriptionDTO := new(dtos.UpdateSubscriptionDTO)
+
+	if err := utils.Validate(c, updateSubscriptionDTO); err != nil {
+		if vErr, ok := err.(*utils.ValidationError); ok {
+			return throw.BadRequest(c, "Validation failed", map[string]any{
+				"errors": vErr.Errors,
+			})
+		}
+
+		return throw.InternalError(c, "Internal server error", map[string]any{
+			"error": err.Error(),
+		})
+	}
+
+	if err := h.SubscriptionService.UpdateSubscription(updateSubscriptionDTO, uint32(subID)); err != nil {
+		return throw.InternalError(c, "Failed to update subscription", map[string]any{
+			"error": err.Error(),
+		})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"message": "Subscription updated successfully",
+	})
+}
+
+// Delete subscription
+// @Summary Delete a subscription
+// @Description Delete a subscription by its ID
+// @Tags Subscription
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param subID path string true "Subscription ID"
+// @Success 204 {object} fiber.Map{message=string}
+// @Failure 400 {object} fiber.Map{message=string,error=string}
+// @Failure 500 {object} fiber.Map{message=string,error=string}
+// @Router /subscriptions/{subID} [delete]
+func (h *SubscriptionController) DeleteSubscription(c *fiber.Ctx) error {
+	subIDStr := fmt.Sprintf("%v", c.Params("subID"))
+	subID, err := strconv.ParseUint(subIDStr, 10, 32)
+
+	if err != nil {
+		return throw.BadRequest(c, "Invalid subscription ID", map[string]any{
+			"error": "Invalid subscription ID",
+		})
+	}
+
+	if err := h.SubscriptionService.DeleteSubscription(uint32(subID)); err != nil {
+		return throw.InternalError(c, "Failed to delete subscription", map[string]any{
+			"error": err.Error(),
+		})
+	}
+
+	return c.Status(fiber.StatusNoContent).JSON(fiber.Map{
+		"message": "Subscription deleted successfully",
 	})
 }

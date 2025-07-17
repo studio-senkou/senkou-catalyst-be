@@ -22,10 +22,9 @@ func NewSubscriptionService(
 	}
 }
 
-func (s *SubscriptionService) CreateSubscription() error {
-	return nil
-}
-
+// Create a new subscription
+// This function will create a new subscription and return the created subscription
+// It returns an error if the subscription could not be created
 func (s *SubscriptionService) CreateNewSubscription(request *dtos.CreateSubscriptionDTO) (*models.Subscription, error) {
 	subscription := &models.Subscription{
 		Name:        request.Name,
@@ -45,19 +44,72 @@ func (s *SubscriptionService) CreateNewSubscription(request *dtos.CreateSubscrip
 
 // Create a new subscription plan
 // This function will create a new subscription plan and return error if it already exists
-func (s *SubscriptionService) CreateSubscriptionPlan(planRequest *dtos.CreateSubscriptionPlanDTO, subID uint32) error {
-	if exists, err := s.SubscriptionPlanRepository.IsPlanExists(subID, planRequest.Name); err != nil || exists {
+func (s *SubscriptionService) CreateSubscriptionPlan(request *dtos.CreateSubscriptionPlanDTO, subID uint32) error {
+	if exists, err := s.SubscriptionPlanRepository.IsPlanExists(subID, request.Name); err != nil || exists {
 		return errors.New("subscription plan already exists")
 	}
 
 	plan := &models.SubscriptionPlan{
 		SubID: subID,
-		Name:  planRequest.Name,
-		Value: planRequest.Value,
+		Name:  request.Name,
+		Value: request.Value,
 	}
 
 	if err := s.SubscriptionPlanRepository.StoreNewPlan(plan); err != nil {
 		return errors.New("failed to create subscription plan")
+	}
+
+	return nil
+}
+
+// Get all subscriptions
+// This function retrieves all subscription from the database
+// It returns a slice of subscription and an error if any
+func (s *SubscriptionService) GetAllSubscriptions() ([]*models.Subscription, error) {
+	subscriptions, err := s.SubscriptionRepository.FindAllSubscriptions()
+	if err != nil {
+		return nil, errors.New("failed to retrieve subscriptions")
+	}
+
+	return subscriptions, nil
+}
+
+// Update an existing subscription
+// This function updates an existing subscription with the provided request data
+// It returns an error if the subscription does not exist as if the update fails
+func (s *SubscriptionService) UpdateSubscription(request *dtos.UpdateSubscriptionDTO, subID uint32) error {
+
+	if subscription, err := s.SubscriptionRepository.FindByID(subID); err != nil || subscription == nil {
+		return errors.New("subscription not found")
+	}
+
+	updatedSubscription := &models.Subscription{
+		ID:          subID,
+		Name:        *request.Name,
+		Description: *request.Description,
+		Price:       float32(*request.Price),
+		Duration:    *request.Duration,
+	}
+
+	if _, err := s.SubscriptionRepository.UpdateSubscription(updatedSubscription); err != nil {
+		return errors.New("failed to update subscription")
+	}
+
+	return nil
+}
+
+// Delete a subscription
+// This function deletes a subscription by its ID
+// It returns an error if the subscription does not exist or if the deletion fails
+func (s *SubscriptionService) DeleteSubscription(subID uint32) error {
+	if subscription, err := s.SubscriptionRepository.FindByID(subID); err != nil || subscription == nil {
+		return errors.New("subscription not found")
+	}
+
+	subscription := &models.Subscription{ID: subID}
+
+	if err := s.SubscriptionRepository.DeleteSubscription(subscription); err != nil {
+		return errors.New("failed to delete subscription")
 	}
 
 	return nil

@@ -20,3 +20,10 @@ func (dto *CreateSubscriptionDTO) ErrorMessages() map[string]string {
 		"duration.min":      "Duration must be at least 1 month",
 	}
 }
+
+type UpdateSubscriptionDTO struct {
+	Name        *string  `json:"name" validate:"required,max=100"`
+	Price       *float64 `json:"price" validate:"omitempty,number,min=0"`
+	Description *string  `json:"description" validate:"omitempty,max=500"`
+	Duration    *int16   `json:"duration" validate:"omitempty,number,min=1"`
+}
