@@ -1,17 +1,22 @@
 package errors
 
-type AppError interface {
-	error
-	Code() int
-	Type() string
-	Details() map[string]interface{}
+type AppError struct {
+	Code    int `json:"code"`
+	Details any `json:"details,omitempty"`
+}
+
+func NewAppError(code int, details any) *AppError {
+	return &AppError{
+		Code:    code,
+		Details: details,
+	}
 }
 
 type BaseError struct {
-	ErrorCode    int                    `json:"code"`
-	ErrorMessage string                 `json:"message"`
-	ErrorType    string                 `json:"type"`
-	ErrorDetails map[string]interface{} `json:"details,omitempty"`
+	ErrorCode    int    `json:"code"`
+	ErrorMessage string `json:"message"`
+	ErrorType    string `json:"type"`
+	ErrorDetails any    `json:"details,omitempty"`
 }
 
 func (e *BaseError) Error() string {
@@ -26,6 +31,6 @@ func (e *BaseError) Type() string {
 	return e.ErrorType
 }
 
-func (e *BaseError) Details() map[string]interface{} {
+func (e *BaseError) Details() any {
 	return e.ErrorDetails
 }

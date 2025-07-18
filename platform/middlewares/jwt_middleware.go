@@ -51,8 +51,8 @@ var JWTProtected fiber.Handler = func(c *fiber.Ctx) error {
 
 	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"message": "Invalid token",
-			"error":   err.Error(),
+			"message": "Cannot continue to process request due to invalid token",
+			"error":   fmt.Sprintf("Token validation failed: %s", err.Error()),
 		})
 	}
 

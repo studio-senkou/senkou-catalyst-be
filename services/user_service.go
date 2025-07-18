@@ -10,7 +10,7 @@ type UserService interface {
 	Create(user models.User) (*models.User, error)
 	GetAll() (*[]models.User, error)
 	GetUserDetail(userID uint32) (*models.User, error)
-	VerifyCredentials(email, password string) (uint, error)
+	VerifyCredentials(email, password string) (uint32, error)
 	VerifyIsAnAdministrator(userID uint32) (bool, error)
 }
 
@@ -44,7 +44,7 @@ func (s *userService) GetAll() (*[]models.User, error) {
 	return s.UserRepository.FindAll()
 }
 
-func (s *userService) VerifyCredentials(email, password string) (uint, error) {
+func (s *userService) VerifyCredentials(email, password string) (uint32, error) {
 	user, err := s.UserRepository.FindByEmail(email)
 
 	if err != nil {
@@ -55,7 +55,7 @@ func (s *userService) VerifyCredentials(email, password string) (uint, error) {
 		return 0, errors.New("invalid email or password")
 	}
 
-	return uint(user.ID), nil
+	return user.ID, nil
 }
 
 // Get user detail by its ID

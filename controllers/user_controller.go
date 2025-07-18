@@ -1,11 +1,13 @@
 package controllers
 
 import (
+	"fmt"
 	"senkou-catalyst-be/dtos"
 	"senkou-catalyst-be/models"
 	"senkou-catalyst-be/services"
 	"senkou-catalyst-be/utils"
 	"senkou-catalyst-be/utils/throw"
+	"strconv"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -31,12 +33,12 @@ func (h *UserController) CreateUser(c *fiber.Ctx) error {
 
 	if err := utils.Validate(c, registerUserDTO); err != nil {
 		if vErr, ok := err.(*utils.ValidationError); ok {
-			return throw.ValidationError(c, "Validation failed", vErr.Errors)
+			return throw.ValidationError(c, "Bad request", map[string]any{
+				"errors": vErr.Errors,
+			})
 		}
 
-		return throw.InternalError(c, "Internal server error", map[string]any{
-			"error": err.Error(),
-		})
+		return throw.InternalError(c, "Internal server error", fmt.Sprintf("Could not process your request due to an error: %v", err.Error()))
 	}
 
 	newUser, err := h.service.Create(models.User{
@@ -66,8 +68,9 @@ func (h *UserController) CreateUser(c *fiber.Ctx) error {
 // @Router /users [get]
 func (h *UserController) GetUsers(c *fiber.Ctx) error {
 	users, err := h.service.GetAll()
+
 	if err != nil {
-		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+		return throw.InternalError(c, "Failed to retrieve users", fmt.Sprintf("Could not process your request due to an error: %v", err.Error()))
 	}
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
@@ -90,18 +93,17 @@ func (h *UserController) GetUsers(c *fiber.Ctx) error {
 // @Failure 500 {object} fiber.Map{message=string, error=string}
 // @Router /users/me [get]
 func (h *UserController) GetUserDetail(c *fiber.Ctx) error {
-	userID := c.Locals("userID").(uint32)
+	userIDStr := fmt.Sprintf("%v", c.Locals("userID"))
+	userID, err := strconv.ParseUint(userIDStr, 10, 32)
 
-	if userID == 0 {
+	if userID == 0 || err != nil {
 		return throw.Unauthorized(c, "You must be logged in to access this resource")
 	}
 
-	user, err := h.service.GetUserDetail(userID)
+	user, err := h.service.GetUserDetail(uint32(userID))
 
 	if err != nil {
-		return throw.InternalError(c, "Failed to retrieve user details", map[string]any{
-			"error": err.Error(),
-		})
+		return throw.InternalError(c, "Failed to retrieve user details", fmt.Sprintf("Could not process your request due to an error: %v", err.Error()))
 	}
 
 	return c.Status(fiber.StatusNotImplemented).JSON(fiber.Map{

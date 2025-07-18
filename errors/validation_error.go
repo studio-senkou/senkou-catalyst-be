@@ -4,10 +4,10 @@ import "net/http"
 
 type ValidationError struct {
 	*BaseError
-	Fields map[string]string `json:"fields"`
+	Fields any `json:"fields"`
 }
 
-func NewValidationError(message string, fields map[string]string) *ValidationError {
+func NewValidationError(message string, fields any) *ValidationError {
 	return &ValidationError{
 		BaseError: &BaseError{
 			ErrorCode:    http.StatusBadRequest,

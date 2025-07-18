@@ -3,6 +3,7 @@ package config
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -14,17 +15,17 @@ import (
 )
 
 type ErrorResponse struct {
-	Success bool           `json:"-"`
-	Error   ErrorDetail    `json:"error"`
-	Data    any            `json:"data,omitempty"`
-	Meta    map[string]any `json:"meta,omitempty"`
+	Success bool        `json:"-"`
+	Error   ErrorDetail `json:"error"`
+	Data    any         `json:"data,omitempty"`
+	Meta    any         `json:"meta,omitempty"`
 }
 
 type ErrorDetail struct {
-	Code    int            `json:"code"`
-	Type    string         `json:"-"`
-	Message string         `json:"message"`
-	Details map[string]any `json:"details,omitempty"`
+	Code    int    `json:"code"`
+	Type    string `json:"-"`
+	Message string `json:"message"`
+	Details any    `json:"details,omitempty"`
 }
 
 func SendLog(errMsg string) {
@@ -71,7 +72,7 @@ func SendLog(errMsg string) {
 		},
 	}
 
-	if len(errorResponse.Error.Details) > 0 {
+	if len(errorResponse.Error.Details.([]any)) > 0 {
 		detailsJson, _ := json.MarshalIndent(errorResponse.Error.Details, "", "  ")
 		embed["fields"] = append(embed["fields"].([]map[string]any), map[string]any{
 			"name":   "Details",
@@ -109,6 +110,7 @@ func InitFiberConfig() *fiber.Config {
 		AppName: "Senkou Catalyst API",
 		ErrorHandler: func(c *fiber.Ctx, err error) error {
 			log.Printf("Error: %v", err)
+			log.Printf("Error type : %T", err)
 
 			response := ErrorResponse{
 				Success: false,
@@ -119,7 +121,10 @@ func InitFiberConfig() *fiber.Config {
 				},
 			}
 
-			if appErr, ok := err.(errors.AppError); ok {
+			// If the error is type of BaseError
+			if appErr, ok := err.(*errors.BaseError); ok {
+				fmt.Println("Masuk disini error e")
+
 				response.Error = ErrorDetail{
 					Code:    appErr.Code(),
 					Type:    appErr.Type(),
@@ -127,10 +132,10 @@ func InitFiberConfig() *fiber.Config {
 					Details: appErr.Details(),
 				}
 
-				if validationErr, ok := err.(*errors.ValidationError); ok {
+				if appErr.Code() >= 400 && appErr.Code() < 500 {
 					return c.Status(appErr.Code()).JSON(fiber.Map{
-						"message": "Bad request",
-						"errors":  validationErr.Fields,
+						"message": appErr.ErrorMessage,
+						"error":   appErr.Details(),
 					})
 				}
 
@@ -138,8 +143,35 @@ func InitFiberConfig() *fiber.Config {
 					sendErrorLog(response)
 				}
 				return c.Status(appErr.Code()).JSON(fiber.Map{
-					"message": "Internal server error",
+					"message": appErr.ErrorMessage,
 					"error":   appErr.Details(),
+				})
+			}
+
+			// If the error is derived from BaseError
+			if validationErr, ok := err.(*errors.ValidationError); ok {
+				response.Error.Code = fiber.StatusBadRequest
+				response.Error.Message = "Bad request"
+				response.Error.Type = "VALIDATION_ERROR"
+				response.Error.Details = validationErr.Fields
+
+				return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+					"message": response.Error.Message,
+					"errors":  validationErr.Fields,
+				})
+			}
+
+			// If the error is a bad request error
+			if badRequestErr, ok := err.(*errors.BadRequestError); ok {
+				fmt.Println("Masuk disini bad request error")
+				response.Error.Code = fiber.StatusBadRequest
+				response.Error.Message = badRequestErr.ErrorMessage
+				response.Error.Type = "BAD_REQUEST_ERROR"
+				response.Error.Details = badRequestErr.Details
+
+				return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+					"message": response.Error.Message,
+					"error":   badRequestErr.Details(),
 				})
 			}
 

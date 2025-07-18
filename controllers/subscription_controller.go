@@ -50,9 +50,9 @@ func (h *SubscriptionController) CreateSubscription(c *fiber.Ctx) error {
 
 	subscription, err := h.SubscriptionService.CreateNewSubscription(createSubscriptionDTO)
 
-	if err != nil {
+	if err != nil && err.Code == 500 {
 		return throw.InternalError(c, "Failed to create subscription", map[string]any{
-			"error": err.Error(),
+			"error": err.Details,
 		})
 	}
 
@@ -79,12 +79,10 @@ func (h *SubscriptionController) CreateSubscription(c *fiber.Ctx) error {
 // @Router /subscriptions/{planID}/plans [post]
 func (h *SubscriptionController) CreateSubscriptionPlan(c *fiber.Ctx) error {
 	planIDStr := fmt.Sprintf("%v", c.Locals("planID"))
-	planID, err := strconv.ParseUint(planIDStr, 10, 64)
+	planID, err := strconv.ParseUint(planIDStr, 10, 32)
 
 	if err != nil {
-		return throw.BadRequest(c, "Invalid plan ID", map[string]any{
-			"error": "Invalid plan ID",
-		})
+		return throw.BadRequest(c, "Cannot continue to create subscription plan", "Failed to parse subscription plan ID")
 	}
 
 	planRequest := new(dtos.CreateSubscriptionPlanDTO)
@@ -102,8 +100,14 @@ func (h *SubscriptionController) CreateSubscriptionPlan(c *fiber.Ctx) error {
 	}
 
 	if err := h.SubscriptionService.CreateSubscriptionPlan(planRequest, uint32(planID)); err != nil {
+		if err.Code == 400 {
+			return throw.BadRequest(c, "Subscription plan already exists", map[string]any{
+				"errors": err.Details,
+			})
+		}
+
 		return throw.InternalError(c, "Failed to create subscription plan", map[string]any{
-			"error": err.Error(),
+			"error": err.Details,
 		})
 	}
 
@@ -126,27 +130,28 @@ func (h *SubscriptionController) CreateSubscriptionPlan(c *fiber.Ctx) error {
 // @Router /subscriptions/{subID}/subscribe [post]
 func (h *SubscriptionController) SubscribeSubscription(c *fiber.Ctx) error {
 	userIDStr := fmt.Sprintf("%v", c.Locals("userID"))
-	userID, err := strconv.ParseUint(userIDStr, 10, 64)
+	userID, err := strconv.ParseUint(userIDStr, 10, 32)
 
-	if err != nil {
-		return throw.BadRequest(c, "Invalid user ID", map[string]any{
-			"error": "Invalid user ID",
-		})
+	if userID == 0 || err != nil {
+		return throw.BadRequest(c, "Cannot continue to subscribe user subscription", "Failed to parse user ID")
 	}
 
 	subIDStr := fmt.Sprintf("%v", c.Params("subID"))
-	subID, err := strconv.ParseUint(subIDStr, 10, 64)
+	subID, err := strconv.ParseUint(subIDStr, 10, 32)
 
 	if err != nil {
-		return throw.BadRequest(c, "Invalid subscription ID", map[string]any{
-			"error": "Invalid subscription ID",
-		})
+		return throw.BadRequest(c, "Cannot continue to subscribe user subscription", "Failed to parse subscription ID")
 	}
 
 	if err := h.SubscriptionService.SubscribeUserToSubscription(uint32(userID), uint32(subID)); err != nil {
-		return throw.InternalError(c, "Failed to subscribe user to subscription", map[string]any{
-			"error": err.Error(),
-		})
+		switch err.Code {
+		case 400:
+			return throw.BadRequest(c, "User already has an active subscription", "Could not subscribe user to subscription")
+		case 404:
+			return throw.NotFound(c, "Subscription not found")
+		}
+
+		return throw.InternalError(c, "Failed to subscribe user to subscription", "User could not be subscribed to subscription")
 	}
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
@@ -167,9 +172,7 @@ func (h *SubscriptionController) GetSubscriptions(c *fiber.Ctx) error {
 	subscriptions, err := h.SubscriptionService.GetAllSubscriptions()
 
 	if err != nil {
-		return throw.InternalError(c, "Failed to retrieve subscriptions", map[string]any{
-			"error": err.Error(),
-		})
+		return throw.InternalError(c, "Failed to get subscriptions", "Unable to retrieve subscriptions")
 	}
 
 	return c.JSON(fiber.Map{
@@ -218,9 +221,7 @@ func (h *SubscriptionController) UpdateSubscription(c *fiber.Ctx) error {
 	}
 
 	if err := h.SubscriptionService.UpdateSubscription(updateSubscriptionDTO, uint32(subID)); err != nil {
-		return throw.InternalError(c, "Failed to update subscription", map[string]any{
-			"error": err.Error(),
-		})
+		return throw.InternalError(c, "Failed to update subscription", "Could not update subscription")
 	}
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
@@ -252,7 +253,7 @@ func (h *SubscriptionController) DeleteSubscription(c *fiber.Ctx) error {
 
 	if err := h.SubscriptionService.DeleteSubscription(uint32(subID)); err != nil {
 		return throw.InternalError(c, "Failed to delete subscription", map[string]any{
-			"error": err.Error(),
+			// "error": err.Error(),
 		})
 	}
 

@@ -12,14 +12,14 @@ import (
 )
 
 type AuthController struct {
-	authService services.AuthService
-	userService services.UserService
+	AuthService services.AuthService
+	UserService services.UserService
 }
 
 func NewAuthController(authService services.AuthService, userService services.UserService) *AuthController {
 	return &AuthController{
-		authService,
-		userService,
+		AuthService: authService,
+		UserService: userService,
 	}
 }
 
@@ -38,30 +38,26 @@ func (h *AuthController) Login(c *fiber.Ctx) error {
 
 	if err := utils.Validate(c, loginRequestDTO); err != nil {
 		if vErr, ok := err.(*utils.ValidationError); ok {
-			return throw.BadRequest(c, "Validation failed", map[string]interface{}{
-				"errors": vErr.Errors,
-			})
+			return throw.ValidationError(c, "Validation failed", vErr.Errors)
 		}
 
-		return throw.InternalError(c, "Internal server error", map[string]interface{}{
+		return throw.InternalError(c, "Internal server error", map[string]any{
 			"error": err.Error(),
 		})
 	}
 
-	userID, err := h.userService.VerifyCredentials(loginRequestDTO.Email, loginRequestDTO.Password)
+	userID, err := h.UserService.VerifyCredentials(loginRequestDTO.Email, loginRequestDTO.Password)
 
 	if err != nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"message": "Invalid email or password",
-		})
+		return throw.Unauthorized(c, "Invalid email or password")
 	}
 
-	accessToken, refreshToken, err := h.authService.GenerateToken(userID)
+	accessToken, refreshToken, appError := h.AuthService.GenerateToken(userID)
 
-	if err != nil {
+	if appError != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"message": "Failed to generate token",
-			"error":   err.Error(),
+			"error":   appError.Details,
 		})
 	}
 
@@ -92,32 +88,40 @@ func (h *AuthController) RefreshToken(c *fiber.Ctx) error {
 
 	if err := utils.Validate(c, refreshTokenRequestDTO); err != nil {
 		if vErr, ok := err.(*utils.ValidationError); ok {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-				"message": "Validation failed",
-				"errors":  vErr.Errors,
-			})
+			return throw.ValidationError(c, "Validation failed", vErr.Errors)
 		}
 
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"message": "Internal server error",
-			"error":   err.Error(),
+		return throw.InternalError(c, "Internal server error", map[string]any{
+			"error": err.Error(),
 		})
 	}
 
-	userID, err := h.authService.ValidateRefreshToken(refreshTokenRequestDTO.RefreshToken)
+	userID, err := h.AuthService.ValidateRefreshToken(refreshTokenRequestDTO.RefreshToken)
 
-	if err != nil {
+	if userID == 0 || err != nil {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"message": "Invalid refresh token",
 		})
 	}
 
-	accessToken, refreshToken, err := h.authService.GenerateToken(userID)
+	userID, refreshError := h.AuthService.ValidateRefreshToken(refreshTokenRequestDTO.RefreshToken)
 
-	if err != nil {
+	if refreshError != nil {
+		if refreshError.Code == 401 {
+			return throw.Unauthorized(c, fmt.Sprintf("Cannot continue to update your token because of %v", refreshError.Details))
+		}
+
+		return throw.InternalError(c, "Failed to validate refresh token", map[string]any{
+			"error": refreshError.Details,
+		})
+	}
+
+	accessToken, refreshToken, tokenError := h.AuthService.GenerateToken(userID)
+
+	if tokenError != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"message": "Failed to generate token",
-			"error":   err.Error(),
+			"error":   tokenError.Details,
 		})
 	}
 
@@ -143,19 +147,15 @@ func (h *AuthController) RefreshToken(c *fiber.Ctx) error {
 // @Router /auth/logout [delete]
 func (h *AuthController) Logout(c *fiber.Ctx) error {
 	userIDStr := fmt.Sprintf("%v", c.Locals("userID"))
-	userID, err := strconv.ParseUint(userIDStr, 10, 64)
+	userID, err := strconv.ParseUint(userIDStr, 10, 32)
 
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"message": "Failed to parse user ID",
-			"error":   err.Error(),
-		})
+	if userID == 0 || err != nil {
+		return throw.BadRequest(c, "Cannot continue to logout user", "User ID is not valid")
 	}
 
-	if err := h.authService.InvalidateSession(uint(userID)); err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"message": "Failed to logout",
-			"error":   err.Error(),
+	if err := h.AuthService.InvalidateSession(uint32(userID)); err != nil {
+		return throw.InternalError(c, "Failed to logout user", map[string]any{
+			"error": err.Details,
 		})
 	}
 

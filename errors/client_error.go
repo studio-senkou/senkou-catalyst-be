@@ -9,7 +9,7 @@ type BadRequestError struct {
 	*BaseError
 }
 
-func NewBadRequestError(message string, details map[string]interface{}) *BadRequestError {
+func NewBadRequestError(message string, details any) *BadRequestError {
 	return &BadRequestError{
 		BaseError: &BaseError{
 			ErrorCode:    http.StatusBadRequest,

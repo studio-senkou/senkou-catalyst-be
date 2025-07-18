@@ -6,7 +6,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-func ValidationError(c *fiber.Ctx, message string, fields map[string]string) error {
+func ValidationError(c *fiber.Ctx, message string, fields any) error {
 	return errors.NewValidationError(message, fields)
 }
 
@@ -22,11 +22,11 @@ func Forbidden(c *fiber.Ctx, message string) error {
 	return errors.NewForbiddenError(message)
 }
 
-func BadRequest(c *fiber.Ctx, message string, details map[string]interface{}) error {
+func BadRequest(c *fiber.Ctx, message string, details any) error {
 	return errors.NewBadRequestError(message, details)
 }
 
-func InternalError(c *fiber.Ctx, message string, details map[string]interface{}) error {
+func InternalError(c *fiber.Ctx, message string, details any) error {
 	return errors.NewInternalError(message, details)
 }
 

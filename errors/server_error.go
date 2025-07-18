@@ -6,7 +6,7 @@ type InternalError struct {
 	*BaseError
 }
 
-func NewInternalError(message string, details map[string]interface{}) *InternalError {
+func NewInternalError(message string, details any) *InternalError {
 	return &InternalError{
 		BaseError: &BaseError{
 			ErrorCode:    http.StatusInternalServerError,
