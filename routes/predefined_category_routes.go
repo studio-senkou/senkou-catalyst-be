@@ -1,7 +1,7 @@
 package routes
 
 import (
-	"senkou-catalyst-be/controllers"
+	"senkou-catalyst-be/app/controllers"
 	"senkou-catalyst-be/platform/middlewares"
 
 	"github.com/gofiber/fiber/v2"

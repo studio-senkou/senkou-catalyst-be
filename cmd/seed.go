@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
-	"senkou-catalyst-be/config"
 	"senkou-catalyst-be/database"
+	"senkou-catalyst-be/platform/config"
 )
 
 // @title Catalyst API Seeder

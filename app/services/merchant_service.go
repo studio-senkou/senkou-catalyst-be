@@ -1,9 +1,9 @@
 package services
 
 import (
-	"senkou-catalyst-be/dtos"
-	"senkou-catalyst-be/errors"
-	"senkou-catalyst-be/models"
+	"senkou-catalyst-be/app/dtos"
+	"senkou-catalyst-be/app/models"
+	"senkou-catalyst-be/platform/errors"
 	"senkou-catalyst-be/repositories"
 
 	"github.com/google/uuid"

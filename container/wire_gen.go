@@ -8,10 +8,12 @@ package container
 
 import (
 	"github.com/google/wire"
-	"senkou-catalyst-be/config"
-	"senkou-catalyst-be/controllers"
+	"senkou-catalyst-be/app/controllers"
+	"senkou-catalyst-be/app/services"
+	"senkou-catalyst-be/platform/config"
 	"senkou-catalyst-be/repositories"
-	"senkou-catalyst-be/services"
+	"senkou-catalyst-be/utils/auth"
+	config2 "senkou-catalyst-be/utils/config"
 )
 
 // Injectors from wire.go:
@@ -60,7 +62,11 @@ func InitializePredefinedCategoryController() (*controllers.PredefinedCategoryCo
 func InitializeAuthController() (*controllers.AuthController, error) {
 	db := config.GetDB()
 	authRepository := repositories.NewAuthRepository(db)
-	authService := services.NewAuthService(authRepository)
+	jwtManager, err := ProvideJWTManager()
+	if err != nil {
+		return nil, err
+	}
+	authService := services.NewAuthService(authRepository, jwtManager)
 	userRepository := repositories.NewUserRepository(db)
 	userService := services.NewUserService(userRepository)
 	authController := controllers.NewAuthController(authService, userService)
@@ -111,7 +117,11 @@ func InitializeContainer() (*Container, error) {
 	predefinedCategoryService := services.NewPredefinedCategoryService(predefinedCategoryRepository)
 	predefinedCategoryController := controllers.NewPredefinedCategoryController(predefinedCategoryService)
 	authRepository := repositories.NewAuthRepository(db)
-	authService := services.NewAuthService(authRepository)
+	jwtManager, err := ProvideJWTManager()
+	if err != nil {
+		return nil, err
+	}
+	authService := services.NewAuthService(authRepository, jwtManager)
 	authController := controllers.NewAuthController(authService, userService)
 	subscriptionRepository := repositories.NewSubscriptionRepository(db)
 	subscriptionPlanRepository := repositories.NewSubscriptionPlanRepository(db)
@@ -130,6 +140,15 @@ var RepositorySet = wire.NewSet(repositories.NewUserRepository, repositories.New
 var ServiceSet = wire.NewSet(services.NewUserService, services.NewMerchantService, services.NewProductService, services.NewCategoryService, services.NewPredefinedCategoryService, services.NewAuthService, services.NewSubscriptionService)
 
 var ControllerSet = wire.NewSet(controllers.NewUserController, controllers.NewMerchantController, controllers.NewProductController, controllers.NewCategoryController, controllers.NewPredefinedCategoryController, controllers.NewAuthController, controllers.NewSubscriptionController)
+
+func ProvideJWTManager() (*auth.JWTManager, error) {
+	secret := config2.MustGetEnv("AUTH_SECRET")
+	return auth.NewJWTManager(secret)
+}
+
+var UtilSet = wire.NewSet(
+	ProvideJWTManager,
+)
 
 func NewContainer(
 	userController *controllers.UserController,

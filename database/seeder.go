@@ -1,15 +1,15 @@
 package database
 
 import (
-	"senkou-catalyst-be/models"
-	"senkou-catalyst-be/utils"
+	"senkou-catalyst-be/app/models"
+	"senkou-catalyst-be/utils/config"
 
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
 
 func Seed(db *gorm.DB) {
-	adminPasswordStr := utils.GetEnv("ADMIN_PASSWORD", "admin123")
+	adminPasswordStr := config.GetEnv("ADMIN_PASSWORD", "admin123")
 	adminPassword, err := bcrypt.GenerateFromPassword(
 		[]byte(adminPasswordStr), bcrypt.DefaultCost,
 	)
@@ -19,9 +19,9 @@ func Seed(db *gorm.DB) {
 	}
 
 	administrator := new(models.User)
-	db.Where("email = ?", utils.GetEnv("ADMIN_EMAIL", "studio.senkou@example.com")).FirstOrCreate(&administrator, models.User{
-		Name:     utils.GetEnv("ADMIN_NAME", "Catalyst Admin"),
-		Email:    utils.GetEnv("ADMIN_EMAIL", "studio.senkou@example.com"),
+	db.Where("email = ?", config.GetEnv("ADMIN_EMAIL", "studio.senkou@example.com")).FirstOrCreate(&administrator, models.User{
+		Name:     config.GetEnv("ADMIN_NAME", "Catalyst Admin"),
+		Email:    config.GetEnv("ADMIN_EMAIL", "studio.senkou@example.com"),
 		Password: adminPassword,
 		Role:     "admin",
 	})

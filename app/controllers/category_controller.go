@@ -2,11 +2,12 @@ package controllers
 
 import (
 	"fmt"
-	"senkou-catalyst-be/dtos"
-	"senkou-catalyst-be/models"
-	"senkou-catalyst-be/services"
-	"senkou-catalyst-be/utils"
-	"senkou-catalyst-be/utils/throw"
+	"senkou-catalyst-be/app/dtos"
+	"senkou-catalyst-be/app/models"
+	"senkou-catalyst-be/app/services"
+	"senkou-catalyst-be/utils/converter"
+	"senkou-catalyst-be/utils/response"
+	"senkou-catalyst-be/utils/validator"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -38,29 +39,29 @@ func (h *CategoryController) CreateCategory(c *fiber.Ctx) error {
 	merchantID := c.Params("merchantID")
 
 	if merchantID == "" {
-		return throw.BadRequest(c, "Cannot continue to create category", "Invalid merchant ID")
+		return response.BadRequest(c, "Cannot continue to create category", "Invalid merchant ID")
 	}
 
 	createCategoryDTO := new(dtos.CreateCategoryDTO)
 
-	if err := utils.Validate(c, createCategoryDTO); err != nil {
-		if vErr, ok := err.(*utils.ValidationError); ok {
-			return throw.ValidationError(c, "Validation failed", vErr.Errors)
+	if err := validator.Validate(c, createCategoryDTO); err != nil {
+		if vErr, ok := err.(*validator.ValidationError); ok {
+			return response.ValidationError(c, "Validation failed", vErr.Errors)
 		}
 
-		return throw.InternalError(c, "Internal server error", map[string]any{
+		return response.InternalError(c, "Internal server error", map[string]any{
 			"error": err.Error(),
 		})
 	}
 
 	if category, _ := h.categoryService.GetCategoryByName(createCategoryDTO.Name, merchantID); category != nil {
-		return throw.BadRequest(c, "Cannot continue to create category due to conflict", "Category already exists with the same name for this merchant")
+		return response.BadRequest(c, "Cannot continue to create category due to conflict", "Category already exists with the same name for this merchant")
 	}
 
 	category, appError := h.categoryService.CreateNewCategory(createCategoryDTO, merchantID)
 
 	if appError != nil {
-		return throw.InternalError(c, "Cannot create the category due to internal error", appError.Details)
+		return response.InternalError(c, "Cannot create the category due to internal error", appError.Details)
 	}
 
 	return c.JSON(fiber.Map{
@@ -86,13 +87,13 @@ func (h *CategoryController) GetCategories(c *fiber.Ctx) error {
 	merchantID := c.Params("merchantID")
 
 	if merchantID == "" {
-		return throw.BadRequest(c, "Cannot continue to retrieve categories", "Invalid merchant ID")
+		return response.BadRequest(c, "Cannot continue to retrieve categories", "Invalid merchant ID")
 	}
 
 	categories, appError := h.categoryService.GetAllCategoriesByMerchantID(merchantID)
 
 	if appError != nil {
-		return throw.InternalError(c, "Cannot retrieve categories due to internal error", appError.Details)
+		return response.InternalError(c, "Cannot retrieve categories due to internal error", appError.Details)
 	}
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
@@ -123,23 +124,23 @@ func (h *CategoryController) UpdateCategory(c *fiber.Ctx) error {
 	categoryID := c.Params("categoryID")
 
 	if merchantID == "" || categoryID == "" {
-		return throw.BadRequest(c, "Cannot continue to update category due to missing IDs", fmt.Sprintf("Invalid Merchant ID: %s, Invalid Category ID: %s", merchantID, categoryID))
+		return response.BadRequest(c, "Cannot continue to update category due to missing IDs", fmt.Sprintf("Invalid Merchant ID: %s, Invalid Category ID: %s", merchantID, categoryID))
 	}
 
-	parsedCategoryID, err := utils.StrToUint(categoryID)
+	parsedCategoryID, err := converter.StrToUint(categoryID)
 
 	if err != nil {
-		return throw.BadRequest(c, "Cannot continue to update category due to invalid ID", "Invalid category ID: "+err.Error())
+		return response.BadRequest(c, "Cannot continue to update category due to invalid ID", "Invalid category ID: "+err.Error())
 	}
 
 	updateCategoryDTO := new(dtos.UpdateCategoryDTO)
 
-	if err := utils.Validate(c, updateCategoryDTO); err != nil {
-		if vErr, ok := err.(*utils.ValidationError); ok {
-			return throw.ValidationError(c, "Validation failed", vErr.Errors)
+	if err := validator.Validate(c, updateCategoryDTO); err != nil {
+		if vErr, ok := err.(*validator.ValidationError); ok {
+			return response.ValidationError(c, "Validation failed", vErr.Errors)
 		}
 
-		return throw.InternalError(c, "Internal server error", err.Error())
+		return response.InternalError(c, "Internal server error", err.Error())
 	}
 
 	updatedCategory, appError := h.categoryService.UpdateCategory(&models.Category{
@@ -149,7 +150,7 @@ func (h *CategoryController) UpdateCategory(c *fiber.Ctx) error {
 	})
 
 	if appError != nil {
-		return throw.InternalError(c, "Cannot update the category due to internal error", appError.Details)
+		return response.InternalError(c, "Cannot update the category due to internal error", appError.Details)
 	}
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
@@ -178,17 +179,17 @@ func (h *CategoryController) DeleteCategory(c *fiber.Ctx) error {
 	categoryID := c.Params("categoryID")
 
 	if merchantID == "" || categoryID == "" {
-		return throw.BadRequest(c, "Cannot continue to delete category due to missing IDs", fmt.Sprintf("Invalid Merchant ID: %s, Invalid Category ID: %s", merchantID, categoryID))
+		return response.BadRequest(c, "Cannot continue to delete category due to missing IDs", fmt.Sprintf("Invalid Merchant ID: %s, Invalid Category ID: %s", merchantID, categoryID))
 	}
 
-	parsedCategoryID, err := utils.StrToUint(categoryID)
+	parsedCategoryID, err := converter.StrToUint(categoryID)
 
 	if err != nil {
-		return throw.BadRequest(c, "Cannot continue to delete category due to invalid ID", "Invalid category ID: "+err.Error())
+		return response.BadRequest(c, "Cannot continue to delete category due to invalid ID", "Invalid category ID: "+err.Error())
 	}
 
 	if err := h.categoryService.DeleteCategory(uint32(parsedCategoryID)); err != nil {
-		return throw.InternalError(c, "Cannot delete category due to internal error", err.Details)
+		return response.InternalError(c, "Cannot delete category due to internal error", err.Details)
 	}
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{

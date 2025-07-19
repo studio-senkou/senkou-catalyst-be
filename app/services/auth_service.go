@@ -1,10 +1,10 @@
 package services
 
 import (
-	"senkou-catalyst-be/dtos"
-	"senkou-catalyst-be/errors"
+	"senkou-catalyst-be/app/dtos"
+	"senkou-catalyst-be/platform/errors"
 	"senkou-catalyst-be/repositories"
-	"senkou-catalyst-be/utils"
+	"senkou-catalyst-be/utils/auth"
 	"time"
 )
 
@@ -16,22 +16,26 @@ type AuthService interface {
 
 type AuthServiceInstance struct {
 	AuthRepository repositories.AuthRepository
+	JwtManager     *auth.JWTManager
 }
 
-func NewAuthService(authRepository repositories.AuthRepository) AuthService {
-	return &AuthServiceInstance{AuthRepository: authRepository}
+func NewAuthService(authRepository repositories.AuthRepository, jwtManager *auth.JWTManager) AuthService {
+	return &AuthServiceInstance{
+		AuthRepository: authRepository,
+		JwtManager:     jwtManager,
+	}
 }
 
 // Generate token and refresh token for the user
 // This function generates a JWT token and a refresh token for the user
 // It stores the refresh token in the database for later validation
 func (s *AuthServiceInstance) GenerateToken(userID uint32) (*dtos.GeneratedToken, *dtos.GeneratedToken, *errors.AppError) {
-	token, err := utils.GenerateToken(userID, time.Now().Add(24*time.Hour))
+	token, err := s.JwtManager.GenerateToken(userID, time.Now().Add(24*time.Hour))
 	if err != nil {
 		return nil, nil, errors.NewAppError(500, "Failed to generate token")
 	}
 
-	refreshToken, err := utils.GenerateToken(userID, time.Now().Add(30*24*time.Hour))
+	refreshToken, err := s.JwtManager.GenerateToken(userID, time.Now().Add(30*24*time.Hour))
 	if err != nil {
 		return nil, nil, errors.NewAppError(500, "Failed to generate refresh token")
 	}

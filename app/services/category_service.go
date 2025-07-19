@@ -2,9 +2,9 @@ package services
 
 import (
 	"fmt"
-	"senkou-catalyst-be/dtos"
-	"senkou-catalyst-be/errors"
-	"senkou-catalyst-be/models"
+	"senkou-catalyst-be/app/dtos"
+	"senkou-catalyst-be/app/models"
+	"senkou-catalyst-be/platform/errors"
 	"senkou-catalyst-be/repositories"
 )
 
@@ -53,6 +53,7 @@ func (s *CategoryServiceInstance) GetCategoryByName(name string, merchantID stri
 	if err != nil {
 		return nil, errors.NewAppError(500, fmt.Sprintf("Failed to get category by name: %v", err.Error()))
 	}
+
 	return category, nil
 }
 

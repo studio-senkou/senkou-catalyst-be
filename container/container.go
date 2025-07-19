@@ -1,8 +1,8 @@
 package container
 
 import (
-	"senkou-catalyst-be/controllers"
-	"senkou-catalyst-be/services"
+	"senkou-catalyst-be/app/controllers"
+	"senkou-catalyst-be/app/services"
 )
 
 type Container struct {

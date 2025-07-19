@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"time"
 
-	"senkou-catalyst-be/errors"
-	"senkou-catalyst-be/utils"
+	"senkou-catalyst-be/platform/errors"
+	"senkou-catalyst-be/utils/config"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -29,13 +29,13 @@ type ErrorDetail struct {
 }
 
 func SendLog(errMsg string) {
-	webhookEnabled := utils.GetEnv("WEBHOOK_ENABLED", "false") == "true"
+	webhookEnabled := config.GetEnv("WEBHOOK_ENABLED", "false") == "true"
 
 	if !webhookEnabled {
 		return
 	}
 
-	webhookURL := utils.GetEnv("WEBHOOK_URL", "")
+	webhookURL := config.GetEnv("WEBHOOK_URL", "")
 
 	if webhookURL == "" {
 		return

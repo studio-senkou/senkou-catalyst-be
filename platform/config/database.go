@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 	"senkou-catalyst-be/database"
-	"senkou-catalyst-be/utils"
+	"senkou-catalyst-be/utils/config"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -14,11 +14,11 @@ var DB *gorm.DB
 var dsn *string
 
 func init() {
-	host := utils.GetEnv("DB_HOST", "localhost")
-	port := utils.GetEnv("DB_PORT", "5432")
-	username := utils.GetEnv("DB_USERNAME", "postgres")
-	password := utils.GetEnv("DB_PASSWORD", "")
-	database := utils.GetEnv("DB_NAME", "senkou_catalyst")
+	host := config.GetEnv("DB_HOST", "localhost")
+	port := config.GetEnv("DB_PORT", "5432")
+	username := config.GetEnv("DB_USERNAME", "postgres")
+	password := config.GetEnv("DB_PASSWORD", "")
+	database := config.GetEnv("DB_NAME", "senkou_catalyst")
 
 	dsnStr := fmt.Sprintf(
 		"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",

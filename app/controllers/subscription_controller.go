@@ -2,10 +2,10 @@ package controllers
 
 import (
 	"fmt"
-	"senkou-catalyst-be/dtos"
-	"senkou-catalyst-be/services"
-	"senkou-catalyst-be/utils"
-	"senkou-catalyst-be/utils/throw"
+	"senkou-catalyst-be/app/dtos"
+	"senkou-catalyst-be/app/services"
+	"senkou-catalyst-be/utils/response"
+	"senkou-catalyst-be/utils/validator"
 	"strconv"
 
 	"github.com/gofiber/fiber/v2"
@@ -36,14 +36,14 @@ func NewSubscriptionController(subService services.SubscriptionService) *Subscri
 func (h *SubscriptionController) CreateSubscription(c *fiber.Ctx) error {
 	createSubscriptionDTO := new(dtos.CreateSubscriptionDTO)
 
-	if err := utils.Validate(c, createSubscriptionDTO); err != nil {
-		if vErr, ok := err.(*utils.ValidationError); ok {
-			return throw.BadRequest(c, "Validation failed", map[string]any{
+	if err := validator.Validate(c, createSubscriptionDTO); err != nil {
+		if vErr, ok := err.(*validator.ValidationError); ok {
+			return response.BadRequest(c, "Validation failed", map[string]any{
 				"errors": vErr.Errors,
 			})
 		}
 
-		return throw.InternalError(c, "Internal server error", map[string]any{
+		return response.InternalError(c, "Internal server error", map[string]any{
 			"error": err.Error(),
 		})
 	}
@@ -51,7 +51,7 @@ func (h *SubscriptionController) CreateSubscription(c *fiber.Ctx) error {
 	subscription, err := h.SubscriptionService.CreateNewSubscription(createSubscriptionDTO)
 
 	if err != nil && err.Code == 500 {
-		return throw.InternalError(c, "Failed to create subscription", map[string]any{
+		return response.InternalError(c, "Failed to create subscription", map[string]any{
 			"error": err.Details,
 		})
 	}
@@ -82,31 +82,31 @@ func (h *SubscriptionController) CreateSubscriptionPlan(c *fiber.Ctx) error {
 	planID, err := strconv.ParseUint(planIDStr, 10, 32)
 
 	if err != nil {
-		return throw.BadRequest(c, "Cannot continue to create subscription plan", "Failed to parse subscription plan ID")
+		return response.BadRequest(c, "Cannot continue to create subscription plan", "Failed to parse subscription plan ID")
 	}
 
 	planRequest := new(dtos.CreateSubscriptionPlanDTO)
 
-	if err := utils.Validate(c, planRequest); err != nil {
-		if vErr, ok := err.(*utils.ValidationError); ok {
-			return throw.BadRequest(c, "Validation failed", map[string]any{
+	if err := validator.Validate(c, planRequest); err != nil {
+		if vErr, ok := err.(*validator.ValidationError); ok {
+			return response.BadRequest(c, "Validation failed", map[string]any{
 				"errors": vErr.Errors,
 			})
 		}
 
-		return throw.InternalError(c, "Internal server error", map[string]any{
+		return response.InternalError(c, "Internal server error", map[string]any{
 			"error": err.Error(),
 		})
 	}
 
 	if err := h.SubscriptionService.CreateSubscriptionPlan(planRequest, uint32(planID)); err != nil {
 		if err.Code == 400 {
-			return throw.BadRequest(c, "Subscription plan already exists", map[string]any{
+			return response.BadRequest(c, "Subscription plan already exists", map[string]any{
 				"errors": err.Details,
 			})
 		}
 
-		return throw.InternalError(c, "Failed to create subscription plan", map[string]any{
+		return response.InternalError(c, "Failed to create subscription plan", map[string]any{
 			"error": err.Details,
 		})
 	}
@@ -133,25 +133,25 @@ func (h *SubscriptionController) SubscribeSubscription(c *fiber.Ctx) error {
 	userID, err := strconv.ParseUint(userIDStr, 10, 32)
 
 	if userID == 0 || err != nil {
-		return throw.BadRequest(c, "Cannot continue to subscribe user subscription", "Failed to parse user ID")
+		return response.BadRequest(c, "Cannot continue to subscribe user subscription", "Failed to parse user ID")
 	}
 
 	subIDStr := fmt.Sprintf("%v", c.Params("subID"))
 	subID, err := strconv.ParseUint(subIDStr, 10, 32)
 
 	if err != nil {
-		return throw.BadRequest(c, "Cannot continue to subscribe user subscription", "Failed to parse subscription ID")
+		return response.BadRequest(c, "Cannot continue to subscribe user subscription", "Failed to parse subscription ID")
 	}
 
 	if err := h.SubscriptionService.SubscribeUserToSubscription(uint32(userID), uint32(subID)); err != nil {
 		switch err.Code {
 		case 400:
-			return throw.BadRequest(c, "User already has an active subscription", "Could not subscribe user to subscription")
+			return response.BadRequest(c, "User already has an active subscription", "Could not subscribe user to subscription")
 		case 404:
-			return throw.NotFound(c, "Subscription not found")
+			return response.NotFound(c, "Subscription not found")
 		}
 
-		return throw.InternalError(c, "Failed to subscribe user to subscription", "User could not be subscribed to subscription")
+		return response.InternalError(c, "Failed to subscribe user to subscription", "User could not be subscribed to subscription")
 	}
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
@@ -172,7 +172,7 @@ func (h *SubscriptionController) GetSubscriptions(c *fiber.Ctx) error {
 	subscriptions, err := h.SubscriptionService.GetAllSubscriptions()
 
 	if err != nil {
-		return throw.InternalError(c, "Failed to get subscriptions", "Unable to retrieve subscriptions")
+		return response.InternalError(c, "Failed to get subscriptions", "Unable to retrieve subscriptions")
 	}
 
 	return c.JSON(fiber.Map{
@@ -201,27 +201,27 @@ func (h *SubscriptionController) UpdateSubscription(c *fiber.Ctx) error {
 	subID, err := strconv.ParseUint(subIDStr, 10, 32)
 
 	if err != nil {
-		return throw.BadRequest(c, "Invalid subscription ID", map[string]any{
+		return response.BadRequest(c, "Invalid subscription ID", map[string]any{
 			"error": "Invalid subscription ID",
 		})
 	}
 
 	updateSubscriptionDTO := new(dtos.UpdateSubscriptionDTO)
 
-	if err := utils.Validate(c, updateSubscriptionDTO); err != nil {
-		if vErr, ok := err.(*utils.ValidationError); ok {
-			return throw.BadRequest(c, "Validation failed", map[string]any{
+	if err := validator.Validate(c, updateSubscriptionDTO); err != nil {
+		if vErr, ok := err.(*validator.ValidationError); ok {
+			return response.BadRequest(c, "Validation failed", map[string]any{
 				"errors": vErr.Errors,
 			})
 		}
 
-		return throw.InternalError(c, "Internal server error", map[string]any{
+		return response.InternalError(c, "Internal server error", map[string]any{
 			"error": err.Error(),
 		})
 	}
 
 	if err := h.SubscriptionService.UpdateSubscription(updateSubscriptionDTO, uint32(subID)); err != nil {
-		return throw.InternalError(c, "Failed to update subscription", "Could not update subscription")
+		return response.InternalError(c, "Failed to update subscription", "Could not update subscription")
 	}
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
@@ -246,13 +246,13 @@ func (h *SubscriptionController) DeleteSubscription(c *fiber.Ctx) error {
 	subID, err := strconv.ParseUint(subIDStr, 10, 32)
 
 	if err != nil {
-		return throw.BadRequest(c, "Invalid subscription ID", map[string]any{
+		return response.BadRequest(c, "Invalid subscription ID", map[string]any{
 			"error": "Invalid subscription ID",
 		})
 	}
 
 	if err := h.SubscriptionService.DeleteSubscription(uint32(subID)); err != nil {
-		return throw.InternalError(c, "Failed to delete subscription", map[string]any{
+		return response.InternalError(c, "Failed to delete subscription", map[string]any{
 			// "error": err.Error(),
 		})
 	}

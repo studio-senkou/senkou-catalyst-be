@@ -1,7 +1,7 @@
-package throw
+package response
 
 import (
-	"senkou-catalyst-be/errors"
+	"senkou-catalyst-be/platform/errors"
 
 	"github.com/gofiber/fiber/v2"
 )

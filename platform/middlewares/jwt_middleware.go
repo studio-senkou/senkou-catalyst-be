@@ -2,7 +2,8 @@ package middlewares
 
 import (
 	"fmt"
-	"senkou-catalyst-be/utils"
+	"senkou-catalyst-be/utils/auth"
+	"senkou-catalyst-be/utils/config"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -10,7 +11,7 @@ import (
 var jwtSecret []byte
 
 func init() {
-	jwtSecret = []byte(utils.GetEnv("AUTH_SECRET", ""))
+	jwtSecret = []byte(config.GetEnv("AUTH_SECRET", ""))
 
 	if len(jwtSecret) == 0 {
 		panic("JWT secret is not set. Please set the AUTH_SECRET environment variable.")
@@ -44,10 +45,19 @@ var JWTProtected fiber.Handler = func(c *fiber.Ctx) error {
 		})
 	}
 
+	jwtManager, managerError := auth.NewJWTManager(string(jwtSecret))
+
+	if managerError != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"message": "Internal server error",
+			"error":   fmt.Sprintf("Failed to initialize JWT manager: %s", managerError.Error()),
+		})
+	}
+
 	// Validate the token and claims or extract the payload inside the token
 	// If the token is valid, we extract the payload that contain the user ID and store
 	// it in the context for further processing
-	claims, err := utils.ValidateToken(authToken)
+	claims, err := jwtManager.ValidateToken(authToken)
 
 	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{

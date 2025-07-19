@@ -2,10 +2,10 @@ package controllers
 
 import (
 	"fmt"
-	"senkou-catalyst-be/dtos"
-	"senkou-catalyst-be/services"
-	"senkou-catalyst-be/utils"
-	"senkou-catalyst-be/utils/throw"
+	"senkou-catalyst-be/app/dtos"
+	"senkou-catalyst-be/app/services"
+	"senkou-catalyst-be/utils/response"
+	"senkou-catalyst-be/utils/validator"
 	"strconv"
 
 	"github.com/gofiber/fiber/v2"
@@ -38,26 +38,26 @@ func (h *MerchantController) CreateMerchant(c *fiber.Ctx) error {
 	userID, err := strconv.ParseUint(userIDStr, 10, 32)
 
 	if userID == 0 || err != nil {
-		return throw.BadRequest(c, "Cannot continue to create merchant", "Failed to parse user ID")
+		return response.BadRequest(c, "Cannot continue to create merchant", "Failed to parse user ID")
 	}
 
 	merchants, appError := h.MerchantService.GetUserMerchants(uint32(userID))
 	if appError != nil {
-		return throw.InternalError(c, "Cannot continue to create merchant", appError.Details)
+		return response.InternalError(c, "Cannot continue to create merchant", appError.Details)
 	}
 
 	if len(merchants) > 0 {
-		return throw.BadRequest(c, "Cannot continue to create merchant", "You can only have one merchant per user")
+		return response.BadRequest(c, "Cannot continue to create merchant", "You can only have one merchant per user")
 	}
 
 	createMerchantRequestDTO := new(dtos.CreateMerchantRequestDTO)
 
-	if err := utils.Validate(c, createMerchantRequestDTO); err != nil {
-		if vErr, ok := err.(*utils.ValidationError); ok {
-			return throw.ValidationError(c, "Validation failed", vErr.Errors)
+	if err := validator.Validate(c, createMerchantRequestDTO); err != nil {
+		if vErr, ok := err.(*validator.ValidationError); ok {
+			return response.ValidationError(c, "Validation failed", vErr.Errors)
 		}
 
-		return throw.InternalError(c, "Internal server error", map[string]any{
+		return response.InternalError(c, "Internal server error", map[string]any{
 			"request": createMerchantRequestDTO,
 			"error":   err.Error(),
 		})
@@ -66,17 +66,17 @@ func (h *MerchantController) CreateMerchant(c *fiber.Ctx) error {
 	userMerchants, _ := h.MerchantService.GetUserMerchants(uint32(userID))
 
 	if len(userMerchants) > 0 {
-		return throw.BadRequest(c, "Cannot continue to create merchant", "Only one merchant is allowed per user")
+		return response.BadRequest(c, "Cannot continue to create merchant", "Only one merchant is allowed per user")
 	}
 
 	merchant, appError := h.MerchantService.CreateMerchant(createMerchantRequestDTO, uint32(userID))
 
 	if appError != nil {
-		return throw.InternalError(c, "Failed to create merchant", appError.Details)
+		return response.InternalError(c, "Failed to create merchant", appError.Details)
 	}
 
 	if merchant == nil {
-		return throw.InternalError(c, "Failed to create merchant", "Merchant creation returned nil")
+		return response.InternalError(c, "Failed to create merchant", "Merchant creation returned nil")
 	}
 
 	return c.JSON(fiber.Map{
@@ -99,17 +99,17 @@ func (h *MerchantController) GetUserMerchants(c *fiber.Ctx) error {
 	userID, err := strconv.ParseUint(userIDStr, 10, 64)
 
 	if err != nil {
-		return throw.BadRequest(c, "Cannot continue to retrieve user merchants", "Failed to parse user ID")
+		return response.BadRequest(c, "Cannot continue to retrieve user merchants", "Failed to parse user ID")
 	}
 
 	merchants, appError := h.MerchantService.GetUserMerchants(uint32(userID))
 
 	if appError != nil {
-		return throw.InternalError(c, "Cannot continue to retrieve user merchants due to internal error", appError.Details)
+		return response.InternalError(c, "Cannot continue to retrieve user merchants due to internal error", appError.Details)
 	}
 
 	if len(merchants) == 0 {
-		return throw.NotFound(c, "No merchants found for the user")
+		return response.NotFound(c, "No merchants found for the user")
 	}
 
 	return c.JSON(fiber.Map{
@@ -135,17 +135,17 @@ func (h *MerchantController) GetMerchantByID(c *fiber.Ctx) error {
 	merchantID := c.Params("id")
 
 	if merchantID == "" {
-		return throw.BadRequest(c, "Cannot continue to retrieve merchant information", "Invalid merchant ID")
+		return response.BadRequest(c, "Cannot continue to retrieve merchant information", "Invalid merchant ID")
 	}
 
 	merchant, appError := h.MerchantService.GetMerchantByID(merchantID)
 
 	if appError != nil {
-		return throw.InternalError(c, "Cannot continue to retrieve merchant information due to internal error", appError.Details)
+		return response.InternalError(c, "Cannot continue to retrieve merchant information due to internal error", appError.Details)
 	}
 
 	if merchant == nil {
-		return throw.NotFound(c, "No merchant found with the provided identifiers")
+		return response.NotFound(c, "No merchant found with the provided identifiers")
 	}
 
 	return c.JSON(fiber.Map{
@@ -170,17 +170,17 @@ func (h *MerchantController) UpdateMerchant(c *fiber.Ctx) error {
 	merchantID := c.Params("id")
 
 	if merchantID == "" {
-		return throw.BadRequest(c, "Cannot continue to update merchant due to missing merchant ID", "Invalid merchant ID")
+		return response.BadRequest(c, "Cannot continue to update merchant due to missing merchant ID", "Invalid merchant ID")
 	}
 
 	updateMerchantRequestDTO := new(dtos.UpdateMerchantRequestDTO)
 
-	if err := utils.Validate(c, updateMerchantRequestDTO); err != nil {
-		if vErr, ok := err.(*utils.ValidationError); ok {
-			return throw.ValidationError(c, "Validation failed", vErr.Errors)
+	if err := validator.Validate(c, updateMerchantRequestDTO); err != nil {
+		if vErr, ok := err.(*validator.ValidationError); ok {
+			return response.ValidationError(c, "Validation failed", vErr.Errors)
 		}
 
-		return throw.InternalError(c, "Internal server error", map[string]any{
+		return response.InternalError(c, "Internal server error", map[string]any{
 			"error": err.Error(),
 		})
 	}
@@ -188,11 +188,11 @@ func (h *MerchantController) UpdateMerchant(c *fiber.Ctx) error {
 	merchant, appError := h.MerchantService.UpdateMerchantByID(merchantID, updateMerchantRequestDTO)
 
 	if appError != nil {
-		return throw.InternalError(c, "Cannot update merchant due to internal error", appError.Details)
+		return response.InternalError(c, "Cannot update merchant due to internal error", appError.Details)
 	}
 
 	if merchant == nil {
-		return throw.InternalError(c, "Cannot update merchant due to internal error", "Merchant update returned nil")
+		return response.InternalError(c, "Cannot update merchant due to internal error", "Merchant update returned nil")
 	}
 
 	return c.JSON(fiber.Map{
@@ -218,19 +218,19 @@ func (h *MerchantController) DeleteMerchant(c *fiber.Ctx) error {
 	merchantID := c.Params("id")
 
 	if merchantID == "" {
-		return throw.BadRequest(c, "Cannot continue to delete the merchant due to invalid merchant ID", "Invalid merchant ID")
+		return response.BadRequest(c, "Cannot continue to delete the merchant due to invalid merchant ID", "Invalid merchant ID")
 	}
 
 	merchant, _ := h.MerchantService.GetMerchantByID(merchantID)
 
 	if merchant == nil {
-		return throw.NotFound(c, "Cannot remove merchant, Your merchant was not found")
+		return response.NotFound(c, "Cannot remove merchant, Your merchant was not found")
 	}
 
 	appError := h.MerchantService.DeleteMerchantByID(merchantID)
 
 	if appError != nil {
-		return throw.InternalError(c, "Cannot delete merchant due to internal error", appError.Details)
+		return response.InternalError(c, "Cannot delete merchant due to internal error", appError.Details)
 	}
 
 	return c.JSON(fiber.Map{

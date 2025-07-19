@@ -4,10 +4,13 @@
 package container
 
 import (
-	"senkou-catalyst-be/config"
-	"senkou-catalyst-be/controllers"
+	"senkou-catalyst-be/app/controllers"
+	"senkou-catalyst-be/app/services"
+	"senkou-catalyst-be/platform/config"
 	"senkou-catalyst-be/repositories"
-	"senkou-catalyst-be/services"
+
+	authUtil "senkou-catalyst-be/utils/auth"
+	configUtil "senkou-catalyst-be/utils/config"
 
 	"github.com/google/wire"
 )
@@ -45,6 +48,15 @@ var ControllerSet = wire.NewSet(
 	controllers.NewPredefinedCategoryController,
 	controllers.NewAuthController,
 	controllers.NewSubscriptionController,
+)
+
+func ProvideJWTManager() (*authUtil.JWTManager, error) {
+	secret := configUtil.MustGetEnv("AUTH_SECRET")
+	return authUtil.NewJWTManager(secret)
+}
+
+var UtilSet = wire.NewSet(
+	ProvideJWTManager,
 )
 
 func InitializeUserController() (*controllers.UserController, error) {
@@ -103,6 +115,7 @@ func InitializeAuthController() (*controllers.AuthController, error) {
 		RepositorySet,
 		ServiceSet,
 		ControllerSet,
+		UtilSet,
 	)
 	return nil, nil
 }
@@ -141,6 +154,7 @@ func InitializeContainer() (*Container, error) {
 		RepositorySet,
 		ServiceSet,
 		ControllerSet,
+		UtilSet,
 		NewContainer,
 	)
 	return nil, nil

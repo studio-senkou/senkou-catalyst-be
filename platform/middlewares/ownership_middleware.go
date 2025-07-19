@@ -2,8 +2,8 @@ package middlewares
 
 import (
 	"fmt"
-	"senkou-catalyst-be/services"
-	"senkou-catalyst-be/utils/throw"
+	"senkou-catalyst-be/app/services"
+	"senkou-catalyst-be/utils/response"
 	"strconv"
 
 	"github.com/gofiber/fiber/v2"
@@ -39,11 +39,11 @@ func OwnershipMiddleware(productService services.ProductService, userService ser
 
 			switch err.Code {
 			case fiber.StatusUnauthorized:
-				return throw.Unauthorized(c, "You do not own this product")
+				return response.Unauthorized(c, "You do not own this product")
 			case fiber.StatusForbidden:
-				return throw.Forbidden(c, "You do not own this product")
+				return response.Forbidden(c, "You do not own this product")
 			case fiber.StatusNotFound:
-				return throw.NotFound(c, "Product not found")
+				return response.NotFound(c, "Product not found")
 			}
 
 			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{

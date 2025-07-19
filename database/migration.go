@@ -1,7 +1,7 @@
 package database
 
 import (
-	"senkou-catalyst-be/models"
+	"senkou-catalyst-be/app/models"
 
 	"gorm.io/gorm"
 )

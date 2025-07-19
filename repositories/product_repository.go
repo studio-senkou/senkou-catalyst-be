@@ -2,7 +2,7 @@ package repositories
 
 import (
 	"errors"
-	"senkou-catalyst-be/models"
+	"senkou-catalyst-be/app/models"
 
 	"gorm.io/gorm"
 )

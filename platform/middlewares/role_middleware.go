@@ -1,8 +1,8 @@
 package middlewares
 
 import (
-	"senkou-catalyst-be/config"
-	"senkou-catalyst-be/models"
+	"senkou-catalyst-be/app/models"
+	"senkou-catalyst-be/platform/config"
 	"slices"
 
 	"github.com/gofiber/fiber/v2"

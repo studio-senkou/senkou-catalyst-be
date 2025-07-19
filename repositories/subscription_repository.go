@@ -1,7 +1,7 @@
 package repositories
 
 import (
-	"senkou-catalyst-be/models"
+	"senkou-catalyst-be/app/models"
 	"time"
 
 	"gorm.io/gorm"

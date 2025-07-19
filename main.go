@@ -3,10 +3,11 @@ package main
 import (
 	"fmt"
 	"log"
-	"senkou-catalyst-be/config"
 	"senkou-catalyst-be/container"
+	"senkou-catalyst-be/platform/config"
 	"senkou-catalyst-be/routes"
-	"senkou-catalyst-be/utils"
+
+	environment "senkou-catalyst-be/utils/config"
 
 	_ "senkou-catalyst-be/docs"
 
@@ -37,7 +38,7 @@ func main() {
 
 	routes.InitRoutes(app, deps)
 
-	err = app.Listen(fmt.Sprintf(":%s", utils.GetEnv("APP_PORT", "8080")))
+	err = app.Listen(fmt.Sprintf(":%s", environment.GetEnv("APP_PORT", "8080")))
 
 	if err != nil {
 		panic(fmt.Sprintf("Failed to start server: %v", err))

@@ -2,10 +2,10 @@ package controllers
 
 import (
 	"fmt"
-	"senkou-catalyst-be/dtos"
-	"senkou-catalyst-be/services"
-	"senkou-catalyst-be/utils"
-	"senkou-catalyst-be/utils/throw"
+	"senkou-catalyst-be/app/dtos"
+	"senkou-catalyst-be/app/services"
+	"senkou-catalyst-be/utils/response"
+	"senkou-catalyst-be/utils/validator"
 	"strconv"
 
 	"github.com/gofiber/fiber/v2"
@@ -36,12 +36,12 @@ func NewAuthController(authService services.AuthService, userService services.Us
 func (h *AuthController) Login(c *fiber.Ctx) error {
 	loginRequestDTO := new(dtos.LoginRequestDTO)
 
-	if err := utils.Validate(c, loginRequestDTO); err != nil {
-		if vErr, ok := err.(*utils.ValidationError); ok {
-			return throw.ValidationError(c, "Validation failed", vErr.Errors)
+	if err := validator.Validate(c, loginRequestDTO); err != nil {
+		if vErr, ok := err.(*validator.ValidationError); ok {
+			return response.ValidationError(c, "Validation failed", vErr.Errors)
 		}
 
-		return throw.InternalError(c, "Internal server error", map[string]any{
+		return response.InternalError(c, "Internal server error", map[string]any{
 			"error": err.Error(),
 		})
 	}
@@ -49,7 +49,7 @@ func (h *AuthController) Login(c *fiber.Ctx) error {
 	userID, err := h.UserService.VerifyCredentials(loginRequestDTO.Email, loginRequestDTO.Password)
 
 	if err != nil {
-		return throw.Unauthorized(c, "Invalid email or password")
+		return response.Unauthorized(c, "Invalid email or password")
 	}
 
 	accessToken, refreshToken, appError := h.AuthService.GenerateToken(userID)
@@ -86,12 +86,12 @@ func (h *AuthController) Login(c *fiber.Ctx) error {
 func (h *AuthController) RefreshToken(c *fiber.Ctx) error {
 	refreshTokenRequestDTO := new(dtos.RefreshTokenRequestDTO)
 
-	if err := utils.Validate(c, refreshTokenRequestDTO); err != nil {
-		if vErr, ok := err.(*utils.ValidationError); ok {
-			return throw.ValidationError(c, "Validation failed", vErr.Errors)
+	if err := validator.Validate(c, refreshTokenRequestDTO); err != nil {
+		if vErr, ok := err.(*validator.ValidationError); ok {
+			return response.ValidationError(c, "Validation failed", vErr.Errors)
 		}
 
-		return throw.InternalError(c, "Internal server error", map[string]any{
+		return response.InternalError(c, "Internal server error", map[string]any{
 			"error": err.Error(),
 		})
 	}
@@ -108,10 +108,10 @@ func (h *AuthController) RefreshToken(c *fiber.Ctx) error {
 
 	if refreshError != nil {
 		if refreshError.Code == 401 {
-			return throw.Unauthorized(c, fmt.Sprintf("Cannot continue to update your token because of %v", refreshError.Details))
+			return response.Unauthorized(c, fmt.Sprintf("Cannot continue to update your token because of %v", refreshError.Details))
 		}
 
-		return throw.InternalError(c, "Failed to validate refresh token", map[string]any{
+		return response.InternalError(c, "Failed to validate refresh token", map[string]any{
 			"error": refreshError.Details,
 		})
 	}
@@ -150,11 +150,11 @@ func (h *AuthController) Logout(c *fiber.Ctx) error {
 	userID, err := strconv.ParseUint(userIDStr, 10, 32)
 
 	if userID == 0 || err != nil {
-		return throw.BadRequest(c, "Cannot continue to logout user", "User ID is not valid")
+		return response.BadRequest(c, "Cannot continue to logout user", "User ID is not valid")
 	}
 
 	if err := h.AuthService.InvalidateSession(uint32(userID)); err != nil {
-		return throw.InternalError(c, "Failed to logout user", map[string]any{
+		return response.InternalError(c, "Failed to logout user", map[string]any{
 			"error": err.Details,
 		})
 	}

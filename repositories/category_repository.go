@@ -1,7 +1,7 @@
 package repositories
 
 import (
-	"senkou-catalyst-be/models"
+	"senkou-catalyst-be/app/models"
 
 	"gorm.io/gorm"
 )
@@ -41,7 +41,7 @@ func (categoryRepo *CategoryRepositoryInstance) StoreCategory(category *models.C
 // It returns the category if found or an error if the operation fails.
 func (categoryRepo *CategoryRepositoryInstance) FindCategoryByName(name string, merchantID string) (*models.Category, error) {
 	var category models.Category
-	if err := categoryRepo.DB.Where("name = ? AND merchant_id = ?", name, merchantID).First(&category).Error; err != nil {
+	if err := categoryRepo.DB.Where("name LIKE %?% AND merchant_id = ?", name, merchantID).First(&category).Error; err != nil {
 		return nil, err
 	}
 	return &category, nil
