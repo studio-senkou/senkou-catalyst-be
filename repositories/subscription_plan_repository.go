@@ -6,35 +6,36 @@ import (
 	"gorm.io/gorm"
 )
 
-type SubscriptionPlanRepository struct {
+type SubscriptionPlanRepository interface {
+	StoreNewPlan(plan *models.SubscriptionPlan) error
+	IsPlanExists(subID uint32, planName string) (bool, error)
+}
+
+type SubscriptionPlanRepositoryInstance struct {
 	DB *gorm.DB
 }
 
-func NewSubscriptionPlanRepository(db *gorm.DB) *SubscriptionPlanRepository {
-	return &SubscriptionPlanRepository{
+func NewSubscriptionPlanRepository(db *gorm.DB) SubscriptionPlanRepository {
+	return &SubscriptionPlanRepositoryInstance{
 		DB: db,
 	}
 }
 
 // Store a new subscription plan
 // This function saves a new subscription plan to the database
-func (r *SubscriptionPlanRepository) StoreNewPlan(plan *models.SubscriptionPlan) error {
+func (r *SubscriptionPlanRepositoryInstance) StoreNewPlan(plan *models.SubscriptionPlan) error {
 	if err := r.DB.Create(plan).Error; err != nil {
 		return err
 	}
 	return nil
 }
 
-func (r *SubscriptionPlanRepository) IsPlanExists(subID uint32, planName string) (bool, error) {
+func (r *SubscriptionPlanRepositoryInstance) IsPlanExists(subID uint32, planName string) (bool, error) {
 	plan := new(models.SubscriptionPlan)
 
 	err := r.DB.Where("name = ? AND subscription_id = ?", planName, subID).First(&plan).Error
 
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return false, nil
-		}
-
 		return false, err
 	}
 

@@ -2,6 +2,7 @@ package services
 
 import (
 	"senkou-catalyst-be/dtos"
+	"senkou-catalyst-be/errors"
 	"senkou-catalyst-be/models"
 	"senkou-catalyst-be/repositories"
 
@@ -9,74 +10,89 @@ import (
 )
 
 type MerchantService interface {
-	CreateMerchant(merchant *dtos.CreateMerchantRequestDTO, userID uint) (*models.Merchant, error)
-	GetUserMerchants(userID uint) (*[]models.Merchant, error)
-	GetMerchantByID(merchantID string) (*models.Merchant, error)
-	UpdateMerchantByID(merchantID string, updateData *dtos.UpdateMerchantRequestDTO) (*models.Merchant, error)
-	DeleteMerchantByID(merchantID string) error
+	CreateMerchant(merchant *dtos.CreateMerchantRequestDTO, userID uint32) (*models.Merchant, *errors.AppError)
+	GetUserMerchants(userID uint32) ([]*models.Merchant, *errors.AppError)
+	GetMerchantByID(merchantID string) (*models.Merchant, *errors.AppError)
+	UpdateMerchantByID(merchantID string, updateData *dtos.UpdateMerchantRequestDTO) (*models.Merchant, *errors.AppError)
+	DeleteMerchantByID(merchantID string) *errors.AppError
 }
 
-type merchantService struct {
-	merchantRepository repositories.MerchantRepository
+type MerchantServiceInstance struct {
+	MerchantRepository repositories.MerchantRepository
 }
 
 func NewMerchantService(merchantRepository repositories.MerchantRepository) MerchantService {
-	return &merchantService{
-		merchantRepository: merchantRepository,
+	return &MerchantServiceInstance{
+		MerchantRepository: merchantRepository,
 	}
 }
 
-func (s *merchantService) CreateMerchant(merchant *dtos.CreateMerchantRequestDTO, userID uint) (*models.Merchant, error) {
-	createdMerchant, err := s.merchantRepository.Create(&models.Merchant{
+// Create a new merchant
+// This function creates a new merchant for the user
+// It returns the created merchant or an error if the creation fails
+func (s *MerchantServiceInstance) CreateMerchant(merchant *dtos.CreateMerchantRequestDTO, userID uint32) (*models.Merchant, *errors.AppError) {
+	createdMerchant, err := s.MerchantRepository.Create(&models.Merchant{
 		ID:      uuid.New().String(),
 		Name:    merchant.Name,
 		OwnerID: uint32(userID),
 	})
 
 	if err != nil {
-		return nil, err
+		return nil, errors.NewAppError(500, "Failed to create merchant")
 	}
 
 	return createdMerchant, nil
 }
 
-func (s *merchantService) GetUserMerchants(userID uint) (*[]models.Merchant, error) {
-	merchants, err := s.merchantRepository.FindMerchantsByUserID(userID)
+// Get user merchants
+// This function retrieves all merchants associated with a user
+// It returns a slice of merchants or an error if the retrieval fails
+func (s *MerchantServiceInstance) GetUserMerchants(userID uint32) ([]*models.Merchant, *errors.AppError) {
+	merchants, err := s.MerchantRepository.FindMerchantsByUserID(userID)
 
 	if err != nil {
-		return nil, nil
+		return nil, errors.NewAppError(500, "Failed to retrieve merchants")
 	}
 
 	return merchants, nil
 }
 
-func (s *merchantService) GetMerchantByID(merchantID string) (*models.Merchant, error) {
-	merchant, err := s.merchantRepository.FindByID(merchantID)
+// Get merchant by ID
+// This function retrieves a merchant by its ID
+// It returns the merchant or an error if the retrieval fails
+func (s *MerchantServiceInstance) GetMerchantByID(merchantID string) (*models.Merchant, *errors.AppError) {
+	merchant, err := s.MerchantRepository.FindByID(merchantID)
 
 	if err != nil {
-		return nil, err
+		return nil, errors.NewAppError(500, "Failed to retrieve merchant")
 	}
 
 	return merchant, nil
 }
 
-func (s *merchantService) UpdateMerchantByID(merchantID string, updateData *dtos.UpdateMerchantRequestDTO) (*models.Merchant, error) {
-	updatedMerchant, err := s.merchantRepository.UpdateMerchant(merchantID, &models.Merchant{
+// Update merchant by ID
+// This function updates an existing merchant with the provided data
+// It returns the updated merchant or an error if the update fails
+func (s *MerchantServiceInstance) UpdateMerchantByID(merchantID string, updateData *dtos.UpdateMerchantRequestDTO) (*models.Merchant, *errors.AppError) {
+	updatedMerchant, err := s.MerchantRepository.UpdateMerchant(merchantID, &models.Merchant{
 		Name: updateData.Name,
 	})
 
 	if err != nil {
-		return nil, err
+		return nil, errors.NewAppError(500, "Failed to update merchant")
 	}
 
 	return updatedMerchant, nil
 }
 
-func (s *merchantService) DeleteMerchantByID(merchantID string) error {
-	err := s.merchantRepository.DeleteMerchant(merchantID)
+// Delete merchant by ID
+// This function deletes a merchant by its ID
+// It returns an error if the deletion fails
+func (s *MerchantServiceInstance) DeleteMerchantByID(merchantID string) *errors.AppError {
+	err := s.MerchantRepository.DeleteMerchant(merchantID)
 
 	if err != nil {
-		return err
+		return errors.NewAppError(500, "Failed to delete merchant")
 	}
 
 	return nil

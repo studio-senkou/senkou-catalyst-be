@@ -1,7 +1,6 @@
 package errors
 
 import (
-	"fmt"
 	"net/http"
 )
 
@@ -52,11 +51,11 @@ type NotFoundError struct {
 	*BaseError
 }
 
-func NewNotFoundError(resource string) *NotFoundError {
+func NewNotFoundError(message string) *NotFoundError {
 	return &NotFoundError{
 		BaseError: &BaseError{
 			ErrorCode:    http.StatusNotFound,
-			ErrorMessage: fmt.Sprintf("%s not found", resource),
+			ErrorMessage: message,
 			ErrorType:    "NOT_FOUND_ERROR",
 		},
 	}

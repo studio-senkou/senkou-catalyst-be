@@ -109,9 +109,6 @@ func InitFiberConfig() *fiber.Config {
 	return &fiber.Config{
 		AppName: "Senkou Catalyst API",
 		ErrorHandler: func(c *fiber.Ctx, err error) error {
-			log.Printf("Error: %v", err)
-			log.Printf("Error type : %T", err)
-
 			response := ErrorResponse{
 				Success: false,
 				Error: ErrorDetail{
@@ -123,8 +120,6 @@ func InitFiberConfig() *fiber.Config {
 
 			// If the error is type of BaseError
 			if appErr, ok := err.(*errors.BaseError); ok {
-				fmt.Println("Masuk disini error e")
-
 				response.Error = ErrorDetail{
 					Code:    appErr.Code(),
 					Type:    appErr.Type(),
@@ -163,7 +158,6 @@ func InitFiberConfig() *fiber.Config {
 
 			// If the error is a bad request error
 			if badRequestErr, ok := err.(*errors.BadRequestError); ok {
-				fmt.Println("Masuk disini bad request error")
 				response.Error.Code = fiber.StatusBadRequest
 				response.Error.Message = badRequestErr.ErrorMessage
 				response.Error.Type = "BAD_REQUEST_ERROR"
@@ -192,8 +186,16 @@ func InitFiberConfig() *fiber.Config {
 			response.Error.Message = err.Error()
 
 			sendErrorLog(response)
+			if response.Error.Details != nil {
+				return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+					"message": "Internal server error",
+					"error":   fmt.Sprintf("%v: %v", response.Error.Message, response.Error.Details),
+				})
+			}
+
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 				"message": "Internal server error",
+				"error":   response.Error.Message,
 			})
 		},
 	}

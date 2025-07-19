@@ -12,10 +12,10 @@ import (
 )
 
 type SubscriptionController struct {
-	SubscriptionService *services.SubscriptionService
+	SubscriptionService services.SubscriptionService
 }
 
-func NewSubscriptionController(subService *services.SubscriptionService) *SubscriptionController {
+func NewSubscriptionController(subService services.SubscriptionService) *SubscriptionController {
 	return &SubscriptionController{
 		SubscriptionService: subService,
 	}

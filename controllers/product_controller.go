@@ -7,15 +7,16 @@ import (
 	"senkou-catalyst-be/utils/throw"
 
 	"github.com/gofiber/fiber/v2"
-	"gorm.io/gorm"
 )
 
 type ProductController struct {
-	productService services.ProductService
+	ProductService services.ProductService
 }
 
 func NewProductController(productService services.ProductService) *ProductController {
-	return &ProductController{productService: productService}
+	return &ProductController{
+		ProductService: productService,
+	}
 }
 
 // Create a new affilition product
@@ -36,9 +37,7 @@ func (h *ProductController) CreateProduct(c *fiber.Ctx) error {
 
 	if err := utils.Validate(c, createProductDTO); err != nil {
 		if vErr, ok := err.(*utils.ValidationError); ok {
-			return throw.BadRequest(c, "Validation failed", map[string]any{
-				"errors": vErr.Errors,
-			})
+			return throw.BadRequest(c, "Validation failed", vErr.Errors)
 		}
 
 		return throw.InternalError(c, "Internal server error", map[string]any{
@@ -46,12 +45,10 @@ func (h *ProductController) CreateProduct(c *fiber.Ctx) error {
 		})
 	}
 
-	createdProduct, err := h.productService.CreateProduct(createProductDTO, createProductDTO.MerchantID)
+	createdProduct, appError := h.ProductService.CreateProduct(createProductDTO, createProductDTO.MerchantID)
 
-	if err != nil {
-		return throw.InternalError(c, "Failed to create product", map[string]any{
-			"error": err.Error(),
-		})
+	if appError != nil {
+		return throw.InternalError(c, "Failed to create product", appError.Details)
 	}
 
 	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
@@ -73,16 +70,10 @@ func (h *ProductController) CreateProduct(c *fiber.Ctx) error {
 // @Failure 500 {object} fiber.Map{error=string,details=any}
 // @Router /products [get]
 func (h *ProductController) GetAllProducts(c *fiber.Ctx) error {
-	products, err := h.productService.GetAllProducts()
+	products, appError := h.ProductService.GetAllProducts()
 
-	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return throw.NotFound(c, "No products found")
-		}
-
-		return throw.InternalError(c, "Failed to retrieve products", map[string]any{
-			"error": err.Error(),
-		})
+	if appError != nil {
+		return throw.InternalError(c, "Cannot retrieve products", appError.Details)
 	}
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
@@ -109,19 +100,18 @@ func (h *ProductController) GetProductByMerchant(c *fiber.Ctx) error {
 	merchantID := c.Params("merchantID")
 
 	if merchantID == "" {
-		return throw.BadRequest(c, "Merchant ID is required", nil)
+		return throw.BadRequest(c, "Cannot continue to retrieve products", "Merchant ID is required")
 	}
 
-	products, err := h.productService.GetProductsByMerchantID(merchantID)
+	products, appError := h.ProductService.GetProductsByMerchantID(merchantID)
 
-	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return throw.NotFound(c, "No products found for this merchant")
+	if appError != nil {
+		switch appError.Code {
+		case fiber.StatusNotFound:
+			return throw.NotFound(c, "No products found for the specified merchant")
+		case fiber.StatusInternalServerError:
+			return throw.InternalError(c, "Failed to retrieve products", appError.Details)
 		}
-
-		return throw.InternalError(c, "Failed to retrieve products", map[string]any{
-			"error": err.Error(),
-		})
 	}
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
@@ -148,19 +138,18 @@ func (h *ProductController) GetProductByID(c *fiber.Ctx) error {
 	productID := c.Params("productID")
 
 	if productID == "" {
-		return throw.BadRequest(c, "Product ID is required", nil)
+		return throw.BadRequest(c, "Cannot continue to retrieve product information", "Product ID is required")
 	}
 
-	product, err := h.productService.GetProductByID(productID)
+	product, appError := h.ProductService.GetProductByID(productID)
 
-	if err != nil {
-		if err == gorm.ErrRecordNotFound {
+	if appError != nil {
+		switch appError.Code {
+		case fiber.StatusNotFound:
 			return throw.NotFound(c, "Product not found")
+		case fiber.StatusInternalServerError:
+			return throw.InternalError(c, "Failed to retrieve product", appError.Details)
 		}
-
-		return throw.InternalError(c, "Failed to retrieve product", map[string]any{
-			"error": err.Error(),
-		})
 	}
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
@@ -189,7 +178,7 @@ func (h *ProductController) UpdateProduct(c *fiber.Ctx) error {
 	productID := c.Params("productID")
 
 	if productID == "" {
-		return throw.BadRequest(c, "Product ID is required", nil)
+		return throw.BadRequest(c, "Cannot continue to update product", "Product ID is required")
 	}
 
 	updatedProductDTO := new(dtos.UpdateProductDTO)
@@ -206,16 +195,15 @@ func (h *ProductController) UpdateProduct(c *fiber.Ctx) error {
 		})
 	}
 
-	updatedProduct, err := h.productService.UpdateProduct(updatedProductDTO, productID)
+	updatedProduct, appError := h.ProductService.UpdateProduct(updatedProductDTO, productID)
 
-	if err != nil {
-		if err == gorm.ErrRecordNotFound {
+	if appError != nil {
+		switch appError.Code {
+		case fiber.StatusNotFound:
 			return throw.NotFound(c, "Product not found")
+		case fiber.StatusInternalServerError:
+			return throw.InternalError(c, "Failed to update product", appError.Details)
 		}
-
-		return throw.InternalError(c, "Failed to update product", map[string]any{
-			"error": err.Error(),
-		})
 	}
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
@@ -246,14 +234,13 @@ func (h *ProductController) DeleteProduct(c *fiber.Ctx) error {
 		return throw.BadRequest(c, "Product ID is required", nil)
 	}
 
-	if err := h.productService.DeleteProduct(productID); err != nil {
-		if err == gorm.ErrRecordNotFound {
+	if err := h.ProductService.DeleteProduct(productID); err != nil {
+		switch err.Code {
+		case fiber.StatusNotFound:
 			return throw.NotFound(c, "Product not found")
+		case fiber.StatusInternalServerError:
+			return throw.InternalError(c, "Failed to delete product", err.Details)
 		}
-
-		return throw.InternalError(c, "Failed to delete product", map[string]any{
-			"error": err.Error(),
-		})
 	}
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{

@@ -33,24 +33,20 @@ func (h *UserController) CreateUser(c *fiber.Ctx) error {
 
 	if err := utils.Validate(c, registerUserDTO); err != nil {
 		if vErr, ok := err.(*utils.ValidationError); ok {
-			return throw.ValidationError(c, "Bad request", map[string]any{
-				"errors": vErr.Errors,
-			})
+			return throw.ValidationError(c, "Bad request", vErr.Errors)
 		}
 
 		return throw.InternalError(c, "Internal server error", fmt.Sprintf("Could not process your request due to an error: %v", err.Error()))
 	}
 
-	newUser, err := h.service.Create(models.User{
+	newUser, appError := h.service.Create(models.User{
 		Name:     registerUserDTO.Name,
 		Email:    registerUserDTO.Email,
 		Password: []byte(registerUserDTO.Password),
 	})
 
-	if err != nil {
-		return throw.InternalError(c, "Failed to create user", map[string]any{
-			"error": err.Error(),
-		})
+	if appError != nil {
+		return throw.InternalError(c, "Failed to create user", appError.Details)
 	}
 
 	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
@@ -67,10 +63,10 @@ func (h *UserController) CreateUser(c *fiber.Ctx) error {
 // @Success 200 {array} models.User
 // @Router /users [get]
 func (h *UserController) GetUsers(c *fiber.Ctx) error {
-	users, err := h.service.GetAll()
+	users, appError := h.service.GetAll()
 
-	if err != nil {
-		return throw.InternalError(c, "Failed to retrieve users", fmt.Sprintf("Could not process your request due to an error: %v", err.Error()))
+	if appError != nil {
+		return throw.InternalError(c, "Failed to retrieve users", appError.Details)
 	}
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
@@ -100,10 +96,10 @@ func (h *UserController) GetUserDetail(c *fiber.Ctx) error {
 		return throw.Unauthorized(c, "You must be logged in to access this resource")
 	}
 
-	user, err := h.service.GetUserDetail(uint32(userID))
+	user, appError := h.service.GetUserDetail(uint32(userID))
 
-	if err != nil {
-		return throw.InternalError(c, "Failed to retrieve user details", fmt.Sprintf("Could not process your request due to an error: %v", err.Error()))
+	if appError != nil {
+		return throw.InternalError(c, "Failed to retrieve user details", fmt.Sprintf("Could not process your request due to an error: %v", appError.Details))
 	}
 
 	return c.Status(fiber.StatusNotImplemented).JSON(fiber.Map{

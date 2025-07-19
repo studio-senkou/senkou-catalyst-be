@@ -1,43 +1,45 @@
 package services
 
 import (
+	"fmt"
 	"senkou-catalyst-be/dtos"
+	"senkou-catalyst-be/errors"
 	"senkou-catalyst-be/models"
 	"senkou-catalyst-be/repositories"
 )
 
 type CategoryService interface {
-	CreateNewCategory(category *dtos.CreateCategoryDTO, merchantID string) (*models.Category, error)
-	GetCategoryByName(name string, merchantID string) (*models.Category, error)
-	GetCategoryByID(id string) (*models.Category, error)
-	GetAllCategoriesByMerchantID(merchantID string) ([]models.Category, error)
-	UpdateCategory(category *models.Category) (*models.Category, error)
-	DeleteCategory(id uint32) error
+	CreateNewCategory(category *dtos.CreateCategoryDTO, merchantID string) (*models.Category, *errors.AppError)
+	GetCategoryByName(name string, merchantID string) (*models.Category, *errors.AppError)
+	GetCategoryByID(id string) (*models.Category, *errors.AppError)
+	GetAllCategoriesByMerchantID(merchantID string) ([]*models.Category, *errors.AppError)
+	UpdateCategory(category *models.Category) (*models.Category, *errors.AppError)
+	DeleteCategory(id uint32) *errors.AppError
 }
 
-type categoryService struct {
-	categoryRepository repositories.CategoryRepository
+type CategoryServiceInstance struct {
+	CategoryRepository repositories.CategoryRepository
 }
 
-func NewCategoryService(categoryRepo repositories.CategoryRepository) CategoryService {
-	return &categoryService{
-		categoryRepository: categoryRepo,
+func NewCategoryService(categoryRepository repositories.CategoryRepository) CategoryService {
+	return &CategoryServiceInstance{
+		CategoryRepository: categoryRepository,
 	}
 }
 
 // Create a new category
 // This function begins by creating a new category model from the provided data.
 // It then attempts to store this category in the database using the category repository.
-func (s *categoryService) CreateNewCategory(category *dtos.CreateCategoryDTO, merchantID string) (*models.Category, error) {
+func (s *CategoryServiceInstance) CreateNewCategory(category *dtos.CreateCategoryDTO, merchantID string) (*models.Category, *errors.AppError) {
 	categoryModel := &models.Category{
 		Name:       category.Name,
 		MerchantID: merchantID,
 	}
 
-	newCategory, err := s.categoryRepository.StoreCategory(categoryModel)
+	newCategory, err := s.CategoryRepository.StoreCategory(categoryModel)
 
 	if err != nil {
-		return nil, err
+		return nil, errors.NewAppError(500, fmt.Sprintf("Failed to create category: %v", err.Error()))
 	}
 
 	return newCategory, nil
@@ -46,10 +48,10 @@ func (s *categoryService) CreateNewCategory(category *dtos.CreateCategoryDTO, me
 // Getting a category by its name
 // This will search for a category by its name and the merchant ID.
 // It returns the category if found or an error if the operation fails.
-func (s *categoryService) GetCategoryByName(name string, merchantID string) (*models.Category, error) {
-	category, err := s.categoryRepository.FindCategoryByName(name, merchantID)
+func (s *CategoryServiceInstance) GetCategoryByName(name string, merchantID string) (*models.Category, *errors.AppError) {
+	category, err := s.CategoryRepository.FindCategoryByName(name, merchantID)
 	if err != nil {
-		return nil, err
+		return nil, errors.NewAppError(500, fmt.Sprintf("Failed to get category by name: %v", err.Error()))
 	}
 	return category, nil
 }
@@ -57,10 +59,10 @@ func (s *categoryService) GetCategoryByName(name string, merchantID string) (*mo
 // Getting a category by its ID
 // This function retrieves a category by its ID.
 // It returns the category if found or an error if the operation fails.
-func (s *categoryService) GetCategoryByID(id string) (*models.Category, error) {
-	category, err := s.categoryRepository.FindCategoryByID(id)
+func (s *CategoryServiceInstance) GetCategoryByID(id string) (*models.Category, *errors.AppError) {
+	category, err := s.CategoryRepository.FindCategoryByID(id)
 	if err != nil {
-		return nil, err
+		return nil, errors.NewAppError(500, fmt.Sprintf("Failed to get category by ID: %v", err.Error()))
 	}
 	return category, nil
 }
@@ -68,10 +70,10 @@ func (s *categoryService) GetCategoryByID(id string) (*models.Category, error) {
 // Getting all categories by its merchant
 // This function will retrieve all categories associated with a specific merchant ID.
 // It returns a slice of categories or an error if the operation fails.
-func (s *categoryService) GetAllCategoriesByMerchantID(merchantID string) ([]models.Category, error) {
-	categories, err := s.categoryRepository.FindAllCategoriesByMerchantID(merchantID)
+func (s *CategoryServiceInstance) GetAllCategoriesByMerchantID(merchantID string) ([]*models.Category, *errors.AppError) {
+	categories, err := s.CategoryRepository.FindAllCategoriesByMerchantID(merchantID)
 	if err != nil {
-		return nil, err
+		return nil, errors.NewAppError(500, fmt.Sprintf("Failed to get categories by merchant ID: %v", err.Error()))
 	}
 	return categories, nil
 }
@@ -80,10 +82,10 @@ func (s *categoryService) GetAllCategoriesByMerchantID(merchantID string) ([]mod
 // This function updates a category with the provided details.
 // It requires an updated category model to be passed in.
 // It returns the updated category or an error if the operation fails.
-func (s *categoryService) UpdateCategory(category *models.Category) (*models.Category, error) {
-	updatedCategory, err := s.categoryRepository.UpdateCategory(category)
+func (s *CategoryServiceInstance) UpdateCategory(category *models.Category) (*models.Category, *errors.AppError) {
+	updatedCategory, err := s.CategoryRepository.UpdateCategory(category)
 	if err != nil {
-		return nil, err
+		return nil, errors.NewAppError(500, fmt.Sprintf("Failed to update category: %v", err.Error()))
 	}
 	return updatedCategory, nil
 }
@@ -92,10 +94,10 @@ func (s *categoryService) UpdateCategory(category *models.Category) (*models.Cat
 // This function deletes a category by its ID.
 // It requires the ID of the category to be passed in.
 // It returns an error if the operation fails.
-func (s *categoryService) DeleteCategory(id uint32) error {
-	err := s.categoryRepository.DeleteCategory(id)
+func (s *CategoryServiceInstance) DeleteCategory(id uint32) *errors.AppError {
+	err := s.CategoryRepository.DeleteCategory(id)
 	if err != nil {
-		return err
+		return errors.NewAppError(500, fmt.Sprintf("Failed to delete category: %v", err.Error()))
 	}
 	return nil
 }

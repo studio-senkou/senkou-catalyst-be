@@ -3,6 +3,7 @@ package middlewares
 import (
 	"fmt"
 	"senkou-catalyst-be/services"
+	"senkou-catalyst-be/utils/throw"
 	"strconv"
 
 	"github.com/gofiber/fiber/v2"
@@ -29,12 +30,20 @@ func OwnershipMiddleware(productService services.ProductService, userService ser
 		}
 
 		if err := productService.VerifyProductOwnership(productID, uint32(userID)); err != nil {
-
 			// Validate if the user is an Administrator
 			if isAdmin, err := userService.VerifyIsAnAdministrator(uint32(userID)); err != nil || !isAdmin {
 				return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
 					"error": "You do not have permission to access this resource",
 				})
+			}
+
+			switch err.Code {
+			case fiber.StatusUnauthorized:
+				return throw.Unauthorized(c, "You do not own this product")
+			case fiber.StatusForbidden:
+				return throw.Forbidden(c, "You do not own this product")
+			case fiber.StatusNotFound:
+				return throw.NotFound(c, "Product not found")
 			}
 
 			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{

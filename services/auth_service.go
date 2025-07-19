@@ -18,7 +18,7 @@ type AuthServiceInstance struct {
 	AuthRepository repositories.AuthRepository
 }
 
-func NewAuthService(authRepository repositories.AuthRepository) *AuthServiceInstance {
+func NewAuthService(authRepository repositories.AuthRepository) AuthService {
 	return &AuthServiceInstance{AuthRepository: authRepository}
 }
 

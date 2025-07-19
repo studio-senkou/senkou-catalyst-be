@@ -1,58 +1,68 @@
 package services
 
 import (
-	"errors"
+	"senkou-catalyst-be/errors"
 	"senkou-catalyst-be/models"
 	"senkou-catalyst-be/repositories"
 )
 
 type UserService interface {
-	Create(user models.User) (*models.User, error)
-	GetAll() (*[]models.User, error)
-	GetUserDetail(userID uint32) (*models.User, error)
-	VerifyCredentials(email, password string) (uint32, error)
-	VerifyIsAnAdministrator(userID uint32) (bool, error)
+	Create(user models.User) (*models.User, *errors.AppError)
+	GetAll() (*[]models.User, *errors.AppError)
+	GetUserDetail(userID uint32) (*models.User, *errors.AppError)
+	VerifyCredentials(email, password string) (uint32, *errors.AppError)
+	VerifyIsAnAdministrator(userID uint32) (bool, *errors.AppError)
 }
 
-type userService struct {
+type UserServiceInstance struct {
 	UserRepository repositories.UserRepository
 }
 
 func NewUserService(userRepository repositories.UserRepository) UserService {
-	return &userService{
+	return &UserServiceInstance{
 		UserRepository: userRepository,
 	}
 }
 
 // Create a new user in the database
 // Returns the created user or an error if any
-func (s *userService) Create(user models.User) (*models.User, error) {
+func (s *UserServiceInstance) Create(user models.User) (*models.User, *errors.AppError) {
 	hashedPassword, err := user.HashPassword()
 
 	if err != nil {
-		return nil, err
+		return nil, errors.NewAppError(500, "Failed to hash password")
 	}
 
 	user.Password = hashedPassword
 
-	return s.UserRepository.Create(&user)
+	createdUser, err := s.UserRepository.Create(&user)
+	if err != nil {
+		return nil, errors.NewAppError(500, "Failed to create user")
+	}
+
+	return createdUser, nil
 }
 
 // Get all users from the database
 // Returns a slice of User models or an error if the operation fails
-func (s *userService) GetAll() (*[]models.User, error) {
-	return s.UserRepository.FindAll()
+func (s *UserServiceInstance) GetAll() (*[]models.User, *errors.AppError) {
+	users, err := s.UserRepository.FindAll()
+	if err != nil {
+		return nil, errors.NewAppError(500, "Failed to retrieve users")
+	}
+
+	return users, nil
 }
 
-func (s *userService) VerifyCredentials(email, password string) (uint32, error) {
+func (s *UserServiceInstance) VerifyCredentials(email, password string) (uint32, *errors.AppError) {
 	user, err := s.UserRepository.FindByEmail(email)
 
 	if err != nil {
-		return 0, err
+		return 0, errors.NewAppError(500, "Failed to find user by email")
 	}
 
 	if !user.CheckPassword(password) {
-		return 0, errors.New("invalid email or password")
+		return 0, errors.NewAppError(400, "invalid email or password")
 	}
 
 	return user.ID, nil
@@ -60,11 +70,11 @@ func (s *userService) VerifyCredentials(email, password string) (uint32, error) 
 
 // Get user detail by its ID
 // Returns the user model or an error if any
-func (s *userService) GetUserDetail(userID uint32) (*models.User, error) {
+func (s *UserServiceInstance) GetUserDetail(userID uint32) (*models.User, *errors.AppError) {
 	user, err := s.UserRepository.FindByID(userID)
 
 	if err != nil {
-		return nil, err
+		return nil, errors.NewAppError(500, "Failed to find user by ID")
 	}
 
 	return user, nil
@@ -72,11 +82,11 @@ func (s *userService) GetUserDetail(userID uint32) (*models.User, error) {
 
 // Verify if the user is an administrator
 // Returns true if the user is an administrator, false otherwise, or an error if any
-func (s *userService) VerifyIsAnAdministrator(userID uint32) (bool, error) {
+func (s *UserServiceInstance) VerifyIsAnAdministrator(userID uint32) (bool, *errors.AppError) {
 	user, err := s.UserRepository.FindByID(userID)
 
 	if err != nil {
-		return false, err
+		return false, errors.NewAppError(500, "Failed to find user by ID")
 	}
 
 	return user.Role == "admin", nil

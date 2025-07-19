@@ -1,43 +1,42 @@
 package services
 
 import (
-	"errors"
 	"fmt"
 	"senkou-catalyst-be/dtos"
+	"senkou-catalyst-be/errors"
 	"senkou-catalyst-be/models"
 	"senkou-catalyst-be/repositories"
 
-	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
 type ProductService interface {
-	CreateProduct(product *dtos.CreateProductDTO, merchantID string) (*models.Product, error)
-	GetProductByID(productID string) (*models.Product, error)
-	GetProductsByMerchantID(merchantID string) ([]*models.Product, error)
-	GetAllProducts() ([]*models.Product, error)
-	UpdateProduct(updatedProduct *dtos.UpdateProductDTO, productID string) (*models.Product, error)
-	DeleteProduct(productID string) error
-	VerifyProductOwnership(productID string, userID uint32) error
+	CreateProduct(product *dtos.CreateProductDTO, merchantID string) (*models.Product, *errors.AppError)
+	GetProductByID(productID string) (*models.Product, *errors.AppError)
+	GetProductsByMerchantID(merchantID string) ([]*models.Product, *errors.AppError)
+	GetAllProducts() ([]*models.Product, *errors.AppError)
+	UpdateProduct(updatedProduct *dtos.UpdateProductDTO, productID string) (*models.Product, *errors.AppError)
+	DeleteProduct(productID string) *errors.AppError
+	VerifyProductOwnership(productID string, userID uint32) *errors.AppError
 }
 
-type productService struct {
-	userReposiroty    repositories.UserRepository
-	productRepository repositories.ProductRepository
+type ProductServiceInstance struct {
+	UserRepository    repositories.UserRepository
+	ProductRepository repositories.ProductRepository
 }
 
 func NewProductService(productRepository repositories.ProductRepository, userRepository repositories.UserRepository) ProductService {
-	return &productService{
-		productRepository: productRepository,
-		userReposiroty:    userRepository,
+	return &ProductServiceInstance{
+		ProductRepository: productRepository,
+		UserRepository:    userRepository,
 	}
 }
 
 // Create a new product
 // This function will be used to create a new product via repository
 // It returns the created product and an error if any
-func (s *productService) CreateProduct(product *dtos.CreateProductDTO, merchantID string) (*models.Product, error) {
+func (s *ProductServiceInstance) CreateProduct(product *dtos.CreateProductDTO, merchantID string) (*models.Product, *errors.AppError) {
 	newProduct := &models.Product{
 		ID:           uuid.New().String(),
 		Title:        product.Title,
@@ -48,10 +47,10 @@ func (s *productService) CreateProduct(product *dtos.CreateProductDTO, merchantI
 		MerchantID:   merchantID,
 	}
 
-	storedProduct, err := s.productRepository.StoreProduct(newProduct)
+	storedProduct, err := s.ProductRepository.StoreProduct(newProduct)
 
 	if err != nil {
-		return nil, err
+		return nil, errors.NewAppError(500, fmt.Sprintf("Failed to create product: %v", err.Error()))
 	}
 
 	return storedProduct, nil
@@ -60,11 +59,15 @@ func (s *productService) CreateProduct(product *dtos.CreateProductDTO, merchantI
 // Get a product by its ID
 // This function retrieves a product from the repository by its ID
 // It returns the product and an error if any
-func (s *productService) GetProductByID(productID string) (*models.Product, error) {
-	product, err := s.productRepository.FindProductByID(productID)
+func (s *ProductServiceInstance) GetProductByID(productID string) (*models.Product, *errors.AppError) {
+	product, err := s.ProductRepository.FindProductByID(productID)
 
 	if err != nil {
-		return nil, err
+		if err == gorm.ErrRecordNotFound {
+			return nil, errors.NewAppError(404, "Product not found")
+		}
+
+		return nil, errors.NewAppError(500, fmt.Sprintf("Failed to retrieve product: %v", err.Error()))
 	}
 
 	return product, nil
@@ -73,11 +76,15 @@ func (s *productService) GetProductByID(productID string) (*models.Product, erro
 // Get products by merchant ID
 // This function retrieves all products associated with a specific merchant ID
 // It returns a slice of products and an error if any
-func (s *productService) GetProductsByMerchantID(merchantID string) ([]*models.Product, error) {
-	products, err := s.productRepository.FindProductsByMerchantID(merchantID)
+func (s *ProductServiceInstance) GetProductsByMerchantID(merchantID string) ([]*models.Product, *errors.AppError) {
+	products, err := s.ProductRepository.FindProductsByMerchantID(merchantID)
 
 	if err != nil {
-		return nil, err
+		if err == gorm.ErrRecordNotFound {
+			return nil, errors.NewAppError(404, "No products found for this merchant")
+		}
+
+		return nil, errors.NewAppError(500, fmt.Sprintf("Failed to retrieve products: %v", err.Error()))
 	}
 
 	return products, nil
@@ -86,11 +93,11 @@ func (s *productService) GetProductsByMerchantID(merchantID string) ([]*models.P
 // Get all products
 // This function retrieves all products from the repository
 // It returns a slice of products and an error if any
-func (s *productService) GetAllProducts() ([]*models.Product, error) {
-	products, err := s.productRepository.FindAllProducts()
+func (s *ProductServiceInstance) GetAllProducts() ([]*models.Product, *errors.AppError) {
+	products, err := s.ProductRepository.FindAllProducts()
 
 	if err != nil {
-		return nil, err
+		return nil, errors.NewAppError(500, fmt.Sprintf("Failed to retrieve products: %v", err.Error()))
 	}
 
 	return products, nil
@@ -100,15 +107,15 @@ func (s *productService) GetAllProducts() ([]*models.Product, error) {
 // This function updates an existing product in the repository
 // It takes an updated product request and a product ID as parameters
 // It returns the updated product and an error if any
-func (s *productService) UpdateProduct(updatedProduct *dtos.UpdateProductDTO, productID string) (*models.Product, error) {
-	product, err := s.productRepository.FindProductByID(productID)
+func (s *ProductServiceInstance) UpdateProduct(updatedProduct *dtos.UpdateProductDTO, productID string) (*models.Product, *errors.AppError) {
+	product, err := s.ProductRepository.FindProductByID(productID)
 
 	if err != nil {
-		return nil, err
+		return nil, errors.NewAppError(404, fmt.Sprintf("Product not found: %v", err.Error()))
 	}
 
 	if product == nil {
-		return nil, errors.New("product not found")
+		// return nil, errors.New("product not found")
 	}
 
 	if updatedProduct.Title != nil {
@@ -131,10 +138,10 @@ func (s *productService) UpdateProduct(updatedProduct *dtos.UpdateProductDTO, pr
 		product.CategoryID = updatedProduct.CategoryID
 	}
 
-	updated, err := s.productRepository.UpdateProduct(product)
+	updated, err := s.ProductRepository.UpdateProduct(product)
 
 	if err != nil {
-		return nil, err
+		return nil, errors.NewAppError(500, fmt.Sprintf("Failed to update product: %v", err.Error()))
 	}
 
 	return updated, nil
@@ -143,50 +150,45 @@ func (s *productService) UpdateProduct(updatedProduct *dtos.UpdateProductDTO, pr
 // Delete a product
 // This function deletes a product from the repository by its ID
 // It returns an error if any
-func (s *productService) DeleteProduct(productID string) error {
-	product, err := s.productRepository.FindProductByID(productID)
+func (s *ProductServiceInstance) DeleteProduct(productID string) *errors.AppError {
+	product, err := s.ProductRepository.FindProductByID(productID)
 
 	if err != nil {
-		return err
+		return errors.NewAppError(404, fmt.Sprintf("Product not found: %v", err.Error()))
 	}
 
 	if product == nil {
-		return errors.New("product not found")
+		// return errors.New("product not found")
 	}
 
-	if err := s.productRepository.DeleteProduct(productID); err != nil {
-		return err
+	if err := s.ProductRepository.DeleteProduct(productID); err != nil {
+		return errors.NewAppError(500, fmt.Sprintf("Failed to delete product: %v", err.Error()))
 	}
 
 	return nil
 }
 
-func (s *productService) VerifyProductOwnership(productID string, userID uint32) error {
-	user, err := s.userReposiroty.FindByID(userID)
+// Verify product ownership
+// This function checks if the user has access to the product based on their merchant association
+// It returns an error if the user does not have access or if the product is not found
+func (s *ProductServiceInstance) VerifyProductOwnership(productID string, userID uint32) *errors.AppError {
+	user, err := s.UserRepository.FindByID(userID)
 	if err != nil || user == nil {
-		return fiber.NewError(fiber.StatusUnauthorized, "unauthorized access")
+		return errors.NewAppError(401, "unauthorized access")
 	}
-
-	fmt.Println("FECTHED USER ID", user.ID)
-	fmt.Println("USER_MERCHANTS", len(user.Merchants))
 
 	if user.Role == "admin" {
 		return nil
 	}
 
 	if len(user.Merchants) == 0 {
-		return fiber.NewError(fiber.StatusForbidden, "user does not have any merchants")
+		return errors.NewAppError(403, "user does not have any merchants")
 	}
 
-	productMerchant, err := s.productRepository.FindMerchantByProductID(productID)
+	productMerchant, err := s.ProductRepository.FindMerchantByProductID(productID)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return errors.New("product not found")
-		}
-		return err
+		return errors.NewAppError(404, fmt.Sprintf("Product not found: %v", err.Error()))
 	}
-
-	fmt.Println(productMerchant.Name)
 
 	merchantID := productMerchant.ID
 	for _, merchant := range user.Merchants {
@@ -194,5 +196,5 @@ func (s *productService) VerifyProductOwnership(productID string, userID uint32)
 			return nil
 		}
 	}
-	return fiber.NewError(fiber.StatusForbidden, "user does not have any access to this product")
+	return errors.NewAppError(403, "user does not have any access to this product")
 }
