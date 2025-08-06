@@ -3,7 +3,7 @@ module senkou-catalyst-be
 go 1.24.3
 
 require (
-	github.com/gofiber/fiber/v2 v2.52.8
+	github.com/gofiber/fiber/v2 v2.52.9
 	github.com/gofiber/swagger v1.1.1
 	github.com/google/uuid v1.6.0
 	github.com/google/wire v0.6.0

@@ -13,6 +13,7 @@ func Seed(db *gorm.DB) {
 	adminPassword, err := bcrypt.GenerateFromPassword(
 		[]byte(adminPasswordStr), bcrypt.DefaultCost,
 	)
+	
 
 	if err != nil {
 		panic("Failed to hash admin password: " + err.Error())
