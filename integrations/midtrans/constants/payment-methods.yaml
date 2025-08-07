@@ -1,0 +1,81 @@
+payment_methods:
+  # Payment method for BRI Virtual Acccount
+  - name: "BRI"
+    payment_type: "bank_transfer"
+    payment_channel: "bri"
+    min_amount: 1
+    max_amount: 5000000000
+    description: "BRI Virtual Account"
+    logo_url: ""
+
+  # Payment method for BCA Virtual Account
+  - name: "BCA"
+    payment_type: "bank_transfer"
+    payment_channel: "bca"
+    min_amount: 10000
+    max_amount: 50000000
+    description: "BCA Virtual Account"
+    logo_url: ""
+
+  # Payment method for ShopeePay e-wallet
+  - name: "BNI"
+    payment_type: "bank_transfer"
+    payment_channel: "bni"
+    min_amount: 1  
+    max_amount: 50000000
+    description: "BNI Virtual Account"
+    logo_url: ""
+
+  # Payment method for OVO e-wallet
+  - name: "Permata"
+    payment_type: "bank_transfer"
+    payment_channel: "permata"
+    min_amount: 1
+    max_amount: 9999999999
+    description: "Permata Virtual Account"
+    logo_url: ""
+
+  # Payment method for GoPay e-wallet
+  - name: "GoPay"
+    payment_type: "e_wallet"
+    payment_channel: "gopay"
+    min_amount: 1000
+    max_amount: 10000000
+    description: "GoPay digital wallet"
+    logo_url: ""
+
+  # Payment method for ShopeePay e-wallet
+  - name: "ShopeePay"
+    payment_type: "e_wallet"
+    payment_channel: "shopeepay"
+    min_amount: 1000
+    max_amount: 10000000
+    description: "ShopeePay digital wallet"
+    logo_url: ""
+
+  # Payment method for DANA e-wallet
+  - name: "DANA"
+    payment_type: "e_wallet"
+    payment_channel: "dana"
+    min_amount: 1000
+    max_amount: 10000000
+    description: "DANA digital wallet"
+    logo_url: ""
+
+  # Payment method for Alfamart over the counter
+  - name: "Alfamart"
+    payment_type: "cstore"
+    payment_channel: "alfamart"
+    min_amount: 1000
+    max_amount: 10000000
+    description: "Alfamart convenience store"
+    logo_url: ""
+  
+  # Payment method for Indomaret over the counter
+  - name: "Indomaret"
+    payment_type: "cstore"
+    payment_channel: "indomaret"
+    min_amount: 1000
+    max_amount: 10000000
+    description: "Indomaret convenience store"
+    logo_url: ""

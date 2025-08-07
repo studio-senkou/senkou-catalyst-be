@@ -3224,6 +3224,9 @@ const docTemplate = `{
                 "name": {
                     "type": "string"
                 },
+                "phone": {
+                    "type": "string"
+                },
                 "role": {
                     "type": "string"
                 },
