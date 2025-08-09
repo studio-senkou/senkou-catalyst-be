@@ -6,6 +6,7 @@ package container
 import (
 	"senkou-catalyst-be/app/controllers"
 	"senkou-catalyst-be/app/services"
+	"senkou-catalyst-be/integrations/midtrans"
 	"senkou-catalyst-be/platform/config"
 	"senkou-catalyst-be/repositories"
 
@@ -28,6 +29,8 @@ var RepositorySet = wire.NewSet(
 	repositories.NewAuthRepository,
 	repositories.NewSubscriptionRepository,
 	repositories.NewSubscriptionPlanRepository,
+	repositories.NewSubscriptionOrderRepository,
+	repositories.NewPaymentTransactionRepository,
 )
 
 var ServiceSet = wire.NewSet(
@@ -38,6 +41,9 @@ var ServiceSet = wire.NewSet(
 	services.NewPredefinedCategoryService,
 	services.NewAuthService,
 	services.NewSubscriptionService,
+	services.NewSubscriptionOrderService,
+	services.NewPaymentMethodsService,
+	services.NewPaymentService,
 )
 
 var ControllerSet = wire.NewSet(
@@ -48,6 +54,8 @@ var ControllerSet = wire.NewSet(
 	controllers.NewPredefinedCategoryController,
 	controllers.NewAuthController,
 	controllers.NewSubscriptionController,
+	controllers.NewPaymentMethodsController,
+	controllers.NewPaymentController,
 )
 
 func ProvideJWTManager() (*authUtil.JWTManager, error) {
@@ -57,6 +65,19 @@ func ProvideJWTManager() (*authUtil.JWTManager, error) {
 
 var UtilSet = wire.NewSet(
 	ProvideJWTManager,
+)
+
+func ProvideMidtransClient() (*midtrans.MidtransClient, error) {
+	return midtrans.NewMidtransClient(), nil
+}
+
+func ProvideMidtransBuilder(client *midtrans.MidtransClient) *midtrans.PaymentBuilder {
+	return midtrans.NewPaymentBuilder(client)
+}
+
+var MidtransSet = wire.NewSet(
+	ProvideMidtransClient,
+	ProvideMidtransBuilder,
 )
 
 func InitializeUserController() (*controllers.UserController, error) {
@@ -126,6 +147,26 @@ func InitializeSubscriptionController() (*controllers.SubscriptionController, er
 		RepositorySet,
 		ServiceSet,
 		ControllerSet,
+		MidtransSet,
+	)
+	return nil, nil
+}
+
+func InitializePaymentController() (*controllers.PaymentController, error) {
+	wire.Build(
+		DatabaseSet,
+		RepositorySet,
+		ServiceSet,
+		ControllerSet,
+		MidtransSet,
+	)
+	return nil, nil
+}
+
+func InitializePaymentMethodsController() (*controllers.PaymentMethodsController, error) {
+	wire.Build(
+		ServiceSet,
+		ControllerSet,
 	)
 	return nil, nil
 }
@@ -148,6 +189,32 @@ func InitializeProductService() (services.ProductService, func(), error) {
 	return nil, nil, nil
 }
 
+func InitializeSubscriptionOrderService() (services.SubscriptionOrderService, func(), error) {
+	wire.Build(
+		DatabaseSet,
+		RepositorySet,
+		ServiceSet,
+	)
+	return nil, nil, nil
+}
+
+func InitializePaymentMethodsService() (services.PaymentMethodsService, func(), error) {
+	wire.Build(
+		ServiceSet,
+	)
+	return nil, nil, nil
+}
+
+func InitializePaymentService() (services.PaymentService, func(), error) {
+	wire.Build(
+		DatabaseSet,
+		MidtransSet,
+		ServiceSet,
+		RepositorySet,
+	)
+	return nil, nil, nil
+}
+
 func InitializeContainer() (*Container, error) {
 	wire.Build(
 		DatabaseSet,
@@ -155,6 +222,7 @@ func InitializeContainer() (*Container, error) {
 		ServiceSet,
 		ControllerSet,
 		UtilSet,
+		MidtransSet,
 		NewContainer,
 	)
 	return nil, nil
@@ -168,6 +236,8 @@ func NewContainer(
 	predefinedCategoryController *controllers.PredefinedCategoryController,
 	authController *controllers.AuthController,
 	subscriptionController *controllers.SubscriptionController,
+	paymentMethodsController *controllers.PaymentMethodsController,
+	paymentController *controllers.PaymentController,
 	userService services.UserService,
 	productService services.ProductService,
 ) *Container {
@@ -179,6 +249,8 @@ func NewContainer(
 		PredefinedCategoryController: predefinedCategoryController,
 		AuthController:               authController,
 		SubscriptionController:       subscriptionController,
+		PaymentMethodsController:     paymentMethodsController,
+		PaymentController:            paymentController,
 		UserService:                  userService,
 		ProductService:               productService,
 	}

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"senkou-catalyst-be/app/dtos"
 	"senkou-catalyst-be/app/services"
+	"senkou-catalyst-be/integrations/midtrans"
 	"senkou-catalyst-be/utils/response"
 	"senkou-catalyst-be/utils/validator"
 	"strconv"
@@ -12,12 +13,18 @@ import (
 )
 
 type SubscriptionController struct {
-	SubscriptionService services.SubscriptionService
+	UserService              services.UserService
+	SubscriptionService      services.SubscriptionService
+	SubscriptionOrderService services.SubscriptionOrderService
+	PaymentService           services.PaymentService
 }
 
-func NewSubscriptionController(subService services.SubscriptionService) *SubscriptionController {
+func NewSubscriptionController(userService services.UserService, subService services.SubscriptionService, subOrderService services.SubscriptionOrderService, paymentService services.PaymentService) *SubscriptionController {
 	return &SubscriptionController{
-		SubscriptionService: subService,
+		UserService:              userService,
+		SubscriptionService:      subService,
+		SubscriptionOrderService: subOrderService,
+		PaymentService:           paymentService,
 	}
 }
 
@@ -139,23 +146,77 @@ func (h *SubscriptionController) SubscribeSubscription(c *fiber.Ctx) error {
 	subIDStr := fmt.Sprintf("%v", c.Params("subID"))
 	subID, err := strconv.ParseUint(subIDStr, 10, 32)
 
-	if err != nil {
+	if subID == 0 || err != nil {
 		return response.BadRequest(c, "Cannot continue to subscribe user subscription", "Failed to parse subscription ID")
 	}
 
-	if err := h.SubscriptionService.SubscribeUserToSubscription(uint32(userID), uint32(subID)); err != nil {
-		switch err.Code {
-		case 400:
-			return response.BadRequest(c, "User already has an active subscription", "Could not subscribe user to subscription")
-		case 404:
-			return response.NotFound(c, "Subscription not found")
+	subscribeRequest := new(dtos.CreateSubscriptionOrderDTO)
+
+	if err := validator.Validate(c, subscribeRequest); err != nil {
+		if vErr, ok := err.(*validator.ValidationError); ok {
+			return response.BadRequest(c, "Validation failed", map[string]any{
+				"errors": vErr.Errors,
+			})
 		}
 
-		return response.InternalError(c, "Failed to subscribe user to subscription", "User could not be subscribed to subscription")
+		return response.InternalError(c, "Internal server error", map[string]any{
+			"error": err.Error(),
+		})
 	}
+
+	subscription, subError := h.SubscriptionService.GetSubscriptionByID(uint32(subID))
+
+	if subError != nil {
+		return response.NotFound(c, "Cannot continue to subscribe user into subscription due to not found subscription")
+	}
+
+	user, userError := h.UserService.GetUserDetail(uint32(userID))
+
+	if userError != nil {
+		return response.NotFound(c, "Cannot continue to subscribe user into subscription due to error getting user details")
+	}
+
+	subOrder, subOrderError := h.SubscriptionOrderService.GetOrderByUserAndSubscription(user.ID, subscription.ID)
+	if subOrderError != nil {
+		if subOrderError.Code != 404 {
+			return response.InternalError(c, "Failed to get subscription order", subOrderError.Details)
+		}
+	}
+
+	if subOrder != nil && subOrder.Status == string(midtrans.PaymentStatusSettled) {
+		return response.BadRequest(c, "User already has an active subscription", "User already subscribed to this subscription")
+	}
+
+	chargeReceipt, paymentErr := h.PaymentService.CreatePayment(user, &midtrans.PaymentMethodConfig{
+		PaymentType: subscribeRequest.PaymentType,
+		Channel:     subscribeRequest.PaymentChannel,
+	}, subscribeRequest.Amount)
+	if paymentErr != nil {
+		return response.InternalError(c, "Failed to create payment", paymentErr)
+	}
+
+	appError := h.SubscriptionOrderService.CreateNewSubscriptionOrder(uint32(userID), uint32(subID), subscribeRequest)
+	if appError != nil {
+		return response.InternalError(c, "Failed to create subscription order", appError.Details)
+	}
+
+	// if err := h.SubscriptionService.SubscribeUserToSubscription(uint32(userID), uint32(subID)); err != nil {
+	// return response.InternalError(c, "Failed to subscribe user to subscription", "User could not be subscribed to subscription")
+	// switch err.Code {
+	// case 400:
+	// 	return response.BadRequest(c, "User already has an active subscription", "Could not subscribe user to subscription")
+	// case 404:
+	// 	return response.NotFound(c, "Subscription not found")
+	// }
+
+	// return response.InternalError(c, "Failed to subscribe user to subscription", "User could not be subscribed to subscription")
+	// }
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"message": "User subscribed to subscription successfully",
+		"data": fiber.Map{
+			"payment_request": chargeReceipt,
+		},
 	})
 }
 

@@ -42,6 +42,7 @@ func (h *UserController) CreateUser(c *fiber.Ctx) error {
 	newUser, appError := h.service.Create(models.User{
 		Name:     registerUserDTO.Name,
 		Email:    registerUserDTO.Email,
+		Phone:    registerUserDTO.Phone,
 		Password: []byte(registerUserDTO.Password),
 	})
 

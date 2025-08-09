@@ -13,6 +13,7 @@ type User struct {
 	Merchants []*Merchant    `json:"merchants"     gorm:"foreignKey:OwnerID;references:ID"`
 	Name      string         `json:"name"         gorm:"type:varchar(100);not null"`
 	Email     string         `json:"email"        gorm:"type:varchar(100);unique;not null"`
+	Phone     string         `json:"phone"        gorm:"type:varchar(20);unique;not null"`
 	Password  []byte         `json:"-"            gorm:"type:varchar(255);not null"`
 	Role      string         `json:"role"         gorm:"type:varchar(20);not null;default:user"`
 	CreatedAt time.Time      `json:"created_at"   gorm:"type:timestamp;default:CURRENT_TIMESTAMP"`
