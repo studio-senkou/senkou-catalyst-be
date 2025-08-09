@@ -21,7 +21,7 @@ payment_methods:
   - name: "BNI"
     payment_type: "bank_transfer"
     payment_channel: "bni"
-    min_amount: 1  
+    min_amount: 1
     max_amount: 50000000
     description: "BNI Virtual Account"
     logo_url: ""
@@ -37,7 +37,7 @@ payment_methods:
 
   # Payment method for GoPay e-wallet
   - name: "GoPay"
-    payment_type: "e_wallet"
+    payment_type: "e_wallet_gopay"
     payment_channel: "gopay"
     min_amount: 1000
     max_amount: 10000000
@@ -46,7 +46,7 @@ payment_methods:
 
   # Payment method for ShopeePay e-wallet
   - name: "ShopeePay"
-    payment_type: "e_wallet"
+    payment_type: "e_wallet_shopeepay"
     payment_channel: "shopeepay"
     min_amount: 1000
     max_amount: 10000000
@@ -55,7 +55,7 @@ payment_methods:
 
   # Payment method for DANA e-wallet
   - name: "DANA"
-    payment_type: "e_wallet"
+    payment_type: "e_wallet_dana"
     payment_channel: "dana"
     min_amount: 1000
     max_amount: 10000000
@@ -70,7 +70,7 @@ payment_methods:
     max_amount: 10000000
     description: "Alfamart convenience store"
     logo_url: ""
-  
+
   # Payment method for Indomaret over the counter
   - name: "Indomaret"
     payment_type: "cstore"

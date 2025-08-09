@@ -84,3 +84,34 @@ func loadPaymentMethods() error {
 
 	return nil
 }
+
+type PaymentStatus string
+
+const (
+	PaymentStatusPending  PaymentStatus = "pending"
+	PaymentStatusSettled  PaymentStatus = "settled"
+	PaymentStatusFailed   PaymentStatus = "failed"
+	PaymentStatusCanceled PaymentStatus = "canceled"
+	PaymentStatusDenied   PaymentStatus = "denied"
+	PaymentStatusExpired  PaymentStatus = "expired"
+	PaymentStatusRefunded PaymentStatus = "refunded"
+)
+
+func ParseStatus(status string) PaymentStatus {
+	switch status {
+	case "pending":
+		return PaymentStatusPending
+	case "settlement":
+		return PaymentStatusSettled
+	case "deny":
+		return PaymentStatusDenied
+	case "expire":
+		return PaymentStatusExpired
+	case "cancel":
+		return PaymentStatusCanceled
+	case "refund":
+		return PaymentStatusRefunded
+	default:
+		return PaymentStatusFailed
+	}
+}

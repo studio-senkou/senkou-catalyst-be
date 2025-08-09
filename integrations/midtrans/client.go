@@ -9,14 +9,12 @@ import (
 
 type MidtransClient struct {
 	CoreAPI     coreapi.Client
-	ClientKey   string
 	ServerKey   string
 	Environment m.EnvironmentType
 }
 
 func NewMidtransClient() *MidtransClient {
-	clientKey := config.GetEnv("MIDTRANS_CLIENT_KEY", "")
-	serverKey := config.GetEnv("MIDTRANS_SERVER_KEY", "")
+	serverKey := config.MustGetEnv("MIDTRANS_SERVER_KEY")
 	env := config.GetEnv("MIDTRANS_ENVIRONMENT", "sandbox")
 
 	var environment m.EnvironmentType
@@ -32,7 +30,6 @@ func NewMidtransClient() *MidtransClient {
 
 	return &MidtransClient{
 		CoreAPI:     *coreAPIClient,
-		ClientKey:   clientKey,
 		ServerKey:   serverKey,
 		Environment: environment,
 	}
