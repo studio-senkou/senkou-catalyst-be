@@ -13,7 +13,8 @@ type Container struct {
 	PredefinedCategoryController *controllers.PredefinedCategoryController
 	AuthController               *controllers.AuthController
 	SubscriptionController       *controllers.SubscriptionController
-
-	UserService    services.UserService
-	ProductService services.ProductService
+	PaymentMethodsController     *controllers.PaymentMethodsController
+	PaymentController            *controllers.PaymentController
+	UserService                  services.UserService
+	ProductService               services.ProductService
 }

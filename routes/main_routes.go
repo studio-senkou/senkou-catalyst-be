@@ -18,7 +18,7 @@ func InitRoutes(app *fiber.App, deps *container.Container) {
 		})
 	})
 
-	app.Get("/swagger/*", swagger.HandlerDefault)
+	app.Get("/docs/*", swagger.HandlerDefault)
 
 	InitUserRoutes(app, deps.UserController)
 	InitAuthRoutes(app, deps.AuthController)
@@ -31,4 +31,6 @@ func InitRoutes(app *fiber.App, deps *container.Container) {
 		ProductService:    deps.ProductService,
 	})
 	InitSubscriptionRoutes(app, deps.SubscriptionController)
+	InitPaymentMethodsRoutes(app, deps.PaymentMethodsController)
+	InitPaymentRoutes(app, deps.PaymentController)
 }

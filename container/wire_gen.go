@@ -10,6 +10,7 @@ import (
 	"github.com/google/wire"
 	"senkou-catalyst-be/app/controllers"
 	"senkou-catalyst-be/app/services"
+	"senkou-catalyst-be/integrations/midtrans"
 	"senkou-catalyst-be/platform/config"
 	"senkou-catalyst-be/repositories"
 	"senkou-catalyst-be/utils/auth"
@@ -75,11 +76,39 @@ func InitializeAuthController() (*controllers.AuthController, error) {
 
 func InitializeSubscriptionController() (*controllers.SubscriptionController, error) {
 	db := config.GetDB()
+	userRepository := repositories.NewUserRepository(db)
+	userService := services.NewUserService(userRepository)
 	subscriptionRepository := repositories.NewSubscriptionRepository(db)
 	subscriptionPlanRepository := repositories.NewSubscriptionPlanRepository(db)
 	subscriptionService := services.NewSubscriptionService(subscriptionRepository, subscriptionPlanRepository)
-	subscriptionController := controllers.NewSubscriptionController(subscriptionService)
+	subscriptionOrderRepository := repositories.NewSubscriptionOrderRepository(db)
+	subscriptionOrderService := services.NewSubscriptionOrderService(subscriptionOrderRepository)
+	midtransClient, err := ProvideMidtransClient()
+	if err != nil {
+		return nil, err
+	}
+	paymentTransactionRepository := repositories.NewPaymentTransactionRepository(db)
+	paymentService := services.NewPaymentService(midtransClient, paymentTransactionRepository)
+	subscriptionController := controllers.NewSubscriptionController(userService, subscriptionService, subscriptionOrderService, paymentService)
 	return subscriptionController, nil
+}
+
+func InitializePaymentController() (*controllers.PaymentController, error) {
+	midtransClient, err := ProvideMidtransClient()
+	if err != nil {
+		return nil, err
+	}
+	db := config.GetDB()
+	paymentTransactionRepository := repositories.NewPaymentTransactionRepository(db)
+	paymentService := services.NewPaymentService(midtransClient, paymentTransactionRepository)
+	paymentController := controllers.NewPaymentController(paymentService)
+	return paymentController, nil
+}
+
+func InitializePaymentMethodsController() (*controllers.PaymentMethodsController, error) {
+	paymentMethodsService := services.NewPaymentMethodsService()
+	paymentMethodsController := controllers.NewPaymentMethodsController(paymentMethodsService)
+	return paymentMethodsController, nil
 }
 
 func InitializeUserService() (services.UserService, func(), error) {
@@ -96,6 +125,32 @@ func InitializeProductService() (services.ProductService, func(), error) {
 	userRepository := repositories.NewUserRepository(db)
 	productService := services.NewProductService(productRepository, userRepository)
 	return productService, func() {
+	}, nil
+}
+
+func InitializeSubscriptionOrderService() (services.SubscriptionOrderService, func(), error) {
+	db := config.GetDB()
+	subscriptionOrderRepository := repositories.NewSubscriptionOrderRepository(db)
+	subscriptionOrderService := services.NewSubscriptionOrderService(subscriptionOrderRepository)
+	return subscriptionOrderService, func() {
+	}, nil
+}
+
+func InitializePaymentMethodsService() (services.PaymentMethodsService, func(), error) {
+	paymentMethodsService := services.NewPaymentMethodsService()
+	return paymentMethodsService, func() {
+	}, nil
+}
+
+func InitializePaymentService() (services.PaymentService, func(), error) {
+	midtransClient, err := ProvideMidtransClient()
+	if err != nil {
+		return nil, nil, err
+	}
+	db := config.GetDB()
+	paymentTransactionRepository := repositories.NewPaymentTransactionRepository(db)
+	paymentService := services.NewPaymentService(midtransClient, paymentTransactionRepository)
+	return paymentService, func() {
 	}, nil
 }
 
@@ -126,8 +181,19 @@ func InitializeContainer() (*Container, error) {
 	subscriptionRepository := repositories.NewSubscriptionRepository(db)
 	subscriptionPlanRepository := repositories.NewSubscriptionPlanRepository(db)
 	subscriptionService := services.NewSubscriptionService(subscriptionRepository, subscriptionPlanRepository)
-	subscriptionController := controllers.NewSubscriptionController(subscriptionService)
-	container := NewContainer(userController, merchantController, productController, categoryController, predefinedCategoryController, authController, subscriptionController, userService, productService)
+	subscriptionOrderRepository := repositories.NewSubscriptionOrderRepository(db)
+	subscriptionOrderService := services.NewSubscriptionOrderService(subscriptionOrderRepository)
+	midtransClient, err := ProvideMidtransClient()
+	if err != nil {
+		return nil, err
+	}
+	paymentTransactionRepository := repositories.NewPaymentTransactionRepository(db)
+	paymentService := services.NewPaymentService(midtransClient, paymentTransactionRepository)
+	subscriptionController := controllers.NewSubscriptionController(userService, subscriptionService, subscriptionOrderService, paymentService)
+	paymentMethodsService := services.NewPaymentMethodsService()
+	paymentMethodsController := controllers.NewPaymentMethodsController(paymentMethodsService)
+	paymentController := controllers.NewPaymentController(paymentService)
+	container := NewContainer(userController, merchantController, productController, categoryController, predefinedCategoryController, authController, subscriptionController, paymentMethodsController, paymentController, userService, productService)
 	return container, nil
 }
 
@@ -135,11 +201,11 @@ func InitializeContainer() (*Container, error) {
 
 var DatabaseSet = wire.NewSet(config.GetDB)
 
-var RepositorySet = wire.NewSet(repositories.NewUserRepository, repositories.NewMerchantRepository, repositories.NewProductRepository, repositories.NewCategoryRepository, repositories.NewPredefinedCategoryRepository, repositories.NewAuthRepository, repositories.NewSubscriptionRepository, repositories.NewSubscriptionPlanRepository)
+var RepositorySet = wire.NewSet(repositories.NewUserRepository, repositories.NewMerchantRepository, repositories.NewProductRepository, repositories.NewCategoryRepository, repositories.NewPredefinedCategoryRepository, repositories.NewAuthRepository, repositories.NewSubscriptionRepository, repositories.NewSubscriptionPlanRepository, repositories.NewSubscriptionOrderRepository, repositories.NewPaymentTransactionRepository)
 
-var ServiceSet = wire.NewSet(services.NewUserService, services.NewMerchantService, services.NewProductService, services.NewCategoryService, services.NewPredefinedCategoryService, services.NewAuthService, services.NewSubscriptionService)
+var ServiceSet = wire.NewSet(services.NewUserService, services.NewMerchantService, services.NewProductService, services.NewCategoryService, services.NewPredefinedCategoryService, services.NewAuthService, services.NewSubscriptionService, services.NewSubscriptionOrderService, services.NewPaymentMethodsService, services.NewPaymentService)
 
-var ControllerSet = wire.NewSet(controllers.NewUserController, controllers.NewMerchantController, controllers.NewProductController, controllers.NewCategoryController, controllers.NewPredefinedCategoryController, controllers.NewAuthController, controllers.NewSubscriptionController)
+var ControllerSet = wire.NewSet(controllers.NewUserController, controllers.NewMerchantController, controllers.NewProductController, controllers.NewCategoryController, controllers.NewPredefinedCategoryController, controllers.NewAuthController, controllers.NewSubscriptionController, controllers.NewPaymentMethodsController, controllers.NewPaymentController)
 
 func ProvideJWTManager() (*auth.JWTManager, error) {
 	secret := config2.MustGetEnv("AUTH_SECRET")
@@ -150,6 +216,19 @@ var UtilSet = wire.NewSet(
 	ProvideJWTManager,
 )
 
+func ProvideMidtransClient() (*midtrans.MidtransClient, error) {
+	return midtrans.NewMidtransClient(), nil
+}
+
+func ProvideMidtransBuilder(client *midtrans.MidtransClient) *midtrans.PaymentBuilder {
+	return midtrans.NewPaymentBuilder(client)
+}
+
+var MidtransSet = wire.NewSet(
+	ProvideMidtransClient,
+	ProvideMidtransBuilder,
+)
+
 func NewContainer(
 	userController *controllers.UserController,
 	merchantController *controllers.MerchantController,
@@ -158,6 +237,8 @@ func NewContainer(
 	predefinedCategoryController *controllers.PredefinedCategoryController,
 	authController *controllers.AuthController,
 	subscriptionController *controllers.SubscriptionController,
+	paymentMethodsController *controllers.PaymentMethodsController,
+	paymentController *controllers.PaymentController,
 	userService services.UserService,
 	productService services.ProductService,
 ) *Container {
@@ -169,6 +250,8 @@ func NewContainer(
 		PredefinedCategoryController: predefinedCategoryController,
 		AuthController:               authController,
 		SubscriptionController:       subscriptionController,
+		PaymentMethodsController:     paymentMethodsController,
+		PaymentController:            paymentController,
 		UserService:                  userService,
 		ProductService:               productService,
 	}

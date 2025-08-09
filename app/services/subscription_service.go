@@ -13,6 +13,7 @@ type SubscriptionService interface {
 	SubscribeUserToSubscription(userID, subID uint32) *errors.AppError
 	CreateSubscriptionPlan(request *dtos.CreateSubscriptionPlanDTO, subID uint32) *errors.AppError
 	GetAllSubscriptions() ([]*models.Subscription, *errors.AppError)
+	GetSubscriptionByID(subID uint32) (*models.Subscription, *errors.AppError)
 	UpdateSubscription(request *dtos.UpdateSubscriptionDTO, subID uint32) *errors.AppError
 	DeleteSubscription(subID uint32) *errors.AppError
 }
@@ -109,6 +110,16 @@ func (s *SubscriptionServiceInstance) GetAllSubscriptions() ([]*models.Subscript
 	}
 
 	return subscriptions, nil
+}
+
+func (s *SubscriptionServiceInstance) GetSubscriptionByID(subID uint32) (*models.Subscription, *errors.AppError) {
+	subscription, err := s.SubscriptionRepository.FindByID(subID)
+
+	if err != nil || subscription == nil {
+		return nil, errors.NewAppError(404, "Subscription not found")
+	}
+
+	return subscription, nil
 }
 
 // Update an existing subscription

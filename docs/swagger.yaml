@@ -272,6 +272,8 @@ definitions:
         type: array
       name:
         type: string
+      phone:
+        type: string
       role:
         type: string
       updated_at:
@@ -999,6 +1001,81 @@ paths:
       summary: Create a new product
       tags:
       - Products
+  /payment-methods:
+    get:
+      description: Get all available payment methods
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get all available payment methods
+      tags:
+      - PaymentMethods
+  /payment-methods/{type}:
+    get:
+      description: Get payment methods by type
+      parameters:
+      - description: Payment Method Type
+        in: path
+        name: type
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/fiber.Map'
+            - properties:
+                data:
+                  allOf:
+                  - $ref: '#/definitions/fiber.Map'
+                  - properties:
+                      payment_methods:
+                        items: {}
+                        type: array
+                    type: object
+                message:
+                  type: string
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/fiber.Map'
+            - properties:
+                error:
+                  type: string
+                success:
+                  type: boolean
+              type: object
+      summary: Get payment methods by type
+      tags:
+      - PaymentMethods
+  /payment-methods/types:
+    get:
+      description: Get all available payment method types
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get all available payment method types
+      tags:
+      - PaymentMethods
   /predefined-categories:
     get:
       consumes:

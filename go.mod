@@ -13,6 +13,10 @@ require (
 	gorm.io/gorm v1.30.0
 )
 
+require github.com/xendit/xendit-go/v7 v7.0.0
+
+require github.com/midtrans/midtrans-go v1.3.8 // indirect
+
 require (
 	github.com/KyleBanks/depth v1.2.1 // indirect
 	github.com/PuerkitoBio/purell v1.1.1 // indirect
@@ -25,7 +29,7 @@ require (
 	github.com/go-playground/validator/v10 v10.27.0
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
-	github.com/jackc/pgx/v5 v5.6.0 // indirect
+	github.com/jackc/pgx/v5 v5.6.0
 	github.com/jackc/puddle/v2 v2.2.2 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect

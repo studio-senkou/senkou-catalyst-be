@@ -1313,6 +1313,131 @@ const docTemplate = `{
                 }
             }
         },
+        "/payment-methods": {
+            "get": {
+                "description": "Get all available payment methods",
+                "tags": [
+                    "PaymentMethods"
+                ],
+                "summary": "Get all available payment methods",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/payment-methods/types": {
+            "get": {
+                "description": "Get all available payment method types",
+                "tags": [
+                    "PaymentMethods"
+                ],
+                "summary": "Get all available payment method types",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/payment-methods/{type}": {
+            "get": {
+                "description": "Get payment methods by type",
+                "tags": [
+                    "PaymentMethods"
+                ],
+                "summary": "Get payment methods by type",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Payment Method Type",
+                        "name": "type",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/fiber.Map"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "allOf": [
+                                                {
+                                                    "$ref": "#/definitions/fiber.Map"
+                                                },
+                                                {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "payment_methods": {
+                                                            "type": "array",
+                                                            "items": {}
+                                                        }
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/fiber.Map"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "type": "string"
+                                        },
+                                        "success": {
+                                            "type": "boolean"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
         "/predefined-categories": {
             "get": {
                 "security": [
@@ -3222,6 +3347,9 @@ const docTemplate = `{
                     }
                 },
                 "name": {
+                    "type": "string"
+                },
+                "phone": {
                     "type": "string"
                 },
                 "role": {
