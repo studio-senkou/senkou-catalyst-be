@@ -169,6 +169,18 @@ func InitFiberConfig() *fiber.Config {
 				})
 			}
 
+			// If the error is a not found error
+			if notFoundErr, ok := err.(*errors.NotFoundError); ok {
+				response.Error.Code = fiber.StatusNotFound
+				response.Error.Message = notFoundErr.ErrorMessage
+				response.Error.Type = "NOT_FOUND_ERROR"
+				response.Error.Details = notFoundErr.Details
+
+				return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+					"message": response.Error.Message,
+				})
+			}
+
 			if fiberErr, ok := err.(*fiber.Error); ok {
 				response.Error.Code = fiberErr.Code
 				response.Error.Message = fiberErr.Message
