@@ -6,7 +6,7 @@ export DISCORD_BOT_URL
 export DISCORD_CHANNEL_ID
 endif
 
-.PHONY=auth-secret rebuild rebuild-dev wire dev-up dev-down dev-logs prod-up prod-down prod-logs seed clean dev-status prod-status list-all swagger test-discord
+.PHONY=auth-secret rebuild rebuild-stage rebuild-dev wire dev-up dev-down dev-logs prod-up prod-down prod-logs seed clean dev-status prod-status list-all swagger test-discord
 
 auth-secret:
 	@echo "" >> .env
@@ -36,6 +36,13 @@ rebuild-stage:
 	@docker image prune -f
 	@echo "✅ Staging rebuild completed successfully!"
 	@$(call send_discord_notification,✅ Staging rebuild completed successfully for Senkou Catalyst BE)
+
+rebuild-dev:
+	@docker compose -f docker-compose-dev.yml --env-file .env -p senkou-catalyst-dev down --remove-orphans
+	@docker compose -f docker-compose-dev.yml --env-file .env -p senkou-catalyst-dev build --no-cache
+	@docker compose -f docker-compose-dev.yml --env-file .env -p senkou-catalyst-dev up -d
+	@docker image prune -f
+	@echo "Development environment rebuilt successfully!"
 
 wire:
 	@cd container && wire
