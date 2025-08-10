@@ -30,7 +30,7 @@ func (s *StorageController) GetFromStorage(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid filename"})
 	}
 
-	file, err := storage.DownloadFileFromStorage(filename)
+	file, contentType, err := storage.DownloadFileFromStorage(filename)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"status":  "fail",
@@ -39,5 +39,7 @@ func (s *StorageController) GetFromStorage(c *fiber.Ctx) error {
 		})
 	}
 
+	c.Set("Content-Type", contentType)
+	c.Set("Content-Disposition", "attachment; filename="+filename)
 	return c.Send(file)
 }

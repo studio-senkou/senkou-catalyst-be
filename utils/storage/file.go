@@ -107,7 +107,7 @@ func RemoveFileFromStorage(path string) error {
 	return nil
 }
 
-func DownloadFileFromStorage(path string) ([]byte, error) {
+func DownloadFileFromStorage(path string) ([]byte, string, error) {
 	ctx := context.Background()
 	uploader := NewUploadService()
 
@@ -116,14 +116,14 @@ func DownloadFileFromStorage(path string) ([]byte, error) {
 		Key:    &path,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to get file: %w", err)
+		return nil, "", fmt.Errorf("failed to get file: %w", err)
 	}
 	defer output.Body.Close()
 
 	data, err := io.ReadAll(output.Body)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read file body: %w", err)
+		return nil, "", fmt.Errorf("failed to read file body: %w", err)
 	}
 
-	return data, nil
+	return data, *output.ContentType, nil
 }
