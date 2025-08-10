@@ -1,22 +1,26 @@
 package controllers
 
 import (
+	"fmt"
 	"senkou-catalyst-be/app/dtos"
 	"senkou-catalyst-be/app/services"
 	"senkou-catalyst-be/utils/response"
 	"senkou-catalyst-be/utils/storage"
 	"senkou-catalyst-be/utils/validator"
+	"strconv"
 
 	"github.com/gofiber/fiber/v2"
 )
 
 type ProductController struct {
+	UserService    services.UserService
 	ProductService services.ProductService
 }
 
-func NewProductController(productService services.ProductService) *ProductController {
+func NewProductController(productService services.ProductService, userService services.UserService) *ProductController {
 	return &ProductController{
 		ProductService: productService,
+		UserService:    userService,
 	}
 }
 
@@ -27,13 +31,18 @@ func NewProductController(productService services.ProductService) *ProductContro
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Param merchantID path string true "Merchant ID"
 // @Param product body dtos.CreateProductDTO true "Product data"
 // @Success 201 {object} fiber.Map{message=string,data=fiber.Map{product=models.Product}}
 // @Failure 400 {object} fiber.Map{error=string,details=any}
 // @Failure 500 {object} fiber.Map{error=string,details=any}
-// @Router /merchants/{merchantID}/products [post]
+// @Router /products [post]
 func (h *ProductController) CreateProduct(c *fiber.Ctx) error {
+	userIDStr := fmt.Sprintf("%v", c.Locals("userID"))
+	userID, err := strconv.ParseUint(userIDStr, 10, 32)
+	if err != nil {
+		return response.InternalError(c, "Failed to parse user ID", fmt.Sprintf("Invalid user ID: %v", err.Error()))
+	}
+
 	createProductDTO := new(dtos.CreateProductDTO)
 
 	if validationErrors, err := validator.ValidateFormData(c, createProductDTO); err != nil {
@@ -51,18 +60,27 @@ func (h *ProductController) CreateProduct(c *fiber.Ctx) error {
 		return response.BadRequest(c, "Product photo is required", nil)
 	}
 
+	user, userErr := h.UserService.GetUserDetail(uint32(userID))
+	if userErr != nil {
+		return response.InternalError(c, "Failed to retrieve user details", userErr.Details)
+	}
+
+	if len(user.Merchants) == 0 {
+		return response.BadRequest(c, "Cannot create product", "User does not have any associated merchants")
+	}
+
 	productPhotoPath, err := storage.UploadFileToStorage(productPhoto, "products", "PD", nil)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"status":  "fail",
-			"message": "Failed to upload testimoner photo",
+			"message": "Failed to upload product photo",
 			"error":   err.Error(),
 		})
 	}
 
 	createProductDTO.Photo = productPhotoPath
 
-	createdProduct, appError := h.ProductService.CreateProduct(createProductDTO, createProductDTO.MerchantID)
+	createdProduct, appError := h.ProductService.CreateProduct(createProductDTO, user.Merchants[0].ID)
 
 	if appError != nil {
 		return response.InternalError(c, "Failed to create product", appError.Details)

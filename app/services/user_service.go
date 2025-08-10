@@ -4,6 +4,9 @@ import (
 	"senkou-catalyst-be/app/models"
 	"senkou-catalyst-be/platform/errors"
 	"senkou-catalyst-be/repositories"
+	"strings"
+
+	"github.com/google/uuid"
 )
 
 type UserService interface {
@@ -15,12 +18,14 @@ type UserService interface {
 }
 
 type UserServiceInstance struct {
-	UserRepository repositories.UserRepository
+	UserRepository     repositories.UserRepository
+	MerchantRepository repositories.MerchantRepository
 }
 
-func NewUserService(userRepository repositories.UserRepository) UserService {
+func NewUserService(userRepository repositories.UserRepository, merchantRepository repositories.MerchantRepository) UserService {
 	return &UserServiceInstance{
-		UserRepository: userRepository,
+		UserRepository:     userRepository,
+		MerchantRepository: merchantRepository,
 	}
 }
 
@@ -39,6 +44,23 @@ func (s *UserServiceInstance) Create(user models.User) (*models.User, *errors.Ap
 	if err != nil {
 		return nil, errors.NewAppError(500, "Failed to create user")
 	}
+
+	merchant := &models.Merchant{
+		ID:      "",
+		Name:    user.Name + " Merchant",
+		OwnerID: createdUser.ID,
+	}
+
+	uuidStr := uuid.New().String()
+
+	merchant.ID = strings.ReplaceAll(uuidStr, "-", "")[:16]
+
+	createdMerchant, err := s.MerchantRepository.Create(merchant)
+	if err != nil {
+		return nil, errors.NewAppError(500, "Failed to create merchant")
+	}
+
+	createdUser.Merchants = append(createdUser.Merchants, createdMerchant)
 
 	return createdUser, nil
 }

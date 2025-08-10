@@ -13,10 +13,12 @@ require (
 	gorm.io/gorm v1.30.0
 )
 
-require github.com/midtrans/midtrans-go v1.3.8
+require (
+	github.com/aws/aws-sdk-go-v2 v1.37.2
+	github.com/midtrans/midtrans-go v1.3.8
+)
 
 require (
-	github.com/aws/aws-sdk-go-v2 v1.37.2 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.7.0 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/configsources v1.4.2 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.7.2 // indirect

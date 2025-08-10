@@ -6,7 +6,6 @@ type CreateProductDTO struct {
 	Price        float64 `json:"price" validate:"required,number,min=0"`
 	AffiliateURL string  `json:"affiliate_url" validate:"required,url"`
 	Photo        string  `json:"photo" validate:"omitempty"`
-	MerchantID   string  `json:"merchant_id" validate:"required,uuid"`
 	CategoryID   *uint32 `json:"category_id" validate:"omitempty,number"`
 }
 
@@ -21,8 +20,6 @@ func (dto *CreateProductDTO) ErrorMessages() map[string]string {
 		"affiliate_url.required": "Affiliate URL is required",
 		"affiliate_url.url":      "Affiliate URL must be a valid URL",
 		"category_id.number":     "Category ID must be a valid number",
-		"merchant_id.required":   "Merchant ID is required",
-		"merchant_id.uuid":       "Merchant ID must be a valid UUID",
 	}
 }
 

@@ -6,7 +6,7 @@ export DISCORD_BOT_URL
 export DISCORD_CHANNEL_ID
 endif
 
-.PHONY=auth-secret rebuild rebuild-stage rebuild-dev wire dev-up dev-down dev-logs prod-up prod-down prod-logs seed clean dev-status prod-status list-all swagger test-discord
+.PHONY: auth-secret rebuild rebuild-stage rebuild-dev wire dev-up dev-down dev-logs prod-up prod-down prod-logs seed clean dev-status prod-status list-all swagger test-discord
 
 auth-secret:
 	@echo "" >> .env

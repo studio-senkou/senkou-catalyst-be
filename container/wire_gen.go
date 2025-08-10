@@ -22,7 +22,8 @@ import (
 func InitializeUserController() (*controllers.UserController, error) {
 	db := config.GetDB()
 	userRepository := repositories.NewUserRepository(db)
-	userService := services.NewUserService(userRepository)
+	merchantRepository := repositories.NewMerchantRepository(db)
+	userService := services.NewUserService(userRepository, merchantRepository)
 	userController := controllers.NewUserController(userService)
 	return userController, nil
 }
@@ -40,7 +41,9 @@ func InitializeProductController() (*controllers.ProductController, error) {
 	productRepository := repositories.NewProductRepository(db)
 	userRepository := repositories.NewUserRepository(db)
 	productService := services.NewProductService(productRepository, userRepository)
-	productController := controllers.NewProductController(productService)
+	merchantRepository := repositories.NewMerchantRepository(db)
+	userService := services.NewUserService(userRepository, merchantRepository)
+	productController := controllers.NewProductController(productService, userService)
 	return productController, nil
 }
 
@@ -69,7 +72,8 @@ func InitializeAuthController() (*controllers.AuthController, error) {
 	}
 	authService := services.NewAuthService(authRepository, jwtManager)
 	userRepository := repositories.NewUserRepository(db)
-	userService := services.NewUserService(userRepository)
+	merchantRepository := repositories.NewMerchantRepository(db)
+	userService := services.NewUserService(userRepository, merchantRepository)
 	authController := controllers.NewAuthController(authService, userService)
 	return authController, nil
 }
@@ -77,7 +81,8 @@ func InitializeAuthController() (*controllers.AuthController, error) {
 func InitializeSubscriptionController() (*controllers.SubscriptionController, error) {
 	db := config.GetDB()
 	userRepository := repositories.NewUserRepository(db)
-	userService := services.NewUserService(userRepository)
+	merchantRepository := repositories.NewMerchantRepository(db)
+	userService := services.NewUserService(userRepository, merchantRepository)
 	subscriptionRepository := repositories.NewSubscriptionRepository(db)
 	subscriptionPlanRepository := repositories.NewSubscriptionPlanRepository(db)
 	subscriptionService := services.NewSubscriptionService(subscriptionRepository, subscriptionPlanRepository)
@@ -114,7 +119,8 @@ func InitializePaymentMethodsController() (*controllers.PaymentMethodsController
 func InitializeUserService() (services.UserService, func(), error) {
 	db := config.GetDB()
 	userRepository := repositories.NewUserRepository(db)
-	userService := services.NewUserService(userRepository)
+	merchantRepository := repositories.NewMerchantRepository(db)
+	userService := services.NewUserService(userRepository, merchantRepository)
 	return userService, func() {
 	}, nil
 }
@@ -157,14 +163,14 @@ func InitializePaymentService() (services.PaymentService, func(), error) {
 func InitializeContainer() (*Container, error) {
 	db := config.GetDB()
 	userRepository := repositories.NewUserRepository(db)
-	userService := services.NewUserService(userRepository)
-	userController := controllers.NewUserController(userService)
 	merchantRepository := repositories.NewMerchantRepository(db)
+	userService := services.NewUserService(userRepository, merchantRepository)
+	userController := controllers.NewUserController(userService)
 	merchantService := services.NewMerchantService(merchantRepository)
 	merchantController := controllers.NewMerchantController(merchantService)
 	productRepository := repositories.NewProductRepository(db)
 	productService := services.NewProductService(productRepository, userRepository)
-	productController := controllers.NewProductController(productService)
+	productController := controllers.NewProductController(productService, userService)
 	categoryRepository := repositories.NewCategoryRepository(db)
 	categoryService := services.NewCategoryService(categoryRepository)
 	categoryController := controllers.NewCategoryController(categoryService)
@@ -193,7 +199,8 @@ func InitializeContainer() (*Container, error) {
 	paymentMethodsService := services.NewPaymentMethodsService()
 	paymentMethodsController := controllers.NewPaymentMethodsController(paymentMethodsService)
 	paymentController := controllers.NewPaymentController(paymentService)
-	container := NewContainer(userController, merchantController, productController, categoryController, predefinedCategoryController, authController, subscriptionController, paymentMethodsController, paymentController, userService, productService)
+	storageController := controllers.NewStorageController()
+	container := NewContainer(userController, merchantController, productController, categoryController, predefinedCategoryController, authController, subscriptionController, paymentMethodsController, paymentController, storageController, userService, productService)
 	return container, nil
 }
 
@@ -205,7 +212,7 @@ var RepositorySet = wire.NewSet(repositories.NewUserRepository, repositories.New
 
 var ServiceSet = wire.NewSet(services.NewUserService, services.NewMerchantService, services.NewProductService, services.NewCategoryService, services.NewPredefinedCategoryService, services.NewAuthService, services.NewSubscriptionService, services.NewSubscriptionOrderService, services.NewPaymentMethodsService, services.NewPaymentService)
 
-var ControllerSet = wire.NewSet(controllers.NewUserController, controllers.NewMerchantController, controllers.NewProductController, controllers.NewCategoryController, controllers.NewPredefinedCategoryController, controllers.NewAuthController, controllers.NewSubscriptionController, controllers.NewPaymentMethodsController, controllers.NewPaymentController)
+var ControllerSet = wire.NewSet(controllers.NewUserController, controllers.NewMerchantController, controllers.NewProductController, controllers.NewCategoryController, controllers.NewPredefinedCategoryController, controllers.NewAuthController, controllers.NewSubscriptionController, controllers.NewPaymentMethodsController, controllers.NewPaymentController, controllers.NewStorageController)
 
 func ProvideJWTManager() (*auth.JWTManager, error) {
 	secret := config2.MustGetEnv("AUTH_SECRET")
@@ -239,6 +246,7 @@ func NewContainer(
 	subscriptionController *controllers.SubscriptionController,
 	paymentMethodsController *controllers.PaymentMethodsController,
 	paymentController *controllers.PaymentController,
+	storageController *controllers.StorageController,
 	userService services.UserService,
 	productService services.ProductService,
 ) *Container {
@@ -252,6 +260,7 @@ func NewContainer(
 		SubscriptionController:       subscriptionController,
 		PaymentMethodsController:     paymentMethodsController,
 		PaymentController:            paymentController,
+		StorageController:            storageController,
 		UserService:                  userService,
 		ProductService:               productService,
 	}

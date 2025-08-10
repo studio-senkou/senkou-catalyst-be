@@ -40,8 +40,6 @@ definitions:
       description:
         maxLength: 500
         type: string
-      merchant_id:
-        type: string
       photo:
         type: string
       price:
@@ -52,7 +50,6 @@ definitions:
         type: string
     required:
     - affiliate_url
-    - merchant_id
     - price
     - title
     type: object
@@ -363,6 +360,46 @@ paths:
       summary: Refresh access token
       tags:
       - Auth
+  /files/{filename}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a file from the storage service by its filename
+      parameters:
+      - description: Filename
+        in: path
+        name: filename
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: File content
+          schema:
+            type: file
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/fiber.Map'
+            - properties:
+                error:
+                  type: string
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/fiber.Map'
+            - properties:
+                details: {}
+                error:
+                  type: string
+              type: object
+      summary: Get a file from storage
+      tags:
+      - Storage
   /merchants:
     get:
       description: Retrieve all merchants associated with the user
@@ -945,66 +982,6 @@ paths:
       summary: Get products by merchant ID
       tags:
       - Products
-    post:
-      consumes:
-      - application/json
-      description: Create a new product for a merchant
-      parameters:
-      - description: Merchant ID
-        in: path
-        name: merchantID
-        required: true
-        type: string
-      - description: Product data
-        in: body
-        name: product
-        required: true
-        schema:
-          $ref: '#/definitions/dtos.CreateProductDTO'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Created
-          schema:
-            allOf:
-            - $ref: '#/definitions/fiber.Map'
-            - properties:
-                data:
-                  allOf:
-                  - $ref: '#/definitions/fiber.Map'
-                  - properties:
-                      product:
-                        $ref: '#/definitions/models.Product'
-                    type: object
-                message:
-                  type: string
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            allOf:
-            - $ref: '#/definitions/fiber.Map'
-            - properties:
-                details: {}
-                error:
-                  type: string
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/fiber.Map'
-            - properties:
-                details: {}
-                error:
-                  type: string
-              type: object
-      security:
-      - BearerAuth: []
-      summary: Create a new product
-      tags:
-      - Products
   /payment-methods:
     get:
       description: Get all available payment methods
@@ -1326,6 +1303,61 @@ paths:
       security:
       - BearerAuth: []
       summary: Get all products
+      tags:
+      - Products
+    post:
+      consumes:
+      - application/json
+      description: Create a new product for a merchant
+      parameters:
+      - description: Product data
+        in: body
+        name: product
+        required: true
+        schema:
+          $ref: '#/definitions/dtos.CreateProductDTO'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/fiber.Map'
+            - properties:
+                data:
+                  allOf:
+                  - $ref: '#/definitions/fiber.Map'
+                  - properties:
+                      product:
+                        $ref: '#/definitions/models.Product'
+                    type: object
+                message:
+                  type: string
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/fiber.Map'
+            - properties:
+                details: {}
+                error:
+                  type: string
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/fiber.Map'
+            - properties:
+                details: {}
+                error:
+                  type: string
+              type: object
+      security:
+      - BearerAuth: []
+      summary: Create a new product
       tags:
       - Products
   /products/{productID}:
