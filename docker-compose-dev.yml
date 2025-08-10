@@ -1,23 +1,4 @@
 services:
-  app:
-    build:
-      context: .
-      dockerfile: Dockerfile.dev
-    container_name: senkou-catalyst-app-dev
-    restart: unless-stopped
-    environment:
-      - APP_PORT=5556
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - DB_USERNAME=${DB_USERNAME:-postgres}
-      - DB_PASSWORD=${DB_PASSWORD:-}
-      - DB_NAME=${DB_NAME:-senkou_catalyst_dev}
-      - JWT_SECRET=${JWT_SECRET:-}
-    depends_on:
-      - postgres
-    networks:
-      - catalyst-dev-network
-
   postgres:
     image: postgres:17-alpine
     container_name: senkou-catalyst-postgres-dev
@@ -33,11 +14,19 @@ services:
     networks:
       - catalyst-dev-network
 
-  cloudflare:
-    image: cloudflare/cloudflared:latest
-    container_name: senkou-catalyst-cloudflare-dev
+  minio:
+    image: minio/minio:latest
+    container_name: senkou-catalyst-minio-dev
     restart: unless-stopped
-    command: tunnel --no-autoupdate --protocol http2 run --token ${TUNNEL_TOKEN:-}
+    ports:
+      - "${MINIO_S3_PORT:-9000}:9000"
+      - "${MINIO_WEB_PORT:-9901}:9001"
+    environment:
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER:-minioadmin}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD:-minioadmin}
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data_dev:/data
     networks:
       - catalyst-dev-network
 
@@ -48,4 +37,6 @@ networks:
 
 volumes:
   postgres_data_dev:
+    driver: local
+  minio_data_dev:
     driver: local

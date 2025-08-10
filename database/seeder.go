@@ -9,21 +9,20 @@ import (
 )
 
 func Seed(db *gorm.DB) {
-	adminPasswordStr := config.GetEnv("ADMIN_PASSWORD", "admin123")
+	adminPasswordStr := config.GetEnv("SEEDER_ADMIN_PASSWORD", "admin123")
 	adminPassword, err := bcrypt.GenerateFromPassword(
 		[]byte(adminPasswordStr), bcrypt.DefaultCost,
 	)
-	
 
 	if err != nil {
 		panic("Failed to hash admin password: " + err.Error())
 	}
 
 	administrator := new(models.User)
-	db.Where("email = ?", config.GetEnv("ADMIN_EMAIL", "studio.senkou@example.com")).FirstOrCreate(&administrator, models.User{
-		Name:     config.GetEnv("ADMIN_NAME", "Catalyst Admin"),
-		Email:    config.GetEnv("ADMIN_EMAIL", "studio.senkou@example.com"),
-		Phone:    config.GetEnv("ADMIN_PHONE", "1234567890"),
+	db.Where("email = ?", config.GetEnv("SEEDER_ADMIN_EMAIL", "studio.senkou@example.com")).FirstOrCreate(&administrator, models.User{
+		Name:     config.GetEnv("SEEDER_ADMIN_NAME", "Catalyst Admin"),
+		Email:    config.GetEnv("SEEDER_ADMIN_EMAIL", "studio.senkou@example.com"),
+		Phone:    config.GetEnv("SEEDER_ADMIN_PHONE", "1234567890"),
 		Password: adminPassword,
 		Role:     "admin",
 	})
