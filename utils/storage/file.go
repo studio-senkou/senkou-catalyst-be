@@ -6,10 +6,13 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
+	"io"
 	"mime/multipart"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 )
 
 func GenerateEncryptedFilename(originalFilename, prefix string) string {
@@ -83,6 +86,17 @@ func UploadFileToStorage(file *multipart.FileHeader, storagePath, prefix string,
 	return uploadedPath, nil
 }
 
+func GetFileFromStorage(path string) (string, error) {
+	ctx := context.Background()
+	uploader := NewUploadService()
+	fileURL, err := uploader.GetFileURL(ctx, path)
+	if err != nil {
+		return "", fmt.Errorf("failed to get file URL: %w", err)
+	}
+
+	return fileURL, nil
+}
+
 func RemoveFileFromStorage(path string) error {
 	ctx := context.Background()
 	uploader := NewUploadService()
@@ -91,4 +105,25 @@ func RemoveFileFromStorage(path string) error {
 		return fmt.Errorf("failed to remove file: %w", err)
 	}
 	return nil
+}
+
+func DownloadFileFromStorage(path string) ([]byte, error) {
+	ctx := context.Background()
+	uploader := NewUploadService()
+
+	output, err := uploader.storage.GetObject(ctx, &s3.GetObjectInput{
+		Bucket: &uploader.bucket,
+		Key:    &path,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get file: %w", err)
+	}
+	defer output.Body.Close()
+
+	data, err := io.ReadAll(output.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read file body: %w", err)
+	}
+
+	return data, nil
 }

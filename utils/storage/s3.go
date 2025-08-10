@@ -109,6 +109,24 @@ func (s *UploadService) UploadFile(ctx context.Context, file *multipart.FileHead
 	return key, nil
 }
 
+func (s *UploadService) GetFileURL(ctx context.Context, path string) (string, error) {
+	presignClient := s3.NewPresignClient(s.storage)
+	input := &s3.GetObjectInput{
+		Bucket: aws.String(s.bucket),
+		Key:    aws.String(path),
+	}
+
+	presignedReq, err := presignClient.PresignGetObject(ctx, input, func(opts *s3.PresignOptions) {
+		opts.Expires = 30 * 60 // Persist for 30 minutes
+	})
+
+	if err != nil {
+		return "", fmt.Errorf("failed to presign URL: %w", err)
+	}
+
+	return presignedReq.URL, nil
+}
+
 func (s *UploadService) RemoveFile(ctx context.Context, path string) error {
 	_, err := s.storage.DeleteObject(ctx, &s3.DeleteObjectInput{
 		Bucket: aws.String(s.bucket),
