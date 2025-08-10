@@ -56,6 +56,7 @@ var ControllerSet = wire.NewSet(
 	controllers.NewSubscriptionController,
 	controllers.NewPaymentMethodsController,
 	controllers.NewPaymentController,
+	controllers.NewStorageController,
 )
 
 func ProvideJWTManager() (*authUtil.JWTManager, error) {
@@ -238,6 +239,7 @@ func NewContainer(
 	subscriptionController *controllers.SubscriptionController,
 	paymentMethodsController *controllers.PaymentMethodsController,
 	paymentController *controllers.PaymentController,
+	storageController *controllers.StorageController,
 	userService services.UserService,
 	productService services.ProductService,
 ) *Container {
@@ -251,6 +253,7 @@ func NewContainer(
 		SubscriptionController:       subscriptionController,
 		PaymentMethodsController:     paymentMethodsController,
 		PaymentController:            paymentController,
+		StorageController:            storageController,
 		UserService:                  userService,
 		ProductService:               productService,
 	}

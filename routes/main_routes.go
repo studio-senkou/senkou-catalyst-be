@@ -33,4 +33,5 @@ func InitRoutes(app *fiber.App, deps *container.Container) {
 	InitSubscriptionRoutes(app, deps.SubscriptionController)
 	InitPaymentMethodsRoutes(app, deps.PaymentMethodsController)
 	InitPaymentRoutes(app, deps.PaymentController)
+	InitStorageRoutes(app, deps.StorageController)
 }

@@ -15,6 +15,7 @@ type Container struct {
 	SubscriptionController       *controllers.SubscriptionController
 	PaymentMethodsController     *controllers.PaymentMethodsController
 	PaymentController            *controllers.PaymentController
+	StorageController            *controllers.StorageController
 	UserService                  services.UserService
 	ProductService               services.ProductService
 }
