@@ -1,4 +1,4 @@
-package database
+package seeder
 
 import (
 	"senkou-catalyst-be/app/models"
