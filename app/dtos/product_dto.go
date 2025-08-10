@@ -5,6 +5,7 @@ type CreateProductDTO struct {
 	Description  string  `json:"description" validate:"omitempty,max=500"`
 	Price        float64 `json:"price" validate:"required,number,min=0"`
 	AffiliateURL string  `json:"affiliate_url" validate:"required,url"`
+	Photo        string  `json:"photo" validate:"omitempty"`
 	MerchantID   string  `json:"merchant_id" validate:"required,uuid"`
 	CategoryID   *uint32 `json:"category_id" validate:"omitempty,number"`
 }

@@ -16,6 +16,7 @@ type Product struct {
 	Price        float64        `json:"price"         gorm:"type:decimal(10,2);not null"`
 	Description  string         `json:"description"   gorm:"type:text"`
 	AffiliateURL string         `json:"affiliate_url" gorm:"type:text;not null"`
+	Photo        string         `json:"photo" gorm:"type:text;not null"`
 	CreatedAt    time.Time      `json:"created_at"    gorm:"type:timestamp;default:CURRENT_TIMESTAMP"`
 	UpdatedAt    time.Time      `json:"updated_at"    gorm:"type:timestamp;default:CURRENT_TIMESTAMP"`
 	DeletedAt    gorm.DeletedAt `json:"-"             gorm:"type:timestamp;index"`
