@@ -16,6 +16,19 @@ require (
 require github.com/midtrans/midtrans-go v1.3.8
 
 require (
+	github.com/aws/aws-sdk-go-v2 v1.37.2 // indirect
+	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.7.0 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/configsources v1.4.2 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.7.2 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/v4a v1.4.2 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.13.0 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.8.2 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.13.2 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.19.2 // indirect
+	github.com/aws/smithy-go v1.22.5 // indirect
+)
+
+require (
 	github.com/KyleBanks/depth v1.2.1 // indirect
 	github.com/PuerkitoBio/purell v1.1.1 // indirect
 	github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578 // indirect
@@ -53,6 +66,8 @@ require (
 )
 
 require (
+	github.com/aws/aws-sdk-go-v2/credentials v1.18.3
+	github.com/aws/aws-sdk-go-v2/service/s3 v1.86.0
 	github.com/gabriel-vasile/mimetype v1.4.8 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect

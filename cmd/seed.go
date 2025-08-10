@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"senkou-catalyst-be/database"
+	"senkou-catalyst-be/database/seeder"
 	"senkou-catalyst-be/platform/config"
 )
 
@@ -11,7 +11,7 @@ import (
 // @description Seeder for Catalyst API
 func main() {
 	config.ConnectDB()
-	database.Seed(config.DB)
+	seeder.Seed(config.DB)
 
 	fmt.Println("Database seeding completed successfully!")
 }

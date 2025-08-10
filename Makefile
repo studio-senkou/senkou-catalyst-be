@@ -6,7 +6,7 @@ export DISCORD_BOT_URL
 export DISCORD_CHANNEL_ID
 endif
 
-.PHONY=auth-secret rebuild rebuild-dev wire dev-up dev-down dev-logs prod-up prod-down prod-logs seed clean dev-status prod-status list-all swagger test-discord
+.PHONY=auth-secret rebuild rebuild-stage rebuild-dev wire dev-up dev-down dev-logs prod-up prod-down prod-logs seed clean dev-status prod-status list-all swagger test-discord
 
 auth-secret:
 	@echo "" >> .env
@@ -25,36 +25,43 @@ rebuild:
 	@echo "✅ Production rebuild completed successfully!"
 	@$(call send_discord_notification,✅ Production rebuild completed successfully for Senkou Catalyst BE)
 
-rebuild-dev:
-	@echo "🚀 Starting development rebuild..."
-	@$(call send_discord_notification,🚀 Development rebuild started for Senkou Catalyst BE)
+rebuild-stage:
+	@echo "🚀 Starting staging rebuild..."
+	@$(call send_discord_notification,🚀 Staging rebuild started for Senkou Catalyst BE)
 	@mv .env .env.temp 2>/dev/null || true
-	@docker compose -f docker-compose-dev.yml --env-file .env.development -p senkou-catalyst-dev down --remove-orphans
-	@docker compose -f docker-compose-dev.yml --env-file .env.development -p senkou-catalyst-dev build --no-cache
-	@docker compose -f docker-compose-dev.yml --env-file .env.development -p senkou-catalyst-dev up -d
+	@docker compose -f docker-compose-staging.yml --env-file .env.staging -p senkou-catalyst-staging down --remove-orphans
+	@docker compose -f docker-compose-staging.yml --env-file .env.staging -p senkou-catalyst-staging build --no-cache
+	@docker compose -f docker-compose-staging.yml --env-file .env.staging -p senkou-catalyst-staging up -d
 	@mv .env.temp .env 2>/dev/null || true
 	@docker image prune -f
-	@echo "✅ Development rebuild completed successfully!"
-	@$(call send_discord_notification,✅ Development rebuild completed successfully for Senkou Catalyst BE)
+	@echo "✅ Staging rebuild completed successfully!"
+	@$(call send_discord_notification,✅ Staging rebuild completed successfully for Senkou Catalyst BE)
+
+rebuild-dev:
+	@docker compose -f docker-compose-dev.yml --env-file .env -p senkou-catalyst-dev down --remove-orphans
+	@docker compose -f docker-compose-dev.yml --env-file .env -p senkou-catalyst-dev build --no-cache
+	@docker compose -f docker-compose-dev.yml --env-file .env -p senkou-catalyst-dev up -d
+	@docker image prune -f
+	@echo "Development environment rebuilt successfully!"
 
 wire:
 	@cd container && wire
 	@echo "Wire dependency injection generated successfully."
 
-dev-up:
+stage-up:
 	@mv .env .env.temp 2>/dev/null || true
-	@docker compose -f docker-compose-dev.yml --env-file .env.development -p senkou-catalyst-dev up -d
+	@docker compose -f docker-compose-staging.yml --env-file .env.staging -p senkou-catalyst-staging up -d
 	@mv .env.temp .env 2>/dev/null || true
-	@echo "Development environment started"
+	@echo "Staging environment started"
 
-dev-down:
+stage-down:
 	@mv .env .env.temp 2>/dev/null || true
-	@docker compose -f docker-compose-dev.yml --env-file .env.development -p senkou-catalyst-dev down
+	@docker compose -f docker-compose-staging.yml --env-file .env.staging -p senkou-catalyst-staging down
 	@mv .env.temp .env 2>/dev/null || true
-	@echo "Development environment stopped"
+	@echo "Staging environment stopped"
 
-dev-logs:
-	@docker compose -f docker-compose-dev.yml --env-file .env.development -p senkou-catalyst-dev logs -f
+stage-logs:
+	@docker compose -f docker-compose-staging.yml --env-file .env.staging -p senkou-catalyst-staging logs -f
 
 prod-up:
 	@docker compose -f docker-compose.yml --env-file .env.production -p senkou-catalyst-prod up -d

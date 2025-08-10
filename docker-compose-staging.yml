@@ -1,0 +1,69 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.staging
+    container_name: senkou-catalyst-app-staging
+    restart: unless-stopped
+    environment:
+      - APP_PORT=5556
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USERNAME=${DB_USERNAME:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-}
+      - DB_NAME=${DB_NAME:-senkou_catalyst_staging}
+      - JWT_SECRET=${JWT_SECRET:-}
+    depends_on:
+      - postgres
+    networks:
+      - catalyst-staging-network
+
+  postgres:
+    image: postgres:17-alpine
+    container_name: senkou-catalyst-postgres-staging
+    restart: unless-stopped
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    environment:
+      - POSTGRES_USER=${DB_USERNAME:-postgres}
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-}
+      - POSTGRES_DB=${DB_NAME:-senkou_catalyst}
+    volumes:
+      - postgres_data_staging:/var/lib/postgresql/data
+    networks:
+      - catalyst-staging-network
+
+  cloudflare:
+    image: cloudflare/cloudflared:latest
+    container_name: senkou-catalyst-cloudflare-staging
+    restart: unless-stopped
+    command: tunnel --no-autoupdate --protocol http2 run --token ${TUNNEL_TOKEN:-}
+    networks:
+      - catalyst-staging-network
+
+  minio:
+    image: minio/minio:latest
+    container_name: senkou-catalyst-minio-staging
+    restart: unless-stopped
+    ports:
+      - "${MINIO_S3_PORT:-9000}:9000"
+      - "${MINIO_WEB_PORT:-9901}:9001"
+    environment:
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER:-minioadmin}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD:-minioadmin}
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data_staging:/data
+    networks:
+      - catalyst-staging-network
+
+networks:
+  catalyst-staging-network:
+    name: catalyst-staging-network
+    driver: bridge
+
+volumes:
+  postgres_data_staging:
+    driver: local
+  minio_data_staging:
+    driver: local

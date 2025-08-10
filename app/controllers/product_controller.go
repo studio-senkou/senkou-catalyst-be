@@ -4,6 +4,7 @@ import (
 	"senkou-catalyst-be/app/dtos"
 	"senkou-catalyst-be/app/services"
 	"senkou-catalyst-be/utils/response"
+	"senkou-catalyst-be/utils/storage"
 	"senkou-catalyst-be/utils/validator"
 
 	"github.com/gofiber/fiber/v2"
@@ -35,15 +36,31 @@ func NewProductController(productService services.ProductService) *ProductContro
 func (h *ProductController) CreateProduct(c *fiber.Ctx) error {
 	createProductDTO := new(dtos.CreateProductDTO)
 
-	if err := validator.Validate(c, createProductDTO); err != nil {
-		if vErr, ok := err.(*validator.ValidationError); ok {
-			return response.BadRequest(c, "Validation failed", vErr.Errors)
-		}
-
+	if validationErrors, err := validator.ValidateFormData(c, createProductDTO); err != nil {
 		return response.InternalError(c, "Internal server error", map[string]any{
 			"error": err.Error(),
 		})
+	} else if len(validationErrors) > 0 {
+		return response.BadRequest(c, "Validation failed", validationErrors)
 	}
+
+	productPhoto, err := c.FormFile("photo")
+	if err != nil {
+		return response.BadRequest(c, "Failed to retrieve product photo", err.Error())
+	} else if productPhoto == nil {
+		return response.BadRequest(c, "Product photo is required", nil)
+	}
+
+	productPhotoPath, err := storage.UploadFileToStorage(productPhoto, "products", "PD", nil)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"status":  "fail",
+			"message": "Failed to upload testimoner photo",
+			"error":   err.Error(),
+		})
+	}
+
+	createProductDTO.Photo = productPhotoPath
 
 	createdProduct, appError := h.ProductService.CreateProduct(createProductDTO, createProductDTO.MerchantID)
 
