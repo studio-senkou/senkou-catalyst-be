@@ -19,6 +19,6 @@ func setBankTransferParams(chargeReq *coreapi.ChargeReq, channel BankChannel) er
 			Bank: "bca",
 		}
 	}
-	
+
 	return nil
 }
