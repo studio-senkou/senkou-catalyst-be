@@ -70,6 +70,14 @@ func (b *PaymentBuilder) setPaymentMethodParams(chargeReq *coreapi.ChargeReq, pm
 	switch pm.PaymentType {
 	case "bank_transfer":
 		return setBankTransferParams(chargeReq, BankChannel(pm.Channel))
+	case "e_wallet_dana":
+		return setDanaParams(chargeReq)
+	case "e_wallet_gopay":
+		return setGopayParams(chargeReq)
+	case "e_wallet_shopeepay":
+		return setShopeePayParams(chargeReq)
+	case "qris":
+		return setQrisParams(chargeReq)
 	}
 
 	return errors.New("unsupported payment method: " + pm.PaymentType)

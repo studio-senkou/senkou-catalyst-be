@@ -35,6 +35,15 @@ payment_methods:
     description: "Permata Virtual Account"
     logo_url: ""
 
+  # Payment method for QRIS (Quick Response Code Indonesian Standard)
+  - name: "QRIS"
+    payment_type: "qris"
+    payment_channel: "qris"
+    min_amount: 1000
+    max_amount: 10000000
+    description: "QRIS payment method"
+    logo_url: ""
+
   # Payment method for GoPay e-wallet
   - name: "GoPay"
     payment_type: "e_wallet_gopay"
