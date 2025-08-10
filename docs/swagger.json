@@ -3013,6 +3013,9 @@
                 "merchant_id": {
                     "type": "string"
                 },
+                "photo": {
+                    "type": "string"
+                },
                 "price": {
                     "type": "number",
                     "minimum": 0
@@ -3286,6 +3289,9 @@
                     "type": "string"
                 },
                 "merchant_id": {
+                    "type": "string"
+                },
+                "photo": {
                     "type": "string"
                 },
                 "price": {

@@ -42,6 +42,8 @@ definitions:
         type: string
       merchant_id:
         type: string
+      photo:
+        type: string
       price:
         minimum: 0
         type: number
@@ -233,6 +235,8 @@ definitions:
       id:
         type: string
       merchant_id:
+        type: string
+      photo:
         type: string
       price:
         type: number

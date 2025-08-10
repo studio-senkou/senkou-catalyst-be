@@ -3016,6 +3016,9 @@ const docTemplate = `{
                 "merchant_id": {
                     "type": "string"
                 },
+                "photo": {
+                    "type": "string"
+                },
                 "price": {
                     "type": "number",
                     "minimum": 0
@@ -3289,6 +3292,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "merchant_id": {
+                    "type": "string"
+                },
+                "photo": {
                     "type": "string"
                 },
                 "price": {
