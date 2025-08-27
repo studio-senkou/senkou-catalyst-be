@@ -10,7 +10,7 @@ import (
 
 type User struct {
 	ID        uint32         `json:"id"           gorm:"type:int;primaryKey"`
-	Merchants []*Merchant    `json:"merchants"     gorm:"foreignKey:OwnerID;references:ID"`
+	Merchants []*Merchant    `json:"merchants"    gorm:"foreignKey:OwnerID;references:ID"`
 	Name      string         `json:"name"         gorm:"type:varchar(100);not null"`
 	Email     string         `json:"email"        gorm:"type:varchar(100);unique;not null"`
 	Phone     string         `json:"phone"        gorm:"type:varchar(20);unique;not null"`
