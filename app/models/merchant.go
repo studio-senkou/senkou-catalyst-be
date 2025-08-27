@@ -7,9 +7,6 @@ import (
 )
 
 type Merchant struct {
-
-	gorm.Model
-
 	ID        string         `json:"id"         gorm:"type:char(16);primaryKey"`
 	Name      string         `json:"name"       gorm:"type:varchar(100);not null"`
 	OwnerID   uint32         `json:"owner_id"   gorm:"type:int;not null;unique"`

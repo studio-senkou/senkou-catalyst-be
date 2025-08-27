@@ -103,7 +103,7 @@ func (h *UserController) GetUserDetail(c *fiber.Ctx) error {
 		return response.InternalError(c, "Failed to retrieve user details", fmt.Sprintf("Could not process your request due to an error: %v", appError.Details))
 	}
 
-	return c.Status(fiber.StatusNotImplemented).JSON(fiber.Map{
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"message": "User detail endpoint not implemented",
 		"data": fiber.Map{
 			"user": user,

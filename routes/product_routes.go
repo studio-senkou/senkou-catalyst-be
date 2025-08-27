@@ -16,9 +16,13 @@ type ProductRouteDependencies struct {
 
 func InitProductRoutes(app *fiber.App, deps ProductRouteDependencies) {
 	app.Post("/products", middlewares.JWTProtected, deps.ProductController.CreateProduct)
+	app.Post("/products/:productID/photos", middlewares.JWTProtected, deps.ProductController.UploadProductPhoto)
+
 	app.Get("/products", middlewares.JWTProtected, middlewares.RoleMiddleware("admin"), deps.ProductController.GetAllProducts)
 	app.Get("/products/:id", deps.ProductController.GetProductByID)
 	app.Get("/merchants/:merchantID/products", deps.ProductController.GetProductByMerchant)
+
+	app.Delete("/products/:productID/photos/*", middlewares.JWTProtected, deps.ProductController.DeleteProductPhoto)
 
 	route := app.Group(
 		"/merchants/:merchantID/products/:productID",

@@ -7,9 +7,6 @@ import (
 )
 
 type Subscription struct {
-
-	gorm.Model
-
 	ID          uint32         `json:"id"           gorm:"type:int;primaryKey"`
 	Name        string         `json:"name"         gorm:"type:varchar(100);not null"`
 	Price       float32        `json:"price"        gorm:"type:decimal(10,2);not null"`

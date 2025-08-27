@@ -53,11 +53,14 @@ func (h *ProductController) CreateProduct(c *fiber.Ctx) error {
 		return response.BadRequest(c, "Validation failed", validationErrors)
 	}
 
-	productPhoto, err := c.FormFile("photo")
+	form, err := c.MultipartForm()
 	if err != nil {
-		return response.BadRequest(c, "Failed to retrieve product photo", err.Error())
-	} else if productPhoto == nil {
-		return response.BadRequest(c, "Product photo is required", nil)
+		return response.BadRequest(c, "Failed to parse multipart form data", err.Error())
+	}
+
+	photos := form.File["photos"]
+	if len(photos) == 0 {
+		return response.BadRequest(c, "At least one product photo required", nil)
 	}
 
 	user, userErr := h.UserService.GetUserDetail(uint32(userID))
@@ -69,16 +72,21 @@ func (h *ProductController) CreateProduct(c *fiber.Ctx) error {
 		return response.BadRequest(c, "Cannot create product", "User does not have any associated merchants")
 	}
 
-	productPhotoPath, err := storage.UploadFileToStorage(productPhoto, "products", "PD", nil)
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"status":  "fail",
-			"message": "Failed to upload product photo",
-			"error":   err.Error(),
-		})
+	var photoPaths []string
+	for _, photo := range photos {
+		if !storage.IsValidImageExtension(photo.Filename) {
+			return response.BadRequest(c, "Invalid image format", fmt.Sprintf("File %s has an unsupported format", photo.Filename))
+		}
+
+		photoPath, err := storage.UploadFileToStorage(photo, "products", "PD", nil)
+		if err != nil {
+			return response.InternalError(c, "Failed to upload product photo", err.Error())
+		}
+
+		photoPaths = append(photoPaths, photoPath)
 	}
 
-	createProductDTO.Photo = productPhotoPath
+	createProductDTO.Photos = photoPaths
 
 	createdProduct, appError := h.ProductService.CreateProduct(createProductDTO, user.Merchants[0].ID)
 
@@ -91,6 +99,88 @@ func (h *ProductController) CreateProduct(c *fiber.Ctx) error {
 		"data": fiber.Map{
 			"product": createdProduct,
 		},
+	})
+}
+
+func (h *ProductController) UploadProductPhoto(c *fiber.Ctx) error {
+	productId := c.Params("productID")
+	if productId == "" {
+		return response.BadRequest(c, "Product ID is required", nil)
+	}
+
+	photo, err := c.FormFile("photo")
+	if err != nil {
+		return response.BadRequest(c, "Failed to parse photo", err.Error())
+	}
+
+	if !storage.IsValidImageExtension(photo.Filename) {
+		return response.BadRequest(c, "Invalid image format", fmt.Sprintf("File %s has an unsupported format", photo.Filename))
+	}
+
+	// product, err := h.ProductService.GetProductByID(productId)
+	product, appError := h.ProductService.GetProductByID(productId)
+	if appError != nil {
+		switch appError.Code {
+		case fiber.StatusNotFound:
+			return response.NotFound(c, "Product not found")
+		default:
+			return response.InternalError(c, "Failed to retrieve product", appError.Details)
+		}
+	} else if product == nil {
+		return response.NotFound(c, "Product not found")
+	} else if len(product.Photos) >= 5 {
+		return response.BadRequest(c, "Cannot upload more photos", "Maximum of 5 photos allowed per product")
+	}
+
+	photoPath, err := storage.UploadFileToStorage(photo, "products", "PD", nil)
+	if err != nil {
+		return response.InternalError(c, "Failed to upload product photo", err.Error())
+	}
+
+	product.Photos.AddPhoto(photoPath)
+
+	if err := h.ProductService.UpdateProductPhotos(product); err != nil {
+		return response.InternalError(c, "Failed to update product", err.Details)
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"message": "Successfully update product photos",
+	})
+}
+
+func (h *ProductController) DeleteProductPhoto(c *fiber.Ctx) error {
+	productId := c.Params("productID")
+	if productId == "" {
+		return response.BadRequest(c, "Product ID is required", nil)
+	}
+
+	filePath := c.Params("*")
+	if filePath == "" {
+		return response.BadRequest(c, "File path is required", nil)
+	}
+
+	product, err := h.ProductService.GetProductByID(productId)
+	if err != nil {
+		switch err.Code {
+		case fiber.StatusNotFound:
+			return response.NotFound(c, "Product not found")
+		default:
+			return response.InternalError(c, "Failed to retrieve product", err.Details)
+		}
+	}
+
+	if err := storage.RemoveFileFromStorage(filePath); err != nil {
+		return response.InternalError(c, "Failed to remove photo file", nil)
+	}
+
+	product.Photos.RemovePhoto(filePath)
+
+	if err := h.ProductService.UpdateProductPhotos(product); err != nil {
+		return response.InternalError(c, "Failed to update product", err.Details)
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"message": "Successfully remove photo file",
 	})
 }
 

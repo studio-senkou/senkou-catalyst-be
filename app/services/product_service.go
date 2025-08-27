@@ -17,6 +17,7 @@ type ProductService interface {
 	GetProductsByMerchantID(merchantID string) ([]*models.Product, *errors.AppError)
 	GetAllProducts() ([]*models.Product, *errors.AppError)
 	UpdateProduct(updatedProduct *dtos.UpdateProductDTO, productID string) (*models.Product, *errors.AppError)
+	UpdateProductPhotos(product *models.Product) *errors.AppError
 	DeleteProduct(productID string) *errors.AppError
 	VerifyProductOwnership(productID string, userID uint32) *errors.AppError
 }
@@ -42,7 +43,7 @@ func (s *ProductServiceInstance) CreateProduct(product *dtos.CreateProductDTO, m
 		Title:        product.Title,
 		Description:  product.Description,
 		Price:        product.Price,
-		Photo:        product.Photo,
+		Photos:       product.Photos,
 		AffiliateURL: product.AffiliateURL,
 		CategoryID:   product.CategoryID,
 		MerchantID:   merchantID,
@@ -146,6 +147,14 @@ func (s *ProductServiceInstance) UpdateProduct(updatedProduct *dtos.UpdateProduc
 	}
 
 	return updated, nil
+}
+
+func (s *ProductServiceInstance) UpdateProductPhotos(product *models.Product) *errors.AppError {
+	if _, err := s.ProductRepository.UpdateProduct(product); err != nil {
+		return errors.NewAppError(500, fmt.Sprintf("Failed to update product photos: %v", err.Error()))
+	}
+
+	return nil
 }
 
 // Delete a product

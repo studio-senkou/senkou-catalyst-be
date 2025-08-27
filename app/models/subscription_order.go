@@ -8,9 +8,6 @@ import (
 )
 
 type SubscriptionOrder struct {
-
-	gorm.Model
-
 	ID                   uuid.UUID      `json:"id" gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
 	UserID               uint32         `json:"user_id" gorm:"not null;index"`
 	SubscriptionID       uint32         `json:"subscription_id" gorm:"not null;index"`

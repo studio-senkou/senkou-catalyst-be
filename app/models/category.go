@@ -7,9 +7,6 @@ import (
 )
 
 type Category struct {
-	
-	gorm.Model
-
 	ID         uint32         `json:"id"          gorm:"primaryKey;autoIncrement"`
 	Name       string         `json:"name"        gorm:"type:varchar(100);not null"`
 	MerchantID string         `json:"merchant_id" gorm:"type:char(16);not null"`

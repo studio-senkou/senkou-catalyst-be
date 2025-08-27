@@ -1,12 +1,12 @@
 package dtos
 
 type CreateProductDTO struct {
-	Title        string  `json:"title" validate:"required,max=150"`
-	Description  string  `json:"description" validate:"omitempty,max=500"`
-	Price        float64 `json:"price" validate:"required,number,min=0"`
-	AffiliateURL string  `json:"affiliate_url" validate:"required,url"`
-	Photo        string  `json:"photo" validate:"omitempty"`
-	CategoryID   *uint32 `json:"category_id" validate:"omitempty,number"`
+	Title        string   `json:"title" validate:"required,max=150"`
+	Description  string   `json:"description" validate:"omitempty,max=500"`
+	Price        float64  `json:"price" validate:"required,number,min=0"`
+	AffiliateURL string   `json:"affiliate_url" validate:"required,url"`
+	Photos       []string `json:"photos" validate:"omitempty"`
+	CategoryID   *uint32  `json:"category_id" validate:"omitempty,number"`
 }
 
 func (dto *CreateProductDTO) ErrorMessages() map[string]string {
