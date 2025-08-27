@@ -1,8 +1,15 @@
 package models
 
-import "time"
+import (
+	"time"
+
+	"gorm.io/gorm"
+)
 
 type UserSubscription struct {
+
+	gorm.Model
+
 	ID            uint32       `json:"id"             gorm:"type:int;primaryKey"`
 	UserID        uint32       `json:"user_id"        gorm:"type:bigint;not null"`
 	User          User         `json:"user"           gorm:"foreignKey:UserID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`

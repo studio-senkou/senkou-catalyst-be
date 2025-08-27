@@ -1,8 +1,15 @@
 package models
 
-import "time"
+import (
+	"time"
+
+	"gorm.io/gorm"
+)
 
 type UserHasToken struct {
+
+	gorm.Model
+	
 	ID        uint      `json:"id"         gorm:"primaryKey"`
 	UserID    uint32    `json:"user_id"    gorm:"not null"`
 	User      User      `json:"user"       gorm:"foreignKey:UserID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`

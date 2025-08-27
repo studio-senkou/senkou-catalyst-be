@@ -7,6 +7,9 @@ import (
 )
 
 type Product struct {
+
+	gorm.Model
+
 	ID           string         `json:"id"            gorm:"type:uuid;primaryKey"`
 	MerchantID   string         `json:"merchant_id"   gorm:"type:char(16);not null"`
 	Merchant     Merchant       `json:"-"      gorm:"foreignKey:MerchantID;references:ID"`

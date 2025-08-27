@@ -8,6 +8,9 @@ import (
 )
 
 type PaymentTransaction struct {
+
+	gorm.Model
+
 	ID              uuid.UUID      `json:"id" gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
 	PaymentType     string         `json:"payment_type" gorm:"type:varchar(50);not null"`
 	PaymentChannel  string         `json:"payment_channel" gorm:"type:varchar(50);not null"`

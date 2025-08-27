@@ -1,8 +1,15 @@
 package models
 
-import "time"
+import (
+	"time"
+
+	"gorm.io/gorm"
+)
 
 type SubscriptionPlan struct {
+
+	gorm.Model
+
 	ID           uint32       `json:"id"           gorm:"type:int;primaryKey"`
 	SubID        uint32       `json:"sub_id"       gorm:"type:uuid;not null"`
 	Subscription Subscription `json:"-" gorm:"foreignKey:SubID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`

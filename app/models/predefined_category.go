@@ -7,6 +7,9 @@ import (
 )
 
 type PredefinedCategory struct {
+
+	gorm.Model
+
 	ID          uint32         `json:"id"          gorm:"primaryKey"`
 	Name        string         `json:"name"        gorm:"type:varchar(100);not null"`
 	Description string         `json:"description" gorm:"type:text"`
