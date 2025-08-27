@@ -72,13 +72,15 @@ func SendLog(errMsg string) {
 		},
 	}
 
-	if len(errorResponse.Error.Details.([]any)) > 0 {
-		detailsJson, _ := json.MarshalIndent(errorResponse.Error.Details, "", "  ")
-		embed["fields"] = append(embed["fields"].([]map[string]any), map[string]any{
-			"name":   "Details",
-			"value":  "```json\n" + string(detailsJson) + "\n```",
-			"inline": false,
-		})
+	if errorResponse.Error.Details != nil {
+		if details, ok := errorResponse.Error.Details.([]any); ok && len(details) > 0 {
+			detailsJson, _ := json.MarshalIndent(errorResponse.Error.Details, "", "  ")
+			embed["fields"] = append(embed["fields"].([]map[string]any), map[string]any{
+				"name":   "Details",
+				"value":  "```json\n" + string(detailsJson) + "\n```",
+				"inline": false,
+			})
+		}
 	}
 
 	payload := map[string]any{
@@ -156,7 +158,7 @@ func InitFiberConfig() *fiber.Config {
 				})
 			}
 
-			// If the error is a bad request error
+			// If the error is a bad request error``
 			if badRequestErr, ok := err.(*errors.BadRequestError); ok {
 				response.Error.Code = fiber.StatusBadRequest
 				response.Error.Message = badRequestErr.ErrorMessage
