@@ -102,6 +102,19 @@ func (h *ProductController) CreateProduct(c *fiber.Ctx) error {
 	})
 }
 
+// Upload a product photo
+// @Summary Upload a product photo
+// @Description Upload a photo for a specific product
+// @Tags Products
+// @Accept multipart/form-data
+// @Produce json
+// @Security BearerAuth
+// @Param productID path string true "Product ID"
+// @Param photo formData file true "Product photo"
+// @Success 200 {object} fiber.Map{message=string}
+// @Failure 400 {object} fiber.Map{error=string,details=any}
+// @Failure 500 {object} fiber.Map{error=string,details=any}
+// @Router /products/{productID}/photos [post]
 func (h *ProductController) UploadProductPhoto(c *fiber.Ctx) error {
 	productId := c.Params("productID")
 	if productId == "" {
@@ -148,6 +161,20 @@ func (h *ProductController) UploadProductPhoto(c *fiber.Ctx) error {
 	})
 }
 
+// Delete product photo
+// @Summary Delete the product photo by it's file path
+// @Description Delete a photo for a specific product
+// @Tags Products
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param productID path string true "Product ID"
+// @Param filePath path string true "File path"
+// @Success 200 {object} fiber.Map{message=string}
+// @Failure 400 {object} fiber.Map{error=string,details=any}
+// @Failure 404 {object} fiber.Map{error=string,details=any}
+// @Failure 500 {object} fiber.Map{error=string,details=any}
+// @Router /products/{productID}/photos/{filePath} [delete]
 func (h *ProductController) DeleteProductPhoto(c *fiber.Ctx) error {
 	productId := c.Params("productID")
 	if productId == "" {

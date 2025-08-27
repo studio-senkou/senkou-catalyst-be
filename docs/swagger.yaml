@@ -40,8 +40,10 @@ definitions:
       description:
         maxLength: 500
         type: string
-      photo:
-        type: string
+      photos:
+        items:
+          type: string
+        type: array
       price:
         minimum: 0
         type: number
@@ -233,8 +235,10 @@ definitions:
         type: string
       merchant_id:
         type: string
-      photo:
-        type: string
+      photos:
+        items:
+          type: string
+        type: array
       price:
         type: number
       title:
@@ -1548,6 +1552,122 @@ paths:
       security:
       - BearerAuth: []
       summary: Update a product
+      tags:
+      - Products
+  /products/{productID}/photos:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Upload a photo for a specific product
+      parameters:
+      - description: Product ID
+        in: path
+        name: productID
+        required: true
+        type: string
+      - description: Product photo
+        in: formData
+        name: photo
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/fiber.Map'
+            - properties:
+                message:
+                  type: string
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/fiber.Map'
+            - properties:
+                details: {}
+                error:
+                  type: string
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/fiber.Map'
+            - properties:
+                details: {}
+                error:
+                  type: string
+              type: object
+      security:
+      - BearerAuth: []
+      summary: Upload a product photo
+      tags:
+      - Products
+  /products/{productID}/photos/{filePath}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a photo for a specific product
+      parameters:
+      - description: Product ID
+        in: path
+        name: productID
+        required: true
+        type: string
+      - description: File path
+        in: path
+        name: filePath
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/fiber.Map'
+            - properties:
+                message:
+                  type: string
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/fiber.Map'
+            - properties:
+                details: {}
+                error:
+                  type: string
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            allOf:
+            - $ref: '#/definitions/fiber.Map'
+            - properties:
+                details: {}
+                error:
+                  type: string
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/fiber.Map'
+            - properties:
+                details: {}
+                error:
+                  type: string
+              type: object
+      security:
+      - BearerAuth: []
+      summary: Delete the product photo by it's file path
       tags:
       - Products
   /subscriptions:
