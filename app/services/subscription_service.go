@@ -6,6 +6,7 @@ import (
 	"senkou-catalyst-be/app/models"
 	"senkou-catalyst-be/platform/errors"
 	"senkou-catalyst-be/repositories"
+	"time"
 )
 
 type SubscriptionService interface {
@@ -14,6 +15,7 @@ type SubscriptionService interface {
 	CreateSubscriptionPlan(request *dtos.CreateSubscriptionPlanDTO, subID uint32) *errors.AppError
 	GetAllSubscriptions() ([]*models.Subscription, *errors.AppError)
 	GetSubscriptionByID(subID uint32) (*models.Subscription, *errors.AppError)
+	AssignFreeTierSubscription(userID uint32) *errors.AppError
 	UpdateSubscription(request *dtos.UpdateSubscriptionDTO, subID uint32) *errors.AppError
 	DeleteSubscription(subID uint32) *errors.AppError
 }
@@ -75,6 +77,29 @@ func (s *SubscriptionServiceInstance) SubscribeUserToSubscription(userID, subID 
 
 	if err := s.SubscriptionRepository.SubscribeUser(sub); err != nil {
 		return errors.NewAppError(500, fmt.Sprintf("Failed to subscribe user to subscription: %s", err.Error()))
+	}
+
+	return nil
+}
+
+// Assign a free tier subscription to a user
+// This function will assign a free tier subscription to a user by userID
+// It returns an error if the user could not be assigned the subscription
+func (s *SubscriptionServiceInstance) AssignFreeTierSubscription(userID uint32) *errors.AppError {
+	freeTierSub, err := s.SubscriptionRepository.FindFreeTierSubscription()
+	if err != nil || freeTierSub == nil {
+		return errors.NewAppError(404, "Free tier subscription not found")
+	}
+
+	if err := s.SubscriptionRepository.SubscribeUser(&models.UserSubscription{
+		UserID:        userID,
+		SubID:         freeTierSub.ID,
+		StartedAt:     time.Now(),
+		ExpiredAt:     time.Now().AddDate(100, 0, 0),
+		IsActive:      true,
+		PaymentStatus: "settled",
+	}); err != nil {
+		return errors.NewAppError(500, fmt.Sprintf("Failed to assign free tier subscription: %s", err.Error()))
 	}
 
 	return nil

@@ -54,6 +54,7 @@ func main() {
 
 func register(c *SeederContext) {
 	c.Register("user_seeder", seeder.SeedUsers)
+	c.Register("subscription_seeder", seeder.SeedSubscriptions)
 	c.Register("all", func(db *gorm.DB) error {
 		if err := seeder.SeedUsers(db); err != nil {
 			panic(err)

@@ -30,14 +30,17 @@ func (r *SubscriptionPlanRepositoryInstance) StoreNewPlan(plan *models.Subscript
 	return nil
 }
 
+// Check if the subscription plan already exists
+// This function checks for the existence of a subscription plan by its name and subscription ID
 func (r *SubscriptionPlanRepositoryInstance) IsPlanExists(subID uint32, planName string) (bool, error) {
-	plan := new(models.SubscriptionPlan)
-
-	err := r.DB.Where("name = ? AND subscription_id = ?", planName, subID).First(&plan).Error
+	var count int64
+	err := r.DB.Model(&models.SubscriptionPlan{}).
+		Where("name = ? AND sub_id = ?", planName, subID).
+		Count(&count).Error
 
 	if err != nil {
 		return false, err
 	}
 
-	return true, nil
+	return count > 0, nil
 }
