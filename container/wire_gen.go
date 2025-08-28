@@ -24,7 +24,10 @@ func InitializeUserController() (*controllers.UserController, error) {
 	userRepository := repositories.NewUserRepository(db)
 	merchantRepository := repositories.NewMerchantRepository(db)
 	userService := services.NewUserService(userRepository, merchantRepository)
-	userController := controllers.NewUserController(userService)
+	subscriptionRepository := repositories.NewSubscriptionRepository(db)
+	subscriptionPlanRepository := repositories.NewSubscriptionPlanRepository(db)
+	subscriptionService := services.NewSubscriptionService(subscriptionRepository, subscriptionPlanRepository)
+	userController := controllers.NewUserController(userService, subscriptionService)
 	return userController, nil
 }
 
@@ -165,7 +168,10 @@ func InitializeContainer() (*Container, error) {
 	userRepository := repositories.NewUserRepository(db)
 	merchantRepository := repositories.NewMerchantRepository(db)
 	userService := services.NewUserService(userRepository, merchantRepository)
-	userController := controllers.NewUserController(userService)
+	subscriptionRepository := repositories.NewSubscriptionRepository(db)
+	subscriptionPlanRepository := repositories.NewSubscriptionPlanRepository(db)
+	subscriptionService := services.NewSubscriptionService(subscriptionRepository, subscriptionPlanRepository)
+	userController := controllers.NewUserController(userService, subscriptionService)
 	merchantService := services.NewMerchantService(merchantRepository)
 	merchantController := controllers.NewMerchantController(merchantService)
 	productRepository := repositories.NewProductRepository(db)
@@ -184,9 +190,6 @@ func InitializeContainer() (*Container, error) {
 	}
 	authService := services.NewAuthService(authRepository, jwtManager)
 	authController := controllers.NewAuthController(authService, userService)
-	subscriptionRepository := repositories.NewSubscriptionRepository(db)
-	subscriptionPlanRepository := repositories.NewSubscriptionPlanRepository(db)
-	subscriptionService := services.NewSubscriptionService(subscriptionRepository, subscriptionPlanRepository)
 	subscriptionOrderRepository := repositories.NewSubscriptionOrderRepository(db)
 	subscriptionOrderService := services.NewSubscriptionOrderService(subscriptionOrderRepository)
 	midtransClient, err := ProvideMidtransClient()

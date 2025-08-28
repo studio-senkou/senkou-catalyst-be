@@ -12,6 +12,8 @@ type SubscriptionRepository interface {
 	SubscribeUser(sub *models.UserSubscription) error
 	FindAllSubscriptions() ([]*models.Subscription, error)
 	FindByID(id uint32) (*models.Subscription, error)
+	FindActiveSubscriptionByUserID(userID uint32) (*models.Subscription, error)
+	FindFreeTierSubscription() (*models.Subscription, error)
 	UpdateSubscription(updatedSubscription *models.Subscription) (*models.Subscription, error)
 	DeleteSubscription(subscription *models.Subscription) error
 	VerifyUserHasActiveSubscription(userID, subID uint32) (bool, error)
@@ -31,8 +33,9 @@ func NewSubscriptionRepository(db *gorm.DB) SubscriptionRepository {
 // This function saves a new subscription to the database
 // It returns an error if the subscription could not be saved
 func (r *SubscriptionRepositoryInstance) StoreNewSubscription(subscription *models.Subscription) (*models.Subscription, error) {
-	if err := r.DB.Create(subscription).Error; err != nil {
-		return nil, err
+	result := r.DB.Where("name = ?", subscription.Name).FirstOrCreate(subscription)
+	if result.Error != nil {
+		return nil, result.Error
 	}
 
 	return subscription, nil
@@ -62,6 +65,24 @@ func (r *SubscriptionRepositoryInstance) FindAllSubscriptions() ([]*models.Subsc
 	return subscriptions, nil
 }
 
+// Find an active subscription by user id
+// This function retrieves an active subscription for a specific user
+// It returns the subscription and an error if any
+func (r *SubscriptionRepositoryInstance) FindActiveSubscriptionByUserID(userID uint32) (*models.Subscription, error) {
+	userSubscription := new(models.UserSubscription)
+	subscription := new(models.Subscription)
+
+	if err := r.DB.Where("user_id = ? AND is_active = ?", userID, true).First(userSubscription).Error; err != nil {
+		return nil, err
+	}
+
+	if err := r.DB.Preload("Plans").Find(subscription).Error; err != nil {
+		return nil, err
+	}
+
+	return subscription, nil
+}
+
 // Find a subscription by its ID
 // This function retrieves a subscription by its ID from the database
 // It returns the subscription and an error if any
@@ -71,6 +92,17 @@ func (r *SubscriptionRepositoryInstance) FindByID(id uint32) (*models.Subscripti
 		return nil, err
 	}
 	return subscription, nil
+}
+
+// Find a free tier subscription
+// This function retrieve a subscription specific for free tier
+// It returns the subscription and an error if any
+func (r *SubscriptionRepositoryInstance) FindFreeTierSubscription() (*models.Subscription, error) {
+	freeTierSubscription := new(models.Subscription)
+	if err := r.DB.Where("name = $1 AND price = $2", "Free tier", 0).First(freeTierSubscription).Error; err != nil {
+		return nil, err
+	}
+	return freeTierSubscription, nil
 }
 
 // Update an existing subscription

@@ -13,11 +13,15 @@ import (
 )
 
 type UserController struct {
-	service services.UserService
+	userService services.UserService
+	subService  services.SubscriptionService
 }
 
-func NewUserController(service services.UserService) *UserController {
-	return &UserController{service}
+func NewUserController(userService services.UserService, subService services.SubscriptionService) *UserController {
+	return &UserController{
+		userService: userService,
+		subService:  subService,
+	}
 }
 
 // @Summary Create user
@@ -39,7 +43,7 @@ func (h *UserController) CreateUser(c *fiber.Ctx) error {
 		return response.InternalError(c, "Internal server error", fmt.Sprintf("Could not process your request due to an error: %v", err.Error()))
 	}
 
-	newUser, appError := h.service.Create(models.User{
+	newUser, appError := h.userService.Create(models.User{
 		Name:     registerUserDTO.Name,
 		Email:    registerUserDTO.Email,
 		Phone:    registerUserDTO.Phone,
@@ -48,6 +52,10 @@ func (h *UserController) CreateUser(c *fiber.Ctx) error {
 
 	if appError != nil {
 		return response.InternalError(c, "Failed to create user", appError.Details)
+	}
+
+	if err := h.subService.AssignFreeTierSubscription(newUser.ID); err != nil {
+		return response.InternalError(c, "Failed to assign free tier subscription", err.Details)
 	}
 
 	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
@@ -64,7 +72,7 @@ func (h *UserController) CreateUser(c *fiber.Ctx) error {
 // @Success 200 {array} models.User
 // @Router /users [get]
 func (h *UserController) GetUsers(c *fiber.Ctx) error {
-	users, appError := h.service.GetAll()
+	users, appError := h.userService.GetAll()
 
 	if appError != nil {
 		return response.InternalError(c, "Failed to retrieve users", appError.Details)
@@ -97,7 +105,7 @@ func (h *UserController) GetUserDetail(c *fiber.Ctx) error {
 		return response.Unauthorized(c, "You must be logged in to access this resource")
 	}
 
-	user, appError := h.service.GetUserDetail(uint32(userID))
+	user, appError := h.userService.GetUserDetail(uint32(userID))
 
 	if appError != nil {
 		return response.InternalError(c, "Failed to retrieve user details", fmt.Sprintf("Could not process your request due to an error: %v", appError.Details))

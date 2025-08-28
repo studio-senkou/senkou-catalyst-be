@@ -1,11 +1,15 @@
 package services
 
 import (
+	stderror "errors"
 	"fmt"
+
 	"senkou-catalyst-be/app/dtos"
 	"senkou-catalyst-be/app/models"
 	"senkou-catalyst-be/platform/errors"
 	"senkou-catalyst-be/repositories"
+
+	"gorm.io/gorm"
 )
 
 type CategoryService interface {
@@ -51,6 +55,10 @@ func (s *CategoryServiceInstance) CreateNewCategory(category *dtos.CreateCategor
 func (s *CategoryServiceInstance) GetCategoryByName(name string, merchantID string) (*models.Category, *errors.AppError) {
 	category, err := s.CategoryRepository.FindCategoryByName(name, merchantID)
 	if err != nil {
+		if stderror.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.NewAppError(404, "Category not found")
+		}
+
 		return nil, errors.NewAppError(500, fmt.Sprintf("Failed to get category by name: %v", err.Error()))
 	}
 
@@ -62,7 +70,12 @@ func (s *CategoryServiceInstance) GetCategoryByName(name string, merchantID stri
 // It returns the category if found or an error if the operation fails.
 func (s *CategoryServiceInstance) GetCategoryByID(id string) (*models.Category, *errors.AppError) {
 	category, err := s.CategoryRepository.FindCategoryByID(id)
+
 	if err != nil {
+		if stderror.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.NewAppError(404, "Category not found")
+		}
+
 		return nil, errors.NewAppError(500, fmt.Sprintf("Failed to get category by ID: %v", err.Error()))
 	}
 	return category, nil
