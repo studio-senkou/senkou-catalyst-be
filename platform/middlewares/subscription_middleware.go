@@ -69,6 +69,8 @@ func hasAccess(plan *models.SubscriptionPlan, user *models.User) (bool, error) {
 	db := config.GetDB()
 
 	productRepository := repositories.NewProductRepository(db)
+	categoryRepository := repositories.NewCategoryRepository(db)
+
 	switch plan.Name {
 	case "Subscription-Product-Slot":
 
@@ -80,6 +82,22 @@ func hasAccess(plan *models.SubscriptionPlan, user *models.User) (bool, error) {
 				return false, err
 			}
 			if len(products) >= max {
+				return false, nil
+			}
+		}
+
+		return true, nil
+
+	case "Subscription-Category-Limit":
+
+		if categories, err := categoryRepository.FindAllCategoriesByMerchantID(user.Merchants[0].ID); err != nil {
+			return false, err
+		} else {
+			max, err := strconv.Atoi(plan.Value)
+			if err != nil {
+				return false, err
+			}
+			if len(categories) >= max {
 				return false, nil
 			}
 		}

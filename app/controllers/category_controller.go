@@ -54,21 +54,25 @@ func (h *CategoryController) CreateCategory(c *fiber.Ctx) error {
 		})
 	}
 
-	if category, _ := h.categoryService.GetCategoryByName(createCategoryDTO.Name, merchantID); category != nil {
+	if category, err := h.categoryService.GetCategoryByName(createCategoryDTO.Name, merchantID); err != nil {
+		if err.Code == 500 {
+			return response.InternalError(c, "Cannot continue to create category due to internal error", err.Details)
+		}
+	} else if category != nil {
 		return response.BadRequest(c, "Cannot continue to create category due to conflict", "Category already exists with the same name for this merchant")
 	}
 
 	category, appError := h.categoryService.CreateNewCategory(createCategoryDTO, merchantID)
 
 	if appError != nil {
-		return response.InternalError(c, "Cannot create the category due to internal error", appError.Details)
+		return response.InternalError(c, "Cannot create the category errdue to internal error", appError.Details)
 	}
 
-	return c.JSON(fiber.Map{
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"message": "Category created successfully",
 		"data": fiber.Map{
 			"category": category,
 		},
-		"message": "Category created successfully",
 	})
 }
 
