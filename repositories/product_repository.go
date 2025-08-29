@@ -3,6 +3,7 @@ package repositories
 import (
 	"errors"
 	"senkou-catalyst-be/app/models"
+	"senkou-catalyst-be/utils/query"
 
 	"gorm.io/gorm"
 )
@@ -11,7 +12,7 @@ type ProductRepository interface {
 	StoreProduct(product *models.Product) (*models.Product, error)
 	FindProductByID(productID string) (*models.Product, error)
 	FindProductsByMerchantID(merchantID string) ([]*models.Product, error)
-	FindAllProducts() ([]*models.Product, error)
+	FindAllProducts(params *query.QueryParams) ([]*models.Product, int64, error)
 	FindMerchantByProductID(productID string) (*models.Merchant, error)
 	UpdateProduct(updatedProduct *models.Product) (*models.Product, error)
 	DeleteProduct(productID string) error
@@ -70,14 +71,30 @@ func (r *ProductRepositoryInstance) FindProductsByMerchantID(merchantID string) 
 // Get all products by administrator only
 // This function retrieves all products from the database
 // It returns a slice of products and an error if any
-func (r *ProductRepositoryInstance) FindAllProducts() ([]*models.Product, error) {
+func (r *ProductRepositoryInstance) FindAllProducts(params *query.QueryParams) ([]*models.Product, int64, error) {
 	products := make([]*models.Product, 0)
+	var total int64
 
-	if err := r.DB.Find(&products).Error; err != nil {
-		return nil, err
+	queryBuilder := query.NewQueryBuilder(r.DB.Model(&models.Product{})).
+		SetAllowedSorts(map[string]string{
+			"title":      "title",
+			"price":      "price",
+			"created_at": "created_at",
+		}).
+		SetSearchFields([]string{"title"})
+
+	baseQuery := queryBuilder.BuildQuery(params)
+
+	if err := baseQuery.Count(&total).Error; err != nil {
+		return nil, 0, err
 	}
 
-	return products, nil
+	paginatedQuery := queryBuilder.ApplyPagination(baseQuery, params)
+	if err := paginatedQuery.Preload("Merchant").Preload("Category").Find(&products).Error; err != nil {
+		return nil, 0, err
+	}
+
+	return products, total, nil
 }
 
 // Get the merchant associated with a product by its ID

@@ -6,6 +6,7 @@ import (
 	"senkou-catalyst-be/app/models"
 	"senkou-catalyst-be/platform/errors"
 	"senkou-catalyst-be/repositories"
+	"senkou-catalyst-be/utils/query"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -15,7 +16,7 @@ type ProductService interface {
 	CreateProduct(product *dtos.CreateProductDTO, merchantID string) (*models.Product, *errors.AppError)
 	GetProductByID(productID string) (*models.Product, *errors.AppError)
 	GetProductsByMerchantID(merchantID string) ([]*models.Product, *errors.AppError)
-	GetAllProducts() ([]*models.Product, *errors.AppError)
+	GetAllProducts(params *query.QueryParams) ([]*models.Product, *query.PaginationResponse, *errors.AppError)
 	UpdateProduct(updatedProduct *dtos.UpdateProductDTO, productID string) (*models.Product, *errors.AppError)
 	UpdateProductPhotos(product *models.Product) *errors.AppError
 	DeleteProduct(productID string) *errors.AppError
@@ -95,14 +96,16 @@ func (s *ProductServiceInstance) GetProductsByMerchantID(merchantID string) ([]*
 // Get all products
 // This function retrieves all products from the repository
 // It returns a slice of products and an error if any
-func (s *ProductServiceInstance) GetAllProducts() ([]*models.Product, *errors.AppError) {
-	products, err := s.ProductRepository.FindAllProducts()
+func (s *ProductServiceInstance) GetAllProducts(params *query.QueryParams) ([]*models.Product, *query.PaginationResponse, *errors.AppError) {
+	products, total, err := s.ProductRepository.FindAllProducts(params)
 
 	if err != nil {
-		return nil, errors.NewAppError(500, fmt.Sprintf("Failed to retrieve products: %v", err.Error()))
+		return nil, nil, errors.NewAppError(500, fmt.Sprintf("Failed to retrieve products: %v", err.Error()))
 	}
 
-	return products, nil
+	pagination := query.CalculatePagination(params.Page, params.Limit, total)
+
+	return products, pagination, nil
 }
 
 // Update a product

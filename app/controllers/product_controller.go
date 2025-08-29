@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"senkou-catalyst-be/app/dtos"
 	"senkou-catalyst-be/app/services"
+	"senkou-catalyst-be/utils/query"
 	"senkou-catalyst-be/utils/response"
 	"senkou-catalyst-be/utils/storage"
 	"senkou-catalyst-be/utils/validator"
@@ -222,7 +223,9 @@ func (h *ProductController) DeleteProductPhoto(c *fiber.Ctx) error {
 // @Failure 500 {object} fiber.Map{error=string,details=any}
 // @Router /products [get]
 func (h *ProductController) GetAllProducts(c *fiber.Ctx) error {
-	products, appError := h.ProductService.GetAllProducts()
+	params := query.ParseQueryParams(c)
+
+	products, pagination, appError := h.ProductService.GetAllProducts(params)
 
 	if appError != nil {
 		return response.InternalError(c, "Cannot retrieve products", appError.Details)
@@ -231,7 +234,8 @@ func (h *ProductController) GetAllProducts(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"message": "Products retrieved successfully",
 		"data": fiber.Map{
-			"products": products,
+			"products":   products,
+			"pagination": pagination,
 		},
 	})
 }
