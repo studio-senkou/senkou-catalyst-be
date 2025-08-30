@@ -5,6 +5,7 @@ import (
 	"senkou-catalyst-be/app/dtos"
 	"senkou-catalyst-be/app/models"
 	"senkou-catalyst-be/app/services"
+	"senkou-catalyst-be/utils/query"
 	"senkou-catalyst-be/utils/response"
 	"senkou-catalyst-be/utils/validator"
 	"strconv"
@@ -72,7 +73,9 @@ func (h *UserController) CreateUser(c *fiber.Ctx) error {
 // @Success 200 {array} models.User
 // @Router /users [get]
 func (h *UserController) GetUsers(c *fiber.Ctx) error {
-	users, appError := h.userService.GetAll()
+	params := query.ParseQueryParams(c)
+
+	users, pagination, appError := h.userService.GetAll(params)
 
 	if appError != nil {
 		return response.InternalError(c, "Failed to retrieve users", appError.Details)
@@ -81,7 +84,8 @@ func (h *UserController) GetUsers(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"message": "Users retrieved successfully",
 		"data": fiber.Map{
-			"users": users,
+			"users":      users,
+			"pagination": pagination,
 		},
 	})
 }

@@ -2,13 +2,14 @@ package repositories
 
 import (
 	"senkou-catalyst-be/app/models"
+	"senkou-catalyst-be/utils/query"
 
 	"gorm.io/gorm"
 )
 
 type UserRepository interface {
 	Create(user *models.User) (*models.User, error)
-	FindAll() (*[]models.User, error)
+	FindAll(params *query.QueryParams) (*[]models.User, int64, error)
 	FindByEmail(email string) (*models.User, error)
 	FindByID(userID uint32) (*models.User, error)
 }
@@ -23,10 +24,28 @@ func NewUserRepository(db *gorm.DB) UserRepository {
 
 // Find all users in the database
 // Returns a slice of User models or an error if the operation fails
-func (r *userRepository) FindAll() (*[]models.User, error) {
-	var users *[]models.User
-	err := r.db.Find(&users).Error
-	return users, err
+func (r *userRepository) FindAll(params *query.QueryParams) (*[]models.User, int64, error) {
+	users := make([]models.User, 0)
+	var totalRecords int64
+
+	queryBuilder := query.NewQueryBuilder(r.db.Model(&models.User{})).SetAllowedSorts(map[string]string{
+		"name":       "name",
+		"email":      "email",
+		"created_at": "created_at",
+	}).SetSearchFields([]string{"name", "email"})
+
+	baseQuery := queryBuilder.BuildQuery(params)
+
+	if err := baseQuery.Count(&totalRecords).Error; err != nil {
+		return nil, 0, err
+	}
+
+	paginatedQuery := queryBuilder.ApplyPagination(baseQuery, params)
+	if err := paginatedQuery.Preload("Merchants").Find(&users).Error; err != nil {
+		return nil, 0, err
+	}
+
+	return &users, totalRecords, nil
 }
 
 // Create a new user in the database

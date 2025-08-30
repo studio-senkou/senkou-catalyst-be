@@ -4,6 +4,7 @@ import (
 	"senkou-catalyst-be/app/models"
 	"senkou-catalyst-be/platform/errors"
 	"senkou-catalyst-be/repositories"
+	"senkou-catalyst-be/utils/query"
 	"strings"
 
 	"github.com/google/uuid"
@@ -11,7 +12,7 @@ import (
 
 type UserService interface {
 	Create(user models.User) (*models.User, *errors.AppError)
-	GetAll() (*[]models.User, *errors.AppError)
+	GetAll(params *query.QueryParams) (*[]models.User, *query.PaginationResponse, *errors.AppError)
 	GetUserDetail(userID uint32) (*models.User, *errors.AppError)
 	VerifyCredentials(email, password string) (uint32, *errors.AppError)
 	VerifyIsAnAdministrator(userID uint32) (bool, *errors.AppError)
@@ -67,13 +68,15 @@ func (s *UserServiceInstance) Create(user models.User) (*models.User, *errors.Ap
 
 // Get all users from the database
 // Returns a slice of User models or an error if the operation fails
-func (s *UserServiceInstance) GetAll() (*[]models.User, *errors.AppError) {
-	users, err := s.UserRepository.FindAll()
+func (s *UserServiceInstance) GetAll(params *query.QueryParams) (*[]models.User, *query.PaginationResponse, *errors.AppError) {
+	users, total, err := s.UserRepository.FindAll(params)
 	if err != nil {
-		return nil, errors.NewAppError(500, "Failed to retrieve users")
+		return nil, nil, errors.NewAppError(500, "Failed to retrieve users")
 	}
 
-	return users, nil
+	pagination := query.CalculatePagination(params.Page, params.Limit, total)
+
+	return users, pagination, nil
 }
 
 func (s *UserServiceInstance) VerifyCredentials(email, password string) (uint32, *errors.AppError) {
