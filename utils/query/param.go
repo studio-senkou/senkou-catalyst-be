@@ -3,17 +3,20 @@ package query
 import (
 	"slices"
 	"strconv"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 )
 
 type QueryParams struct {
-	Page    int               `json:"page"`    // current page number
-	Limit   int               `json:"limit"`   // number of items per page
-	Sort    string            `json:"sort"`    // sort field
-	Order   string            `json:"order"`   // order `asc` for ascending and `desc` for descending
-	Search  string            `json:"search"`  // search keyword
-	Filters map[string]string `json:"filters"` // additional filters
+	Page     int               `json:"page"`      // current page number
+	Limit    int               `json:"limit"`     // number of items per page
+	Sort     string            `json:"sort"`      // sort field
+	Order    string            `json:"order"`     // order `asc` for ascending and `desc` for descending
+	DateFrom *time.Time        `json:"date_from"` // starting filter from this date
+	DateTo   *time.Time        `json:"date_to"`   // end filter based on this date
+	Search   string            `json:"search"`    // search keyword
+	Filters  map[string]string `json:"filters"`   // additional filters
 }
 
 type PaginationResponse struct {
@@ -59,6 +62,19 @@ func ParseQueryParams(c *fiber.Ctx) *QueryParams {
 	// search params
 	// currently only supports for single search on `search` query param
 	params.Search = c.Query("search")
+
+	if dateFrom := c.Query("date_from"); dateFrom != "" {
+		parsedDateFrom, err := time.Parse("2006-01-02", dateFrom)
+		if err == nil {
+			params.DateFrom = &parsedDateFrom
+		}
+	}
+	if dateTo := c.Query("date_to"); dateTo != "" {
+		parsedDateTo, err := time.Parse("2006-01-02", dateTo)
+		if err == nil {
+			params.DateTo = &parsedDateTo
+		}
+	}
 
 	// filters params
 	for key, value := range c.Queries() {
