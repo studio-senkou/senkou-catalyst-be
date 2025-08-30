@@ -1,6 +1,7 @@
 package repositories
 
 import (
+	"senkou-catalyst-be/app/dtos"
 	"senkou-catalyst-be/app/models"
 
 	"gorm.io/gorm"
@@ -10,6 +11,7 @@ type MerchantRepository interface {
 	Create(merchant *models.Merchant) (*models.Merchant, error)
 	FindMerchantsByUserID(userID uint32) ([]*models.Merchant, error)
 	FindByID(merchantID string) (*models.Merchant, error)
+	FindMerchantOverview(merchantID string) (*dtos.MerchantOverview, error)
 	UpdateMerchant(merchantID string, updateData *models.Merchant) (*models.Merchant, error)
 	DeleteMerchant(merchantID string) error
 }
@@ -69,6 +71,29 @@ func (r *MerchantRepositoryInstance) FindByID(merchantID string) (*models.Mercha
 	}
 
 	return &merchant, nil
+}
+
+// Retrieving merchant overview
+// This function retrieves an overview of a specific merchant by its ID
+// It returns the merchant overview or an error if the retrieval fails
+func (r *MerchantRepositoryInstance) FindMerchantOverview(merchantID string) (*dtos.MerchantOverview, error) {
+	var overview dtos.MerchantOverview
+
+	query := `
+		SELECT
+			COUNT(DISTINCT p.id) AS total_products,
+			COUNT(DISTINCT c.id) AS total_categories
+		FROM merchants m
+			LEFT JOIN products p ON p.merchant_id = m.id
+			LEFT JOIN categories c ON c.merchant_id = m.id
+		WHERE m.id = ?
+	`
+
+	if err := r.DB.Raw(query, merchantID).Scan(&overview).Error; err != nil {
+		return nil, err
+	}
+
+	return &overview, nil
 }
 
 // Update a merchant

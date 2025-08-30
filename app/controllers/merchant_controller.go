@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"senkou-catalyst-be/app/dtos"
 	"senkou-catalyst-be/app/services"
+	"senkou-catalyst-be/utils/query"
 	"senkou-catalyst-be/utils/response"
 	"senkou-catalyst-be/utils/validator"
 	"strconv"
@@ -12,12 +13,14 @@ import (
 )
 
 type MerchantController struct {
-	MerchantService services.MerchantService
+	MerchantService      services.MerchantService
+	ProductMetricService services.ProductInteractionService
 }
 
-func NewMerchantController(merchantService services.MerchantService) *MerchantController {
+func NewMerchantController(merchantService services.MerchantService, productMetricService services.ProductInteractionService) *MerchantController {
 	return &MerchantController{
-		MerchantService: merchantService,
+		MerchantService:      merchantService,
+		ProductMetricService: productMetricService,
 	}
 }
 
@@ -79,9 +82,74 @@ func (h *MerchantController) CreateMerchant(c *fiber.Ctx) error {
 		return response.InternalError(c, "Failed to create merchant", "Merchant creation returned nil")
 	}
 
-	return c.JSON(fiber.Map{
+	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
 		"data":    merchant,
 		"message": "Merchant created successfully",
+	})
+}
+
+func (h *MerchantController) GetMerchantOverview(c *fiber.Ctx) error {
+
+	merchantID := c.Params("id")
+
+	if merchantID == "" {
+		return response.BadRequest(c, "Cannot continue to retrieve merchant overview", "Invalid merchant ID")
+	}
+
+	overview, appError := h.MerchantService.GetMerchantOverview(merchantID)
+
+	if appError != nil {
+		return response.InternalError(c, "Cannot continue to retrieve merchant overview due to internal error", appError.Details)
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"message": "Successfully retrieved merchant overview",
+		"data":    overview,
+	})
+}
+
+// Get merchant product report
+// @Summary Get Merchant Product Report
+// @Description Retrieve product report for a specific merchant
+// @Tags Merchant
+// @Security BearerAuth
+// @Param id path string true "Merchant ID"
+// @Success 200 {object} fiber.Map{data=fiber.Map{interactions=[]models.ProductMetric},message=string}
+// @Failure 400 {object} fiber.Map{message=string}
+// @Failure 404 {object} fiber.Map{message=string}
+// @Failure 500 {object} fiber.Map{message=string,error=string}
+// @Router /merchants/{id}/products/report [get]
+func (h *MerchantController) GetMerchantProductReport(c *fiber.Ctx) error {
+
+	params := query.ParseQueryParams(c)
+
+	merchantID := c.Params("id")
+
+	if merchantID == "" {
+		return response.BadRequest(c, "Cannot continue to retrieve products report", "Invalid merchant ID")
+	}
+
+	productMetrics, appError := h.ProductMetricService.GetProductMetrics(merchantID, params)
+	if appError != nil {
+		return response.InternalError(c, "Cannot continue to retrieve products report", appError.Details)
+	}
+
+	if productMetrics == nil || productMetrics.ProductsStat == nil {
+		productMetrics = &dtos.OverallProductMetrics{
+			ProductsStat: []dtos.ProductReport{},
+			OverallStats: productMetrics.OverallStats,
+		}
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"message": "Successfully retrieved products report",
+		"data": fiber.Map{
+			"interactions": productMetrics.ProductsStat,
+
+			// Overall products stat
+			"total_views":  productMetrics.OverallStats.TotalViews,
+			"total_clicks": productMetrics.OverallStats.TotalClicks,
+		},
 	})
 }
 
@@ -112,7 +180,7 @@ func (h *MerchantController) GetUserMerchants(c *fiber.Ctx) error {
 		return response.NotFound(c, "No merchants found for the user")
 	}
 
-	return c.JSON(fiber.Map{
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"data": fiber.Map{
 			"merchants": merchants,
 		},
@@ -148,7 +216,7 @@ func (h *MerchantController) GetMerchantByID(c *fiber.Ctx) error {
 		return response.NotFound(c, "No merchant found with the provided identifiers")
 	}
 
-	return c.JSON(fiber.Map{
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"data":    merchant,
 		"message": "Merchant retrieved successfully",
 	})
@@ -195,7 +263,7 @@ func (h *MerchantController) UpdateMerchant(c *fiber.Ctx) error {
 		return response.InternalError(c, "Cannot update merchant due to internal error", "Merchant update returned nil")
 	}
 
-	return c.JSON(fiber.Map{
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"data": fiber.Map{
 			"merchant": merchant,
 		},
@@ -233,7 +301,7 @@ func (h *MerchantController) DeleteMerchant(c *fiber.Ctx) error {
 		return response.InternalError(c, "Cannot delete merchant due to internal error", appError.Details)
 	}
 
-	return c.JSON(fiber.Map{
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"message": "Merchant deleted successfully",
 	})
 }

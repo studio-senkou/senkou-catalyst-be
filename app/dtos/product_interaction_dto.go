@@ -19,3 +19,19 @@ func (dto *SendProductInteractionDTO) ErrorMessages() map[string]string {
 		"interaction_type.required": "Interaction type is required",
 	}
 }
+
+type ProductMetricStats struct {
+	TotalViews  int64 `json:"total_views"`
+	TotalClicks int64 `json:"total_clicks"`
+}
+
+type ProductReport struct {
+	Name        string `json:"product_name"`
+	TotalViews  int64  `json:"total_views"`
+	TotalClicks int64  `json:"total_clicks"`
+}
+
+type OverallProductMetrics struct {
+	OverallStats *ProductMetricStats `json:"overall_stats"`
+	ProductsStat []ProductReport     `json:"products_stat"`
+}

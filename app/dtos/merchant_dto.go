@@ -19,3 +19,8 @@ func (dto *UpdateMerchantRequestDTO) ErrorMessages() map[string]string {
 		"name.required": "Merchant name is required",
 	}
 }
+
+type MerchantOverview struct {
+	TotalProducts   int `json:"total_products"`
+	TotalCategories int `json:"total_categories"`
+}

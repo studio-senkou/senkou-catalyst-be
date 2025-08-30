@@ -6,11 +6,14 @@ import (
 	"senkou-catalyst-be/platform/errors"
 	"senkou-catalyst-be/repositories"
 
+	"senkou-catalyst-be/utils/query"
+
 	"github.com/google/uuid"
 )
 
 type ProductInteractionService interface {
 	StoreLog(productID uuid.UUID, request *dtos.SendProductInteractionDTO) *errors.AppError
+	GetProductMetrics(merchantID string, params *query.QueryParams) (*dtos.OverallProductMetrics, *errors.AppError)
 }
 
 type ProductInteractionServiceInstance struct {
@@ -41,4 +44,23 @@ func (s *ProductInteractionServiceInstance) StoreLog(productID uuid.UUID, reques
 	}
 
 	return nil
+}
+
+func (s *ProductInteractionServiceInstance) GetProductMetrics(merchantID string, params *query.QueryParams) (*dtos.OverallProductMetrics, *errors.AppError) {
+	merchantProductsStat, err := s.PIRepo.GetMerchantProductsMetric(merchantID, params)
+	if err != nil {
+		return nil, errors.NewAppError(500, "failed to get product metrics")
+	}
+
+	overallStats, err := s.PIRepo.GetMerchantProductsMetricStats(merchantID, params)
+	if err != nil {
+		return nil, errors.NewAppError(500, "failed to get merchant products stats")
+	}
+
+	result := &dtos.OverallProductMetrics{
+		OverallStats: overallStats,
+		ProductsStat: merchantProductsStat,
+	}
+
+	return result, nil
 }

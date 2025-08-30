@@ -13,17 +13,22 @@ type MerchantService interface {
 	CreateMerchant(merchant *dtos.CreateMerchantRequestDTO, userID uint32) (*models.Merchant, *errors.AppError)
 	GetUserMerchants(userID uint32) ([]*models.Merchant, *errors.AppError)
 	GetMerchantByID(merchantID string) (*models.Merchant, *errors.AppError)
+	GetMerchantOverview(merchantID string) (*dtos.MerchantOverview, *errors.AppError)
 	UpdateMerchantByID(merchantID string, updateData *dtos.UpdateMerchantRequestDTO) (*models.Merchant, *errors.AppError)
 	DeleteMerchantByID(merchantID string) *errors.AppError
 }
 
 type MerchantServiceInstance struct {
 	MerchantRepository repositories.MerchantRepository
+	ProductRepository  repositories.ProductRepository
+	CategoryRepository repositories.CategoryRepository
 }
 
-func NewMerchantService(merchantRepository repositories.MerchantRepository) MerchantService {
+func NewMerchantService(merchantRepository repositories.MerchantRepository, productRepository repositories.ProductRepository, categoryRepository repositories.CategoryRepository) MerchantService {
 	return &MerchantServiceInstance{
 		MerchantRepository: merchantRepository,
+		ProductRepository:  productRepository,
+		CategoryRepository: categoryRepository,
 	}
 }
 
@@ -68,6 +73,16 @@ func (s *MerchantServiceInstance) GetMerchantByID(merchantID string) (*models.Me
 	}
 
 	return merchant, nil
+}
+
+func (s *MerchantServiceInstance) GetMerchantOverview(merchantID string) (*dtos.MerchantOverview, *errors.AppError) {
+	overview, err := s.MerchantRepository.FindMerchantOverview(merchantID)
+
+	if err != nil {
+		return nil, errors.NewAppError(500, "Failed to retrieve merchant overview")
+	}
+
+	return overview, nil
 }
 
 // Update merchant by ID

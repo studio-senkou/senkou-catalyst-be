@@ -10,19 +10,20 @@ import (
 )
 
 type Product struct {
-	ID           string         `json:"id" gorm:"type:uuid;primaryKey"`
-	MerchantID   string         `json:"merchant_id" gorm:"type:char(16);not null"`
-	Merchant     Merchant       `json:"-" gorm:"foreignKey:MerchantID;references:ID"`
-	CategoryID   *uint32        `json:"category_id" gorm:"type:int;default:null"`
-	Category     *Category      `json:"-" gorm:"foreignKey:CategoryID;references:ID"`
-	Title        string         `json:"title" gorm:"type:varchar(150);not null"`
-	Price        float64        `json:"price" gorm:"type:decimal(10,2);not null"`
-	Description  string         `json:"description" gorm:"type:text"`
-	AffiliateURL string         `json:"affiliate_url" gorm:"type:text;not null"`
-	Photos       PhotoArray     `json:"photos" gorm:"type:json;default:'[]'"`
-	CreatedAt    time.Time      `json:"created_at" gorm:"type:timestamp;default:CURRENT_TIMESTAMP"`
-	UpdatedAt    time.Time      `json:"updated_at" gorm:"type:timestamp;default:CURRENT_TIMESTAMP"`
-	DeletedAt    gorm.DeletedAt `json:"-" gorm:"type:timestamp;index"`
+	ID           string          `json:"id" gorm:"type:uuid;primaryKey"`
+	MerchantID   string          `json:"merchant_id" gorm:"type:char(16);not null"`
+	Merchant     Merchant        `json:"-" gorm:"foreignKey:MerchantID;references:ID"`
+	CategoryID   *uint32         `json:"category_id" gorm:"type:int;default:null"`
+	Category     *Category       `json:"-" gorm:"foreignKey:CategoryID;references:ID"`
+	Interactions []ProductMetric `json:"-" gorm:"foreignKey:ProductID;references:ID"`
+	Title        string          `json:"title" gorm:"type:varchar(150);not null"`
+	Price        float64         `json:"price" gorm:"type:decimal(10,2);not null"`
+	Description  string          `json:"description" gorm:"type:text"`
+	AffiliateURL string          `json:"affiliate_url" gorm:"type:text;not null"`
+	Photos       PhotoArray      `json:"photos" gorm:"type:json;default:'[]'"`
+	CreatedAt    time.Time       `json:"created_at" gorm:"type:timestamp;default:CURRENT_TIMESTAMP"`
+	UpdatedAt    time.Time       `json:"updated_at" gorm:"type:timestamp;default:CURRENT_TIMESTAMP"`
+	DeletedAt    gorm.DeletedAt  `json:"-" gorm:"type:timestamp;index"`
 }
 
 type PhotoArray []string
