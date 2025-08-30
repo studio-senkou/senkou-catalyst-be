@@ -1,6 +1,7 @@
 package services
 
 import (
+	stderr "errors"
 	"senkou-catalyst-be/app/models"
 	"senkou-catalyst-be/platform/errors"
 	"senkou-catalyst-be/repositories"
@@ -8,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 type UserService interface {
@@ -40,6 +42,12 @@ func (s *UserServiceInstance) Create(user models.User) (*models.User, *errors.Ap
 	}
 
 	user.Password = hashedPassword
+
+	if user, err := s.UserRepository.FindByEmail(user.Email); err != nil || user != nil {
+		if !stderr.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.NewAppError(400, "User already exists")
+		}
+	}
 
 	createdUser, err := s.UserRepository.Create(&user)
 	if err != nil {

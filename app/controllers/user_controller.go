@@ -52,7 +52,12 @@ func (h *UserController) CreateUser(c *fiber.Ctx) error {
 	})
 
 	if appError != nil {
-		return response.InternalError(c, "Failed to create user", appError.Details)
+		switch appError.Code {
+		case fiber.StatusBadRequest:
+			return response.BadRequest(c, "Cannot continue to register user, user already exists", appError.Details)
+		default:
+			return response.InternalError(c, "Failed to create user", appError.Details)
+		}
 	}
 
 	if err := h.subService.AssignFreeTierSubscription(newUser.ID); err != nil {
