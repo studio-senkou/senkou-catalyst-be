@@ -12,7 +12,6 @@ import (
 	_ "senkou-catalyst-be/docs"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/cors"
 )
 
 // @Title Catalyst API Documentation
@@ -27,12 +26,8 @@ func main() {
 	app := fiber.New(*appConfig)
 
 	// Middlewares
+	app.Use(config.InitCorsConfig())
 	app.Use(config.InitLogger())
-
-	app.Use(cors.New(cors.Config{
-		AllowOrigins: "http://localhost:5173", 
-		AllowHeaders: "Origin, Content-Type, Accept, Authorization",
-	}))
 
 	config.ConnectDB()
 
