@@ -24,6 +24,7 @@ var RepositorySet = wire.NewSet(
 	repositories.NewUserRepository,
 	repositories.NewMerchantRepository,
 	repositories.NewProductRepository,
+	repositories.NewProductInteractionRepository,
 	repositories.NewCategoryRepository,
 	repositories.NewPredefinedCategoryRepository,
 	repositories.NewAuthRepository,
@@ -37,6 +38,7 @@ var ServiceSet = wire.NewSet(
 	services.NewUserService,
 	services.NewMerchantService,
 	services.NewProductService,
+	services.NewProductInteractionService,
 	services.NewCategoryService,
 	services.NewPredefinedCategoryService,
 	services.NewAuthService,
@@ -182,6 +184,15 @@ func InitializeUserService() (services.UserService, func(), error) {
 }
 
 func InitializeProductService() (services.ProductService, func(), error) {
+	wire.Build(
+		DatabaseSet,
+		RepositorySet,
+		ServiceSet,
+	)
+	return nil, nil, nil
+}
+
+func InitializeProductInteractionService() (services.ProductInteractionService, func(), error) {
 	wire.Build(
 		DatabaseSet,
 		RepositorySet,

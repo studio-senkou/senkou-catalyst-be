@@ -13,6 +13,7 @@ func Migrate(db *gorm.DB) {
 		&models.Merchant{},
 		&models.Category{},
 		&models.Product{},
+		&models.ProductMetric{},
 		&models.Subscription{},
 		&models.SubscriptionPlan{},
 		&models.PredefinedCategory{},

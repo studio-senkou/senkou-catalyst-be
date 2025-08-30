@@ -2299,6 +2299,121 @@ const docTemplate = `{
                 }
             }
         },
+        "/products/{productID}/logs": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Send a log for product interactions",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Products"
+                ],
+                "summary": "Sending product log for interaction metrics",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Product ID",
+                        "name": "productID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Product interaction log",
+                        "name": "log",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dtos.SendProductInteractionDTO"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/fiber.Map"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/fiber.Map"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "details": {},
+                                        "error": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/fiber.Map"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "details": {},
+                                        "error": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/fiber.Map"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "details": {},
+                                        "error": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
         "/products/{productID}/photos": {
             "post": {
                 "security": [
@@ -3383,6 +3498,29 @@ const docTemplate = `{
                 }
             }
         },
+        "dtos.SendProductInteractionDTO": {
+            "type": "object",
+            "required": [
+                "browser",
+                "interaction_type",
+                "origin",
+                "os"
+            ],
+            "properties": {
+                "browser": {
+                    "type": "string"
+                },
+                "interaction_type": {
+                    "$ref": "#/definitions/models.ProductMetricInteraction"
+                },
+                "origin": {
+                    "type": "string"
+                },
+                "os": {
+                    "type": "string"
+                }
+            }
+        },
         "dtos.UpdateCategoryDTO": {
             "type": "object",
             "required": [
@@ -3579,6 +3717,17 @@ const docTemplate = `{
                 }
             }
         },
+        "models.ProductMetricInteraction": {
+            "type": "string",
+            "enum": [
+                "view",
+                "click"
+            ],
+            "x-enum-varnames": [
+                "ProductMetricInteractionView",
+                "ProductMetricInteractionClick"
+            ]
+        },
         "models.Subscription": {
             "type": "object",
             "properties": {
@@ -3597,10 +3746,39 @@ const docTemplate = `{
                 "name": {
                     "type": "string"
                 },
+                "plans": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.SubscriptionPlan"
+                    }
+                },
                 "price": {
                     "type": "number"
                 },
                 "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.SubscriptionPlan": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "sub_id": {
+                    "type": "integer"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "value": {
                     "type": "string"
                 }
             }

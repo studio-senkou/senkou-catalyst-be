@@ -114,6 +114,22 @@ definitions:
     required:
     - refresh_token
     type: object
+  dtos.SendProductInteractionDTO:
+    properties:
+      browser:
+        type: string
+      interaction_type:
+        $ref: '#/definitions/models.ProductMetricInteraction'
+      origin:
+        type: string
+      os:
+        type: string
+    required:
+    - browser
+    - interaction_type
+    - origin
+    - os
+    type: object
   dtos.UpdateCategoryDTO:
     properties:
       name:
@@ -246,6 +262,14 @@ definitions:
       updated_at:
         type: string
     type: object
+  models.ProductMetricInteraction:
+    enum:
+    - view
+    - click
+    type: string
+    x-enum-varnames:
+    - ProductMetricInteractionView
+    - ProductMetricInteractionClick
   models.Subscription:
     properties:
       created_at:
@@ -258,9 +282,28 @@ definitions:
         type: integer
       name:
         type: string
+      plans:
+        items:
+          $ref: '#/definitions/models.SubscriptionPlan'
+        type: array
       price:
         type: number
       updated_at:
+        type: string
+    type: object
+  models.SubscriptionPlan:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      sub_id:
+        type: integer
+      updated_at:
+        type: string
+      value:
         type: string
     type: object
   models.User:
@@ -1552,6 +1595,70 @@ paths:
       security:
       - BearerAuth: []
       summary: Update a product
+      tags:
+      - Products
+  /products/{productID}/logs:
+    post:
+      consumes:
+      - application/json
+      description: Send a log for product interactions
+      parameters:
+      - description: Product ID
+        in: path
+        name: productID
+        required: true
+        type: string
+      - description: Product interaction log
+        in: body
+        name: log
+        required: true
+        schema:
+          $ref: '#/definitions/dtos.SendProductInteractionDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/fiber.Map'
+            - properties:
+                message:
+                  type: string
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/fiber.Map'
+            - properties:
+                details: {}
+                error:
+                  type: string
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            allOf:
+            - $ref: '#/definitions/fiber.Map'
+            - properties:
+                details: {}
+                error:
+                  type: string
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/fiber.Map'
+            - properties:
+                details: {}
+                error:
+                  type: string
+              type: object
+      security:
+      - BearerAuth: []
+      summary: Sending product log for interaction metrics
       tags:
       - Products
   /products/{productID}/photos:

@@ -46,7 +46,9 @@ func InitializeProductController() (*controllers.ProductController, error) {
 	productService := services.NewProductService(productRepository, userRepository)
 	merchantRepository := repositories.NewMerchantRepository(db)
 	userService := services.NewUserService(userRepository, merchantRepository)
-	productController := controllers.NewProductController(productService, userService)
+	productInteractionRepository := repositories.NewProductInteractionRepository(db)
+	productInteractionService := services.NewProductInteractionService(productInteractionRepository)
+	productController := controllers.NewProductController(productService, userService, productInteractionService)
 	return productController, nil
 }
 
@@ -137,6 +139,14 @@ func InitializeProductService() (services.ProductService, func(), error) {
 	}, nil
 }
 
+func InitializeProductInteractionService() (services.ProductInteractionService, func(), error) {
+	db := config.GetDB()
+	productInteractionRepository := repositories.NewProductInteractionRepository(db)
+	productInteractionService := services.NewProductInteractionService(productInteractionRepository)
+	return productInteractionService, func() {
+	}, nil
+}
+
 func InitializeSubscriptionOrderService() (services.SubscriptionOrderService, func(), error) {
 	db := config.GetDB()
 	subscriptionOrderRepository := repositories.NewSubscriptionOrderRepository(db)
@@ -176,7 +186,9 @@ func InitializeContainer() (*Container, error) {
 	merchantController := controllers.NewMerchantController(merchantService)
 	productRepository := repositories.NewProductRepository(db)
 	productService := services.NewProductService(productRepository, userRepository)
-	productController := controllers.NewProductController(productService, userService)
+	productInteractionRepository := repositories.NewProductInteractionRepository(db)
+	productInteractionService := services.NewProductInteractionService(productInteractionRepository)
+	productController := controllers.NewProductController(productService, userService, productInteractionService)
 	categoryRepository := repositories.NewCategoryRepository(db)
 	categoryService := services.NewCategoryService(categoryRepository)
 	categoryController := controllers.NewCategoryController(categoryService)
@@ -211,9 +223,9 @@ func InitializeContainer() (*Container, error) {
 
 var DatabaseSet = wire.NewSet(config.GetDB)
 
-var RepositorySet = wire.NewSet(repositories.NewUserRepository, repositories.NewMerchantRepository, repositories.NewProductRepository, repositories.NewCategoryRepository, repositories.NewPredefinedCategoryRepository, repositories.NewAuthRepository, repositories.NewSubscriptionRepository, repositories.NewSubscriptionPlanRepository, repositories.NewSubscriptionOrderRepository, repositories.NewPaymentTransactionRepository)
+var RepositorySet = wire.NewSet(repositories.NewUserRepository, repositories.NewMerchantRepository, repositories.NewProductRepository, repositories.NewProductInteractionRepository, repositories.NewCategoryRepository, repositories.NewPredefinedCategoryRepository, repositories.NewAuthRepository, repositories.NewSubscriptionRepository, repositories.NewSubscriptionPlanRepository, repositories.NewSubscriptionOrderRepository, repositories.NewPaymentTransactionRepository)
 
-var ServiceSet = wire.NewSet(services.NewUserService, services.NewMerchantService, services.NewProductService, services.NewCategoryService, services.NewPredefinedCategoryService, services.NewAuthService, services.NewSubscriptionService, services.NewSubscriptionOrderService, services.NewPaymentMethodsService, services.NewPaymentService)
+var ServiceSet = wire.NewSet(services.NewUserService, services.NewMerchantService, services.NewProductService, services.NewProductInteractionService, services.NewCategoryService, services.NewPredefinedCategoryService, services.NewAuthService, services.NewSubscriptionService, services.NewSubscriptionOrderService, services.NewPaymentMethodsService, services.NewPaymentService)
 
 var ControllerSet = wire.NewSet(controllers.NewUserController, controllers.NewMerchantController, controllers.NewProductController, controllers.NewCategoryController, controllers.NewPredefinedCategoryController, controllers.NewAuthController, controllers.NewSubscriptionController, controllers.NewPaymentMethodsController, controllers.NewPaymentController, controllers.NewStorageController)
 

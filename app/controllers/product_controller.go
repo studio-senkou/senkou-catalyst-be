@@ -11,17 +11,20 @@ import (
 	"strconv"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
 )
 
 type ProductController struct {
 	UserService    services.UserService
 	ProductService services.ProductService
+	ProductMetric  services.ProductInteractionService
 }
 
-func NewProductController(productService services.ProductService, userService services.UserService) *ProductController {
+func NewProductController(productService services.ProductService, userService services.UserService, productMetric services.ProductInteractionService) *ProductController {
 	return &ProductController{
 		ProductService: productService,
 		UserService:    userService,
+		ProductMetric:  productMetric,
 	}
 }
 
@@ -401,5 +404,51 @@ func (h *ProductController) DeleteProduct(c *fiber.Ctx) error {
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"message": "Product deleted successfully",
+	})
+}
+
+// Send product log
+// @Summary Sending product log for interaction metrics
+// @Description Send a log for product interactions
+// @Tags Products
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param productID path string true "Product ID"
+// @Param log body dtos.SendProductInteractionDTO true "Product interaction log"
+// @Success 200 {object} fiber.Map{message=string}
+// @Failure 400 {object} fiber.Map{error=string,details=any}
+// @Failure 404 {object} fiber.Map{error=string,details=any}
+// @Failure 500 {object} fiber.Map{error=string,details=any}
+// @Router /products/{productID}/logs [post]
+func (h *ProductController) SendProductLog(c *fiber.Ctx) error {
+	productID := c.Params("productID")
+
+	if productID == "" {
+		return response.BadRequest(c, "Product ID is required", nil)
+	}
+
+	sendProductLogDTO := new(dtos.SendProductInteractionDTO)
+
+	if err := validator.Validate(c, sendProductLogDTO); err != nil {
+		if vErr, ok := err.(*validator.ValidationError); ok {
+			return response.BadRequest(c, "Validation failed", map[string]any{
+				"errors": vErr.Errors,
+			})
+		}
+
+		return response.InternalError(c, "Internal server error", map[string]any{
+			"error": err.Error(),
+		})
+	}
+
+	parsedProductID := uuid.MustParse(productID)
+
+	if err := h.ProductMetric.StoreLog(parsedProductID, sendProductLogDTO); err != nil {
+		return response.InternalError(c, "Failed to store product interaction log", err.Details)
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"message": "Product interaction log sent successfully",
 	})
 }
