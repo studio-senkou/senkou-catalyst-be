@@ -1277,7 +1277,7 @@ const docTemplate = `{
             "get": {
                 "description": "Get all available payment methods",
                 "tags": [
-                    "PaymentMethods"
+                    "Payment Methods"
                 ],
                 "summary": "Get all available payment methods",
                 "responses": {
@@ -1302,7 +1302,7 @@ const docTemplate = `{
             "get": {
                 "description": "Get all available payment method types",
                 "tags": [
-                    "PaymentMethods"
+                    "Payment Methods"
                 ],
                 "summary": "Get all available payment method types",
                 "responses": {
@@ -1327,7 +1327,7 @@ const docTemplate = `{
             "get": {
                 "description": "Get payment methods by type",
                 "tags": [
-                    "PaymentMethods"
+                    "Payment Methods"
                 ],
                 "summary": "Get payment methods by type",
                 "parameters": [
@@ -2299,7 +2299,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/products/{productID}/logs": {
+        "/products/{productID}/interactions": {
             "post": {
                 "security": [
                     {

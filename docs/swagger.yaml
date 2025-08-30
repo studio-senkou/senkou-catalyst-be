@@ -1045,7 +1045,7 @@ paths:
             type: object
       summary: Get all available payment methods
       tags:
-      - PaymentMethods
+      - Payment Methods
   /payment-methods/{type}:
     get:
       description: Get payment methods by type
@@ -1086,7 +1086,7 @@ paths:
               type: object
       summary: Get payment methods by type
       tags:
-      - PaymentMethods
+      - Payment Methods
   /payment-methods/types:
     get:
       description: Get all available payment method types
@@ -1103,7 +1103,7 @@ paths:
             type: object
       summary: Get all available payment method types
       tags:
-      - PaymentMethods
+      - Payment Methods
   /predefined-categories:
     get:
       consumes:
@@ -1597,7 +1597,7 @@ paths:
       summary: Update a product
       tags:
       - Products
-  /products/{productID}/logs:
+  /products/{productID}/interactions:
     post:
       consumes:
       - application/json

@@ -420,7 +420,7 @@ func (h *ProductController) DeleteProduct(c *fiber.Ctx) error {
 // @Failure 400 {object} fiber.Map{error=string,details=any}
 // @Failure 404 {object} fiber.Map{error=string,details=any}
 // @Failure 500 {object} fiber.Map{error=string,details=any}
-// @Router /products/{productID}/logs [post]
+// @Router /products/{productID}/interactions [post]
 func (h *ProductController) SendProductLog(c *fiber.Ctx) error {
 	productID := c.Params("productID")
 

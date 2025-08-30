@@ -19,7 +19,7 @@ func NewPaymentMethodsController(paymentMethodsService services.PaymentMethodsSe
 // GetAllAvailablePaymentMethods retrieves all available payment methods
 // @Summary Get all available payment methods
 // @Description Get all available payment methods
-// @Tags PaymentMethods
+// @Tags Payment Methods
 // @Success 200 {object} map[string]interface{}
 // @Failure 500 {object} map[string]interface{}
 // @Router /payment-methods [get]
@@ -43,7 +43,7 @@ func (pc *PaymentMethodsController) GetAllAvailablePaymentMethods(c *fiber.Ctx) 
 // GetPaymentMethodsByType retrieves payment methods by type
 // @Summary Get payment methods by type
 // @Description Get payment methods by type
-// @Tags PaymentMethods
+// @Tags Payment Methods
 // @Param type path string true "Payment Method Type"
 // @Success 200 {object} fiber.Map{message=string,data=fiber.Map{payment_methods=[]interface{}}}
 // @Failure 500 {object} fiber.Map{success=bool,error=string}
@@ -70,7 +70,7 @@ func (pc *PaymentMethodsController) GetPaymentMethodsByType(c *fiber.Ctx) error 
 // GetPaymentMethodTypes retrieves all available payment method types
 // @Summary Get all available payment method types
 // @Description Get all available payment method types
-// @Tags PaymentMethods
+// @Tags Payment Methods
 // @Success 200 {object} map[string]interface{}
 // @Failure 500 {object} map[string]interface{}
 // @Router /payment-methods/types [get]
