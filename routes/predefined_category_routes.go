@@ -7,12 +7,27 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-func InitPredefinedCategoryRoutes(app *fiber.App, predefinedCategoryController *controllers.PredefinedCategoryController) {
-	app.Get("/predefined-categories", predefinedCategoryController.GetPredefinedCategories)
+func InitPredefinedCategoryRoutes(app *fiber.App, PDController *controllers.PredefinedCategoryController) {
+	app.Get(
+		"/predefined-categories",
+		PDController.GetPredefinedCategories,
+	)
 
-	pdRoute := app.Group("/predefined-categories", middlewares.JWTProtected, middlewares.RoleMiddleware("admin"))
+	PDRoute := app.Group(
+		"/predefined-categories",
+		middlewares.JWTProtected,
+		middlewares.RoleMiddleware("admin"),
+	)
 
-	pdRoute.Post("/", predefinedCategoryController.StoreCategory)
-	pdRoute.Put("/:pcID", predefinedCategoryController.UpdatePredefinedCategory)
-	pdRoute.Delete("/:pcID", predefinedCategoryController.DeletePredefinedCategory)
+	PDRoute.Post(
+		"/",
+		PDController.StoreCategory,
+	)
+	PDRoute.Put(
+		"/:pcID",
+		PDController.UpdatePredefinedCategory,
+	)
+	PDRoute.Delete("/:pcID",
+		PDController.DeletePredefinedCategory,
+	)
 }
