@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"senkou-catalyst-be/app/models"
 	"senkou-catalyst-be/platform/config"
+	"senkou-catalyst-be/platform/constants"
 	"senkou-catalyst-be/repositories"
 	"senkou-catalyst-be/utils/response"
 	"strconv"
@@ -11,7 +12,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-func SubscriptionMiddleware(plans ...string) fiber.Handler {
+func SubscriptionMiddleware(plans ...constants.SubscriptionPlan) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		userIDStr := fmt.Sprintf("%v", c.Locals("userID"))
 		userID, err := strconv.ParseUint(userIDStr, 10, 32)
@@ -46,7 +47,7 @@ func SubscriptionMiddleware(plans ...string) fiber.Handler {
 		}
 
 		for _, plan := range sub.Plans {
-			if contains(plans, plan.Name) {
+			if contains(plans, constants.SubscriptionPlan(plan.Name)) {
 				if hasAccess, err := hasAccess(&plan, user); err != nil {
 					return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 						"error": "Failed to verify subscription plan access",
@@ -72,7 +73,7 @@ func hasAccess(plan *models.SubscriptionPlan, user *models.User) (bool, error) {
 	categoryRepository := repositories.NewCategoryRepository(db)
 
 	switch plan.Name {
-	case "Subscription-Product-Slot":
+	case string(constants.SubscriptionProductSlot):
 
 		if products, err := productRepository.FindProductsByMerchantID(user.Merchants[0].ID); err != nil {
 			return false, err
@@ -88,7 +89,7 @@ func hasAccess(plan *models.SubscriptionPlan, user *models.User) (bool, error) {
 
 		return true, nil
 
-	case "Subscription-Category-Limit":
+	case string(constants.SubscriptionCategoryLimit):
 
 		if categories, err := categoryRepository.FindAllCategoriesByMerchantID(user.Merchants[0].ID); err != nil {
 			return false, err
@@ -103,12 +104,20 @@ func hasAccess(plan *models.SubscriptionPlan, user *models.User) (bool, error) {
 		}
 
 		return true, nil
+
+	case string(constants.SubscriptionAnalytics):
+
+		return plan.Value == "true", nil // Just returning true if the user has access to analytics
+
+	case string(constants.SubscriptionInteractionMetrics):
+
+		return plan.Value == "true", nil // Just returning true if the user has access to interaction metrics
 	}
 
 	return false, nil
 }
 
-func contains(list []string, target string) bool {
+func contains(list []constants.SubscriptionPlan, target constants.SubscriptionPlan) bool {
 	for _, v := range list {
 		if v == target {
 			return true
