@@ -3,10 +3,10 @@ package dtos
 type CreateProductDTO struct {
 	Title        string   `json:"title" validate:"required,max=150"`
 	Description  string   `json:"description" validate:"omitempty,max=500"`
-	Price        float64  `json:"price" validate:"required,number,min=0"`
+	Price        string   `json:"price" validate:"required,number,min=0"`
 	AffiliateURL string   `json:"affiliate_url" validate:"required,url"`
 	Photos       []string `json:"photos" validate:"omitempty"`
-	CategoryID   *uint32  `json:"category_id" validate:"omitempty,number"`
+	CategoryID   uint32  `json:"category_id" validate:"omitempty,number,min=1"`
 }
 
 func (dto *CreateProductDTO) ErrorMessages() map[string]string {
@@ -27,7 +27,7 @@ type UpdateProductDTO struct {
 	ID           string   `json:"id"`
 	Title        *string  `json:"title" validate:"omitempty,max=150"`
 	Description  *string  `json:"description" validate:"omitempty,max=500"`
-	Price        *float64 `json:"price" validate:"omitempty,number,min=0"`
+	Price        *string `json:"price" validate:"omitempty,number,min=0"`
 	AffiliateURL *string  `json:"affiliate_url" validate:"omitempty,url"`
 	CategoryID   *uint32  `json:"category_id" validate:"omitempty,number"`
 }

@@ -46,7 +46,7 @@ func (s *ProductServiceInstance) CreateProduct(product *dtos.CreateProductDTO, m
 		Price:        product.Price,
 		Photos:       product.Photos,
 		AffiliateURL: product.AffiliateURL,
-		CategoryID:   product.CategoryID,
+		CategoryID:   &product.CategoryID,
 		MerchantID:   merchantID,
 	}
 

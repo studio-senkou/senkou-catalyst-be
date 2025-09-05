@@ -17,7 +17,7 @@ type Product struct {
 	Category     *Category       `json:"-" gorm:"foreignKey:CategoryID;references:ID"`
 	Interactions []ProductMetric `json:"-" gorm:"foreignKey:ProductID;references:ID"`
 	Title        string          `json:"title" gorm:"type:varchar(150);not null"`
-	Price        float64         `json:"price" gorm:"type:decimal(10,2);not null"`
+	Price        string          `json:"price" gorm:"type:varchar(30);not null"`
 	Description  string          `json:"description" gorm:"type:text"`
 	AffiliateURL string          `json:"affiliate_url" gorm:"type:text;not null"`
 	Photos       PhotoArray      `json:"photos" gorm:"type:json;default:'[]'"`
