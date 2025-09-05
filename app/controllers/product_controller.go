@@ -292,9 +292,9 @@ func (h *ProductController) GetProductByMerchant(c *fiber.Ctx) error {
 // @Failure 400 {object} fiber.Map{error=string,details=any}
 // @Failure 404 {object} fiber.Map{error=string,details=any}
 // @Failure 500 {object} fiber.Map{error=string,details=any}
-// @Router /products/{productID} [get]
+// @Router /products/{id} [get]
 func (h *ProductController) GetProductByID(c *fiber.Ctx) error {
-	productID := c.Params("productID")
+	productID := c.Params("id")
 
 	if productID == "" {
 		return response.BadRequest(c, "Cannot continue to retrieve product information", "Product ID is required")
