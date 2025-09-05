@@ -171,6 +171,19 @@ func InitFiberConfig() *fiber.Config {
 				})
 			}
 
+			// If the error is unauthorized
+			if unauthorizedError, ok := err.(*errors.UnauthorizedError); ok {
+				response.Error.Code = fiber.StatusUnauthorized
+				response.Error.Message = unauthorizedError.ErrorMessage
+				response.Error.Type = "UNAUTHORIZED_ERROR"
+				response.Error.Details = unauthorizedError.Details
+
+				return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+					"message": response.Error.Message,
+					"error":   unauthorizedError.Details(),
+				})
+			}
+
 			// If the error is a not found error
 			if notFoundErr, ok := err.(*errors.NotFoundError); ok {
 				response.Error.Code = fiber.StatusNotFound
