@@ -49,7 +49,7 @@ func (h *AuthController) Login(c *fiber.Ctx) error {
 	userID, err := h.UserService.VerifyCredentials(loginRequestDTO.Email, loginRequestDTO.Password)
 
 	if err != nil {
-		return response.Unauthorized(c, "Invalid email or password")
+		return response.BadRequest(c, "Invalid email or password", nil)
 	}
 
 	accessToken, refreshToken, appError := h.AuthService.GenerateToken(userID)
