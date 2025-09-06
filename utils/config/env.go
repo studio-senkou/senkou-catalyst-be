@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"strconv"
 	"time"
 
@@ -59,4 +60,22 @@ func MustGetEnv(key string) string {
 		panic(fmt.Sprintf("Environment variable %s is required but not set", key))
 	}
 	return value
+}
+
+func loadEnvForTesting() error {
+	wd, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+
+	// Traverse up to 5 levels to find .env file
+	for i := 0; i < 5; i++ {
+		envPath := filepath.Join(wd, ".env")
+		if _, err := os.Stat(envPath); err == nil {
+			return godotenv.Load(envPath)
+		}
+		wd = filepath.Dir(wd)
+	}
+
+	return fmt.Errorf(".env file not found")
 }
