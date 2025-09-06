@@ -5,14 +5,16 @@ services:
       dockerfile: Dockerfile.staging
     container_name: senkou-catalyst-app-staging
     restart: unless-stopped
+    env_file:
+      - .env.staging
     environment:
       - APP_PORT=5556
       - DB_HOST=postgres
       - DB_PORT=5432
-      - DB_USERNAME=${DB_USERNAME:-postgres}
-      - DB_PASSWORD=${DB_PASSWORD:-}
-      - DB_NAME=${DB_NAME:-senkou_catalyst_staging}
-      - JWT_SECRET=${JWT_SECRET:-}
+      # - DB_USERNAME=${DB_USERNAME:-postgres}
+      # - DB_PASSWORD=${DB_PASSWORD:-}
+      # - DB_NAME=${DB_NAME:-senkou_catalyst_staging}
+      # - AUTH_SECRET=${AUTH_SECRET:-}
     depends_on:
       - postgres
     networks:
