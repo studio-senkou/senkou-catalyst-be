@@ -6,7 +6,10 @@ import (
 	"senkou-catalyst-be/platform/errors"
 	"senkou-catalyst-be/repositories"
 
+	stderrors "errors"
+
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 type MerchantService interface {
@@ -14,6 +17,7 @@ type MerchantService interface {
 	GetUserMerchants(userID uint32) ([]*models.Merchant, *errors.AppError)
 	GetMerchantByID(merchantID string) (*models.Merchant, *errors.AppError)
 	GetMerchantOverview(merchantID string) (*dtos.MerchantOverview, *errors.AppError)
+	GetMerchantByUsername(username string) (*models.Merchant, *errors.AppError)
 	UpdateMerchantByID(merchantID string, updateData *dtos.UpdateMerchantRequestDTO) (*models.Merchant, *errors.AppError)
 	DeleteMerchantByID(merchantID string) *errors.AppError
 }
@@ -53,7 +57,7 @@ func (s *MerchantServiceInstance) CreateMerchant(merchant *dtos.CreateMerchantRe
 // This function retrieves all merchants associated with a user
 // It returns a slice of merchants or an error if the retrieval fails
 func (s *MerchantServiceInstance) GetUserMerchants(userID uint32) ([]*models.Merchant, *errors.AppError) {
-	merchants, err := s.MerchantRepository.FindMerchantsByUserID(userID)
+	merchants, err := s.MerchantRepository.FindByUserID(userID)
 
 	if err != nil {
 		return nil, errors.NewAppError(500, "Failed to retrieve merchants")
@@ -76,13 +80,31 @@ func (s *MerchantServiceInstance) GetMerchantByID(merchantID string) (*models.Me
 }
 
 func (s *MerchantServiceInstance) GetMerchantOverview(merchantID string) (*dtos.MerchantOverview, *errors.AppError) {
-	overview, err := s.MerchantRepository.FindMerchantOverview(merchantID)
+	overview, err := s.MerchantRepository.FindOverview(merchantID)
 
 	if err != nil {
 		return nil, errors.NewAppError(500, "Failed to retrieve merchant overview")
 	}
 
 	return overview, nil
+}
+
+// Get merchant by username
+// This function retrieves a merchant by its username
+// It returns the merchant or an error if the retrieval fails
+func (s *MerchantServiceInstance) GetMerchantByUsername(username string) (*models.Merchant, *errors.AppError) {
+	merchant, err := s.MerchantRepository.FindByUsername(username)
+
+	if err != nil {
+
+		if stderrors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.NewAppError(404, "Merchant not found")
+		}
+
+		return nil, errors.NewAppError(500, "Failed to retrieve merchant by username")
+	}
+
+	return merchant, nil
 }
 
 // Update merchant by ID

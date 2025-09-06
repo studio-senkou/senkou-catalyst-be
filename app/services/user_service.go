@@ -13,7 +13,7 @@ import (
 )
 
 type UserService interface {
-	Create(user models.User) (*models.User, *errors.AppError)
+	Create(user *models.User, merchant *models.Merchant) (*models.User, *errors.AppError)
 	GetAll(params *query.QueryParams) (*[]models.User, *query.PaginationResponse, *errors.AppError)
 	GetUserDetail(userID uint32) (*models.User, *errors.AppError)
 	VerifyCredentials(email, password string) (uint32, *errors.AppError)
@@ -34,7 +34,7 @@ func NewUserService(userRepository repositories.UserRepository, merchantReposito
 
 // Create a new user in the database
 // Returns the created user or an error if any
-func (s *UserServiceInstance) Create(user models.User) (*models.User, *errors.AppError) {
+func (s *UserServiceInstance) Create(user *models.User, merchant *models.Merchant) (*models.User, *errors.AppError) {
 	hashedPassword, err := user.HashPassword()
 
 	if err != nil {
@@ -49,16 +49,12 @@ func (s *UserServiceInstance) Create(user models.User) (*models.User, *errors.Ap
 		}
 	}
 
-	createdUser, err := s.UserRepository.Create(&user)
+	createdUser, err := s.UserRepository.Create(user)
 	if err != nil {
 		return nil, errors.NewAppError(500, "Failed to create user")
 	}
 
-	merchant := &models.Merchant{
-		ID:      "",
-		Name:    user.Name + " Merchant",
-		OwnerID: createdUser.ID,
-	}
+	merchant.OwnerID = createdUser.ID
 
 	uuidStr := uuid.New().String()
 

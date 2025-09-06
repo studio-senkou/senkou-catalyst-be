@@ -9,19 +9,23 @@ import (
 	"senkou-catalyst-be/utils/response"
 	"senkou-catalyst-be/utils/validator"
 	"strconv"
+	"strings"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 )
 
 type UserController struct {
-	userService services.UserService
-	subService  services.SubscriptionService
+	userService     services.UserService
+	merchantService services.MerchantService
+	subService      services.SubscriptionService
 }
 
-func NewUserController(userService services.UserService, subService services.SubscriptionService) *UserController {
+func NewUserController(userService services.UserService, merchantService services.MerchantService, subService services.SubscriptionService) *UserController {
 	return &UserController{
-		userService: userService,
-		subService:  subService,
+		userService:     userService,
+		merchantService: merchantService,
+		subService:      subService,
 	}
 }
 
@@ -34,9 +38,9 @@ func NewUserController(userService services.UserService, subService services.Sub
 // @Success 200 {object} models.User
 // @Router /users [post]
 func (h *UserController) CreateUser(c *fiber.Ctx) error {
-	registerUserDTO := new(dtos.RegisterUserDTO)
+	userRequest := new(dtos.RegisterUserDTO)
 
-	if err := validator.Validate(c, registerUserDTO); err != nil {
+	if err := validator.Validate(c, userRequest); err != nil {
 		if vErr, ok := err.(*validator.ValidationError); ok {
 			return response.ValidationError(c, "Bad request", vErr.Errors)
 		}
@@ -44,12 +48,33 @@ func (h *UserController) CreateUser(c *fiber.Ctx) error {
 		return response.InternalError(c, "Internal server error", fmt.Sprintf("Could not process your request due to an error: %v", err.Error()))
 	}
 
-	newUser, appError := h.userService.Create(models.User{
-		Name:     registerUserDTO.Name,
-		Email:    registerUserDTO.Email,
-		Phone:    registerUserDTO.Phone,
-		Password: []byte(registerUserDTO.Password),
-	})
+	if userRequest.MerchantUsername != nil {
+		_, err := h.merchantService.GetMerchantByUsername(*userRequest.MerchantUsername)
+		if err != nil && err.Code != fiber.StatusNotFound {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"message": "Cannot continue to register user, merchant username already taken",
+				"error":   "Merchant username already taken",
+			})
+		}
+	}
+
+	user := &models.User{
+		Name:     userRequest.Name,
+		Email:    userRequest.Email,
+		Phone:    userRequest.Phone,
+		Password: []byte(userRequest.Password),
+	}
+
+	merchant := new(models.Merchant)
+	merchant.Name = userRequest.Name + "'s Merchant"
+
+	if userRequest.MerchantUsername != nil {
+		merchant.Username = *userRequest.MerchantUsername
+	} else {
+		merchant.Username = strings.ToLower(strings.ReplaceAll(userRequest.Name, " ", "-")) + "-" + strconv.FormatInt(time.Now().Unix(), 10)
+	}
+
+	newUser, appError := h.userService.Create(user, merchant)
 
 	if appError != nil {
 		switch appError.Code {

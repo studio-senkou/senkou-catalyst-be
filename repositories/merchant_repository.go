@@ -9,9 +9,10 @@ import (
 
 type MerchantRepository interface {
 	Create(merchant *models.Merchant) (*models.Merchant, error)
-	FindMerchantsByUserID(userID uint32) ([]*models.Merchant, error)
+	FindByUserID(userID uint32) ([]*models.Merchant, error)
 	FindByID(merchantID string) (*models.Merchant, error)
-	FindMerchantOverview(merchantID string) (*dtos.MerchantOverview, error)
+	FindOverview(merchantID string) (*dtos.MerchantOverview, error)
+	FindByUsername(username string) (*models.Merchant, error)
 	UpdateMerchant(merchantID string, updateData *models.Merchant) (*models.Merchant, error)
 	DeleteMerchant(merchantID string) error
 }
@@ -40,7 +41,7 @@ func (r *MerchantRepositoryInstance) Create(merchant *models.Merchant) (*models.
 // Find merchants by user ID
 // This function retrieves all merchants associated with a specific user ID
 // It returns a slice of merchants or an error if the retrieval fails
-func (r *MerchantRepositoryInstance) FindMerchantsByUserID(userID uint32) ([]*models.Merchant, error) {
+func (r *MerchantRepositoryInstance) FindByUserID(userID uint32) ([]*models.Merchant, error) {
 	merchants := make([]*models.Merchant, 0)
 
 	if err := r.DB.
@@ -76,7 +77,7 @@ func (r *MerchantRepositoryInstance) FindByID(merchantID string) (*models.Mercha
 // Retrieving merchant overview
 // This function retrieves an overview of a specific merchant by its ID
 // It returns the merchant overview or an error if the retrieval fails
-func (r *MerchantRepositoryInstance) FindMerchantOverview(merchantID string) (*dtos.MerchantOverview, error) {
+func (r *MerchantRepositoryInstance) FindOverview(merchantID string) (*dtos.MerchantOverview, error) {
 	var overview dtos.MerchantOverview
 
 	query := `
@@ -94,6 +95,19 @@ func (r *MerchantRepositoryInstance) FindMerchantOverview(merchantID string) (*d
 	}
 
 	return &overview, nil
+}
+
+// Find a merchant by username
+// This function retrieves a merchant by its username
+// It returns the merchant or an error if the retrieval fails
+func (r *MerchantRepositoryInstance) FindByUsername(username string) (*models.Merchant, error) {
+	merchant := new(models.Merchant)
+
+	if err := r.DB.Where("username = ?", username).First(merchant).Error; err != nil {
+		return nil, err
+	}
+
+	return merchant, nil
 }
 
 // Update a merchant

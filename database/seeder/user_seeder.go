@@ -21,13 +21,13 @@ func SeedUsers(db *gorm.DB) error {
 		[]byte(adminPasswordStr), bcrypt.DefaultCost,
 	)
 
-	userService.Create(models.User{
+	userService.Create(&models.User{
 		Name:     config.GetEnv("SEEDER_ADMIN_NAME", "Catalyst Admin"),
 		Email:    config.GetEnv("SEEDER_ADMIN_EMAIL", "studio.senkou@example.com"),
 		Phone:    config.GetEnv("SEEDER_ADMIN_PHONE", "1234567890"),
 		Password: adminPassword,
 		Role:     "admin",
-	})
+	}, nil)
 
 	if err != nil {
 		panic("Failed to hash admin password: " + err.Error())
@@ -38,20 +38,26 @@ func SeedUsers(db *gorm.DB) error {
 		panic("Failed to hash password: " + err.Error())
 	}
 
-	userService.Create(models.User{
+	userService.Create(&models.User{
 		Name:     "Agus Prasetyo",
 		Email:    "agus.prasetyo@senkou.co.id",
 		Phone:    "6281234567890",
 		Password: hashedPassword,
 		Role:     "user",
+	}, &models.Merchant{
+		Name:     "Agus's Store",
+		Username: "agus-prasetyo",
 	})
 
-	userService.Create(models.User{
+	userService.Create(&models.User{
 		Name:     "Budi Santoso",
 		Email:    "budi.santoso@senkou.co.id",
 		Phone:    "6289876543210",
 		Password: hashedPassword,
 		Role:     "user",
+	}, &models.Merchant{
+		Name:     "Budi's Store",
+		Username: "budi-santoso",
 	})
 
 	return nil
