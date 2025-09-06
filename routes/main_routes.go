@@ -8,6 +8,11 @@ import (
 )
 
 func InitRoutes(app *fiber.App, deps *container.Container) {
+	// Global OPTIONS handler for CORS preflight
+	app.Options("/*", func(c *fiber.Ctx) error {
+		return c.SendStatus(fiber.StatusNoContent)
+	})
+
 	// Initialize all routes
 	// This initiation is use to centralize the route initialization
 	// and make it easier to manage dependencies.
