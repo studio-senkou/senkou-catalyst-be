@@ -1,255 +1,96 @@
 package config
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"log"
-	"net/http"
-	"time"
 
 	"senkou-catalyst-be/platform/errors"
 	"senkou-catalyst-be/utils/config"
+	"senkou-catalyst-be/utils/response"
+	"senkou-catalyst-be/utils/webhook"
 
 	"github.com/gofiber/fiber/v2"
 )
-
-type ErrorResponse struct {
-	Success bool        `json:"-"`
-	Error   ErrorDetail `json:"error"`
-	Data    any         `json:"data,omitempty"`
-	Meta    any         `json:"meta,omitempty"`
-}
-
-type ErrorDetail struct {
-	Code    int    `json:"code"`
-	Type    string `json:"-"`
-	Message string `json:"message"`
-	Details any    `json:"details,omitempty"`
-}
-
-func SendLog(errMsg string) {
-	webhookEnabled := config.GetEnv("WEBHOOK_ENABLED", "false") == "true"
-
-	if !webhookEnabled {
-		return
-	}
-
-	webhookURL := config.GetEnv("WEBHOOK_URL", "")
-
-	if webhookURL == "" {
-		return
-	}
-
-	var errorResponse ErrorResponse
-	json.Unmarshal([]byte(errMsg), &errorResponse)
-
-	embed := map[string]any{
-		"title":       "🚨 Error in Senkou Catalyst API",
-		"color":       getColorByErrorType(errorResponse.Error.Type),
-		"description": "An error occurred in the application",
-		"fields": []map[string]any{
-			// {
-			// 	"name":   "Error Type",
-			// 	"value":  errorResponse.Error.Type,
-			// 	"inline": true,
-			// },
-			{
-				"name":   "Status Code",
-				"value":  errorResponse.Error.Code,
-				"inline": true,
-			},
-			{
-				"name":   "Message",
-				"value":  errorResponse.Error.Message,
-				"inline": false,
-			},
-		},
-		"timestamp": time.Now().Format(time.RFC3339),
-		"footer": map[string]any{
-			"text":     "Senkou Catalyst API",
-			"icon_url": "https://via.placeholder.com/16x16/ff0000/ffffff?text=!",
-		},
-	}
-
-	if errorResponse.Error.Details != nil {
-		if details, ok := errorResponse.Error.Details.([]any); ok && len(details) > 0 {
-			detailsJson, _ := json.MarshalIndent(errorResponse.Error.Details, "", "  ")
-			embed["fields"] = append(embed["fields"].([]map[string]any), map[string]any{
-				"name":   "Details",
-				"value":  "```json\n" + string(detailsJson) + "\n```",
-				"inline": false,
-			})
-		}
-	}
-
-	payload := map[string]any{
-		"embeds": []map[string]any{embed},
-	}
-
-	payloadBytes, err := json.Marshal(payload)
-	if err != nil {
-		log.Printf("Failed to marshal webhook payload: %v", err)
-		return
-	}
-
-	go func() {
-		response, postErr := http.Post(webhookURL, "application/json", bytes.NewBuffer(payloadBytes))
-		if postErr != nil {
-			log.Printf("Failed to send webhook log: %v", postErr)
-			return
-		}
-		defer response.Body.Close()
-
-		if response.StatusCode != http.StatusOK && response.StatusCode != http.StatusNoContent {
-			log.Printf("Discord webhook returned status: %d", response.StatusCode)
-		}
-	}()
-}
 
 func InitFiberConfig() *fiber.Config {
 	return &fiber.Config{
 		AppName: "Senkou Catalyst API",
 		ErrorHandler: func(c *fiber.Ctx, err error) error {
-			response := ErrorResponse{
+			resp := response.ErrorResponse{
 				Success: false,
-				Error: ErrorDetail{
+				Error: response.ErrorDetail{
 					Code:    fiber.StatusInternalServerError,
 					Type:    "INTERNAL_ERROR",
 					Message: "Internal server error",
 				},
 			}
 
-			// If the error is type of BaseError
-			if appErr, ok := err.(*errors.BaseError); ok {
-				response.Error = ErrorDetail{
-					Code:    appErr.Code(),
-					Type:    appErr.Type(),
-					Message: appErr.Error(),
-					Details: appErr.Details(),
+			if customErr, ok := err.(*errors.CustomError); ok {
+				resp.Error = response.ErrorDetail{
+					Code:    customErr.StatusCode(),
+					Type:    customErr.ErrorType(),
+					Message: customErr.Message,
+					Details: customErr.Details,
 				}
 
-				if appErr.Code() >= 400 && appErr.Code() < 500 {
-					return c.Status(appErr.Code()).JSON(fiber.Map{
-						"message": appErr.ErrorMessage,
-						"error":   appErr.Details(),
-					})
+				if customErr.StatusCode() >= 500 {
+					sendLog(c, resp)
 				}
 
-				if appErr.Code() >= 500 {
-					sendErrorLog(response)
-				}
-				return c.Status(appErr.Code()).JSON(fiber.Map{
-					"message": appErr.ErrorMessage,
-					"error":   appErr.Details(),
-				})
-			}
-
-			// If the error is derived from BaseError
-			if validationErr, ok := err.(*errors.ValidationError); ok {
-				response.Error.Code = fiber.StatusBadRequest
-				response.Error.Message = "Bad request"
-				response.Error.Type = "VALIDATION_ERROR"
-				response.Error.Details = validationErr.Fields
-
-				return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-					"message": response.Error.Message,
-					"errors":  validationErr.Fields,
-				})
-			}
-
-			// If the error is a bad request error``
-			if badRequestErr, ok := err.(*errors.BadRequestError); ok {
-				response.Error.Code = fiber.StatusBadRequest
-				response.Error.Message = badRequestErr.ErrorMessage
-				response.Error.Type = "BAD_REQUEST_ERROR"
-				response.Error.Details = badRequestErr.Details
-
-				return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-					"message": response.Error.Message,
-					"error":   badRequestErr.Details(),
-				})
-			}
-
-			// If the error is unauthorized
-			if unauthorizedError, ok := err.(*errors.UnauthorizedError); ok {
-				response.Error.Code = fiber.StatusUnauthorized
-				response.Error.Message = unauthorizedError.ErrorMessage
-				response.Error.Type = "UNAUTHORIZED_ERROR"
-				response.Error.Details = unauthorizedError.Details
-
-				return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-					"message": response.Error.Message,
-					"error":   unauthorizedError.Details(),
-				})
-			}
-
-			// If the error is a not found error
-			if notFoundErr, ok := err.(*errors.NotFoundError); ok {
-				response.Error.Code = fiber.StatusNotFound
-				response.Error.Message = notFoundErr.ErrorMessage
-				response.Error.Type = "NOT_FOUND_ERROR"
-				response.Error.Details = notFoundErr.Details
-
-				return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-					"message": response.Error.Message,
+				return c.Status(customErr.StatusCode()).JSON(fiber.Map{
+					"message": customErr.Message,
+					"error":   customErr.Details,
 				})
 			}
 
 			if fiberErr, ok := err.(*fiber.Error); ok {
-				response.Error.Code = fiberErr.Code
-				response.Error.Message = fiberErr.Message
-				response.Error.Type = "FIBER_ERROR"
+				resp.Error.Code = fiberErr.Code
+				resp.Error.Message = fiberErr.Message
+				resp.Error.Type = "FIBER_ERROR"
 
 				if fiberErr.Code >= 500 {
-					sendErrorLog(response)
+					sendLog(c, resp)
 				}
 
 				return c.Status(fiberErr.Code).JSON(fiber.Map{
-					"message": response.Error.Message,
+					"message": resp.Error.Message,
 				})
 			}
 
-			response.Error.Message = err.Error()
-
-			sendErrorLog(response)
-			if response.Error.Details != nil {
-				return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-					"message": "Internal server error",
-					"error":   fmt.Sprintf("%v: %v", response.Error.Message, response.Error.Details),
-				})
-			}
+			resp.Error.Message = err.Error()
+			sendLog(c, resp)
 
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 				"message": "Internal server error",
-				"error":   response.Error.Message,
+				"error":   resp.Error.Message,
 			})
 		},
 	}
 }
 
-func sendErrorLog(response ErrorResponse) {
-	responseBytes, err := json.Marshal(response)
+func sendLog(c *fiber.Ctx, resp response.ErrorResponse) {
+	responseBytes, err := json.Marshal(resp.Error.StackTrace)
 	if err != nil {
 		log.Printf("Failed to marshal error response: %v", err)
 		return
 	}
-	SendLog(string(responseBytes))
-}
 
-func getColorByErrorType(errorType string) int {
-	switch errorType {
-	case "VALIDATION_ERROR":
-		return 16776960
-	case "NOT_FOUND_ERROR":
-		return 16753920
-	case "UNAUTHORIZED_ERROR", "FORBIDDEN_ERROR":
-		return 16711680
-	case "DATABASE_ERROR":
-		return 8388736
-	case "BUSINESS_ERROR":
-		return 16744448
-	default:
-		return 15158332
+	webhookURL := config.GetEnv("WEBHOOK_URL", "")
+
+	builder := webhook.NewDiscordWebhookBuilder(webhookURL)
+
+	message := &webhook.DiscordWebhook{
+		Content: fmt.Sprintf(
+			"🚨 Error Occured:\n\n**Endpoint**: `%s` \n\n**Error**: %s\n\n**Stack Trace**:\n```%s```",
+			c.Path(),
+			resp.Error.Details,
+			string(responseBytes),
+		),
+	}
+
+	if err := builder.Send(message); err != nil {
+		log.Printf("Failed to send error log to Discord: %v", err)
+		return
 	}
 }

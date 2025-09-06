@@ -12,6 +12,7 @@ import (
 	_ "senkou-catalyst-be/docs"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/recover"
 )
 
 // @Title Catalyst API Documentation
@@ -25,9 +26,9 @@ func main() {
 	appConfig := config.InitFiberConfig()
 	app := fiber.New(*appConfig)
 
-	// Middlewares
 	app.Use(config.InitCorsConfig())
 	app.Use(config.InitLogger())
+	app.Use(recover.New())
 
 	config.ConnectDB()
 
