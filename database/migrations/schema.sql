@@ -23,7 +23,7 @@ CREATE TABLE public.categories (
     name character varying(100) NOT NULL,
     merchant_id character(16) NOT NULL,
     created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
-    updated_at timestamp without time zone,
+    updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
     deleted_at timestamp without time zone
 );
 
@@ -58,7 +58,7 @@ CREATE TABLE public.merchants (
     username character varying(100) NOT NULL,
     owner_id integer,
     created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
-    updated_at timestamp without time zone,
+    updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
     deleted_at timestamp without time zone
 );
 
@@ -81,7 +81,7 @@ CREATE TABLE public.payment_transactions (
     expired_at timestamp without time zone,
     settled_at timestamp without time zone,
     created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
-    updated_at timestamp without time zone,
+    updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
     deleted_at timestamp without time zone
 );
 
@@ -132,7 +132,7 @@ CREATE TABLE public.product_metrics (
     ua_os text,
     interaction text,
     created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
-    updated_at timestamp without time zone
+    updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP
 );
 
 
@@ -170,7 +170,7 @@ CREATE TABLE public.products (
     affiliate_url text NOT NULL,
     photos json,
     created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
-    updated_at timestamp without time zone,
+    updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
     deleted_at timestamp without time zone
 );
 
@@ -196,7 +196,7 @@ CREATE TABLE public.subscription_orders (
     amount numeric(10,2) NOT NULL,
     status character varying(50) DEFAULT 'pending'::character varying,
     created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
-    updated_at timestamp without time zone,
+    updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
     deleted_at timestamp without time zone
 );
 
@@ -211,7 +211,7 @@ CREATE TABLE public.subscription_plans (
     name character varying(100) NOT NULL,
     value text,
     created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
-    updated_at timestamp without time zone,
+    updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
     deleted_at timestamp without time zone
 );
 
@@ -247,7 +247,7 @@ CREATE TABLE public.subscriptions (
     description text,
     duration smallint NOT NULL,
     created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
-    updated_at timestamp without time zone,
+    updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
     deleted_at timestamp without time zone
 );
 
@@ -273,6 +273,40 @@ ALTER SEQUENCE public.subscriptions_id_seq OWNED BY public.subscriptions.id;
 
 
 --
+-- Name: user_has_tokens; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.user_has_tokens (
+    id integer NOT NULL,
+    user_id integer NOT NULL,
+    token character varying(255) NOT NULL,
+    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    deleted_at timestamp without time zone
+);
+
+
+--
+-- Name: user_has_tokens_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.user_has_tokens_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: user_has_tokens_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.user_has_tokens_id_seq OWNED BY public.user_has_tokens.id;
+
+
+--
 -- Name: user_subscriptions; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -285,7 +319,7 @@ CREATE TABLE public.user_subscriptions (
     is_active boolean DEFAULT false,
     payment_status character varying(50) DEFAULT 'pending'::character varying,
     created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
-    updated_at timestamp without time zone,
+    updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
     deleted_at timestamp without time zone
 );
 
@@ -322,43 +356,9 @@ CREATE TABLE public.users (
     password character varying(255) NOT NULL,
     role character varying(50) NOT NULL,
     created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
-    updated_at timestamp without time zone,
+    updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
     deleted_at timestamp without time zone
 );
-
-
---
--- Name: users_has_token; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.users_has_token (
-    id integer NOT NULL,
-    user_id integer NOT NULL,
-    token character varying(255) NOT NULL,
-    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
-    updated_at timestamp without time zone,
-    deleted_at timestamp without time zone
-);
-
-
---
--- Name: users_has_token_id_seq; Type: SEQUENCE; Schema: public; Owner: -
---
-
-CREATE SEQUENCE public.users_has_token_id_seq
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: users_has_token_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
---
-
-ALTER SEQUENCE public.users_has_token_id_seq OWNED BY public.users_has_token.id;
 
 
 --
@@ -417,6 +417,13 @@ ALTER TABLE ONLY public.subscriptions ALTER COLUMN id SET DEFAULT nextval('publi
 
 
 --
+-- Name: user_has_tokens id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.user_has_tokens ALTER COLUMN id SET DEFAULT nextval('public.user_has_tokens_id_seq'::regclass);
+
+
+--
 -- Name: user_subscriptions id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -428,13 +435,6 @@ ALTER TABLE ONLY public.user_subscriptions ALTER COLUMN id SET DEFAULT nextval('
 --
 
 ALTER TABLE ONLY public.users ALTER COLUMN id SET DEFAULT nextval('public.users_id_seq'::regclass);
-
-
---
--- Name: users_has_token id; Type: DEFAULT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.users_has_token ALTER COLUMN id SET DEFAULT nextval('public.users_has_token_id_seq'::regclass);
 
 
 --
@@ -542,6 +542,14 @@ ALTER TABLE ONLY public.subscriptions
 
 
 --
+-- Name: user_has_tokens user_has_tokens_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.user_has_tokens
+    ADD CONSTRAINT user_has_tokens_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: user_subscriptions user_subscriptions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -555,14 +563,6 @@ ALTER TABLE ONLY public.user_subscriptions
 
 ALTER TABLE ONLY public.users
     ADD CONSTRAINT users_email_key UNIQUE (email);
-
-
---
--- Name: users_has_token users_has_token_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.users_has_token
-    ADD CONSTRAINT users_has_token_pkey PRIMARY KEY (id);
 
 
 --
@@ -731,6 +731,14 @@ ALTER TABLE ONLY public.subscription_plans
 
 
 --
+-- Name: user_has_tokens fk_user_has_tokens; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.user_has_tokens
+    ADD CONSTRAINT fk_user_has_tokens FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
+
+
+--
 -- Name: user_subscriptions fk_user_subscriptions_subscription; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -744,14 +752,6 @@ ALTER TABLE ONLY public.user_subscriptions
 
 ALTER TABLE ONLY public.user_subscriptions
     ADD CONSTRAINT fk_user_subscriptions_user FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
-
-
---
--- Name: users_has_token fk_users_has_token; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.users_has_token
-    ADD CONSTRAINT fk_users_has_token FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
 
 
 --

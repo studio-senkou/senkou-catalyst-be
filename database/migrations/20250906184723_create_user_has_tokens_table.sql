@@ -1,5 +1,5 @@
 -- migrate:up
-CREATE TABLE users_has_token (
+CREATE TABLE user_has_tokens (
     id SERIAL PRIMARY KEY,
     user_id INT NOT NULL,
     token VARCHAR(255) NOT NULL,
@@ -8,14 +8,14 @@ CREATE TABLE users_has_token (
     deleted_at TIMESTAMP
 );
 
-ALTER TABLE users_has_token
-    ADD CONSTRAINT fk_users_has_token
+ALTER TABLE user_has_tokens
+    ADD CONSTRAINT fk_user_has_tokens
     FOREIGN KEY (user_id)
     REFERENCES users(id)
     ON DELETE CASCADE;
 
 -- migrate:down
-ALTER TABLE users_has_token
-    DROP CONSTRAINT IF EXISTS fk_users_has_token;
+ALTER TABLE user_has_tokens
+    DROP CONSTRAINT IF EXISTS fk_user_has_tokens;
 
-DROP TABLE IF EXISTS users_has_token;
+DROP TABLE IF EXISTS user_has_tokens;
