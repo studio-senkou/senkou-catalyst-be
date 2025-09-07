@@ -15,7 +15,11 @@ import (
 
 func InitFiberConfig() *fiber.Config {
 	return &fiber.Config{
-		AppName: "Senkou Catalyst API",
+		AppName:                 "Senkou Catalyst API",
+		DisableStartupMessage:   true,
+		CaseSensitive:           true,
+		StrictRouting:           true,
+		EnableTrustedProxyCheck: true,
 		ErrorHandler: func(c *fiber.Ctx, err error) error {
 			resp := response.ErrorResponse{
 				Success: false,
@@ -62,7 +66,7 @@ func InitFiberConfig() *fiber.Config {
 			sendLog(c, resp)
 
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-				"message": "Internal server error",
+				"message": "Internal server error brok",
 				"error":   resp.Error.Message,
 			})
 		},
@@ -77,6 +81,11 @@ func sendLog(c *fiber.Ctx, resp response.ErrorResponse) {
 	}
 
 	webhookURL := config.GetEnv("WEBHOOK_URL", "")
+	webhookEnabled := config.GetEnv("WEBHOOK_ENABLED", "false")
+
+	if webhookURL == "" || webhookEnabled != "true" {
+		return
+	}
 
 	builder := webhook.NewDiscordWebhookBuilder(webhookURL)
 

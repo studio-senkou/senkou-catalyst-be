@@ -34,22 +34,31 @@ func ValidationError(c *fiber.Ctx, message string, fields any) error {
 
 func NotFound(c *fiber.Ctx, message string) error {
 	customErr := errors.NewCustomError(404, message, "NOT_FOUND", nil)
-	return c.Status(customErr.StatusCode()).JSON(customErr)
+	return c.Status(customErr.StatusCode()).JSON(fiber.Map{
+		"message": customErr.Message,
+	})
 }
 
 func Unauthorized(c *fiber.Ctx, message string) error {
 	customErr := errors.NewCustomError(401, message, "UNAUTHORIZED", nil)
-	return c.Status(customErr.StatusCode()).JSON(customErr)
+	return c.Status(customErr.StatusCode()).JSON(fiber.Map{
+		"message": customErr.Message,
+	})
 }
 
 func Forbidden(c *fiber.Ctx, message string) error {
 	customErr := errors.NewCustomError(403, message, "FORBIDDEN", nil)
-	return c.Status(customErr.StatusCode()).JSON(customErr)
+	return c.Status(customErr.StatusCode()).JSON(fiber.Map{
+		"message": customErr.Message,
+	})
 }
 
 func BadRequest(c *fiber.Ctx, message string, details any) error {
 	customErr := errors.NewCustomError(400, message, "BAD_REQUEST", details)
-	return c.Status(customErr.StatusCode()).JSON(customErr)
+	return c.Status(customErr.StatusCode()).JSON(fiber.Map{
+		"message": customErr.Message,
+		"error":   customErr.Error(),
+	})
 }
 
 func InternalError(c *fiber.Ctx, message string, details any) error {
