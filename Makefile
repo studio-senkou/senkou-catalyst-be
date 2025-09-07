@@ -6,7 +6,7 @@ export DISCORD_BOT_URL
 export DISCORD_CHANNEL_ID
 endif
 
-.PHONY: auth-secret rebuild rebuild-stage rebuild-dev wire dev-up dev-down dev-logs prod-up prod-down prod-logs seed clean dev-status prod-status list-all swagger test-discord
+.PHONY: auth-secret rebuild rebuild-stage rebuild-dev wire dev-up dev-down dev-logs prod-up prod-down prod-logs seed clean dev-status prod-status list-all swagger test-discord migrate-up migrate-down
 
 auth-secret:
 	@echo "" >> .env
@@ -111,6 +111,19 @@ swagger:
 	@echo "Generating Swagger documentation..."
 	@swag init -g main.go -o ./docs --parseDependency --parseInternal
 	@echo "Swagger documentation generated successfully!"
+
+migrations-create:
+	@if [ -z "$(NAME)" ]; then \
+		echo "Error: Please provide a migration name using 'make migrations-create name=your_migration_name'"; \
+		exit 1; \
+	fi
+	@dbmate -u $$(grep '^DB_URL=' .env | cut -d '=' -f2-) --migrations-dir=./database/migrations new $(NAME)
+
+migrate-up:
+	@dbmate -u $$(grep '^DB_URL=' .env | cut -d '=' -f2-) --migrations-dir=./database/migrations --schema-file=./database/migrations/schema.sql up
+
+migrate-down:
+	@dbmate -u $$(grep '^DB_URL=' .env | cut -d '=' -f2-) --migrations-dir=./database/migrations --schema-file=./database/migrations/schema.sql down
 
 test-discord:
 	@echo "Testing Discord notification..."
