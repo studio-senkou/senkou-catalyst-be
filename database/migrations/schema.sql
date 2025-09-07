@@ -87,6 +87,40 @@ CREATE TABLE public.payment_transactions (
 
 
 --
+-- Name: predefined_categories; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.predefined_categories (
+    id integer NOT NULL,
+    name character varying(100) NOT NULL,
+    description text,
+    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    deleted_at timestamp without time zone
+);
+
+
+--
+-- Name: predefined_categories_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.predefined_categories_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: predefined_categories_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.predefined_categories_id_seq OWNED BY public.predefined_categories.id;
+
+
+--
 -- Name: product_metrics; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -355,6 +389,13 @@ ALTER TABLE ONLY public.categories ALTER COLUMN id SET DEFAULT nextval('public.c
 
 
 --
+-- Name: predefined_categories id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.predefined_categories ALTER COLUMN id SET DEFAULT nextval('public.predefined_categories_id_seq'::regclass);
+
+
+--
 -- Name: product_metrics id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -434,6 +475,22 @@ ALTER TABLE ONLY public.payment_transactions
 
 ALTER TABLE ONLY public.payment_transactions
     ADD CONSTRAINT payment_transactions_transaction_id_key UNIQUE (transaction_id);
+
+
+--
+-- Name: predefined_categories predefined_categories_name_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.predefined_categories
+    ADD CONSTRAINT predefined_categories_name_key UNIQUE (name);
+
+
+--
+-- Name: predefined_categories predefined_categories_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.predefined_categories
+    ADD CONSTRAINT predefined_categories_pkey PRIMARY KEY (id);
 
 
 --
@@ -717,4 +774,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20250906190914'),
     ('20250906191222'),
     ('20250906191449'),
-    ('20250906191821');
+    ('20250906191821'),
+    ('20250907031532');
