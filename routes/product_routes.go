@@ -43,8 +43,8 @@ func InitProductRoutes(app *fiber.App, deps ProductRouteDependencies) {
 		deps.ProductController.GetProductByID,
 	)
 	app.Get(
-		"/merchants/:merchantID/products",
-		deps.ProductController.GetProductByMerchant,
+		"/merchants/:username/products",
+		deps.ProductController.GetProductByMerchantUsername,
 	)
 
 	app.Delete(

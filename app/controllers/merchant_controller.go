@@ -188,25 +188,25 @@ func (h *MerchantController) GetUserMerchants(c *fiber.Ctx) error {
 	})
 }
 
-// Get merchant by ID
-// @Summary Get Merchant by ID
-// @Description Retrieve a merchant by its ID
+// Get merchant by username
+// @Summary Get merchant by it's username
+// @Description Retrieve a merchant by it's username
 // @Tags Merchant
 // @Security BearerAuth
-// @Param id path string true "Merchant ID"
+// @Param id path string true "Merchant username"
 // @Success 200 {object} fiber.Map{data=models.Merchant,message=string}
 // @Failure 400 {object} fiber.Map{message=string}
 // @Failure 404 {object} fiber.Map{message=string}
 // @Failure 500 {object} fiber.Map{message=string,error=string}
-// @Router /merchants/{id} [get]
-func (h *MerchantController) GetMerchantByID(c *fiber.Ctx) error {
-	merchantID := c.Params("id")
+// @Router /merchants/{username} [get]
+func (h *MerchantController) GetMerchantByUsername(c *fiber.Ctx) error {
+	username := c.Params("username")
 
-	if merchantID == "" {
+	if username == "" {
 		return response.BadRequest(c, "Cannot continue to retrieve merchant information", "Invalid merchant ID")
 	}
 
-	merchant, appError := h.MerchantService.GetMerchantByID(merchantID)
+	merchant, appError := h.MerchantService.GetMerchantByUsername(username)
 
 	if appError != nil {
 		return response.InternalError(c, "Cannot continue to retrieve merchant information due to internal error", appError.Details)

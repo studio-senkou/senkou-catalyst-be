@@ -17,6 +17,7 @@ type ProductService interface {
 	GetProductByID(productID string) (*models.Product, *errors.AppError)
 	GetProductsByMerchantID(merchantID string) ([]*models.Product, *errors.AppError)
 	GetAllProducts(params *query.QueryParams) ([]*models.Product, *query.PaginationResponse, *errors.AppError)
+	GetProductsByMerchantUsername(username string) ([]*models.Product, *errors.AppError)
 	UpdateProduct(updatedProduct *dtos.UpdateProductDTO, productID string) (*models.Product, *errors.AppError)
 	UpdateProductPhotos(product *models.Product) *errors.AppError
 	DeleteProduct(productID string) *errors.AppError
@@ -46,7 +47,7 @@ func (s *ProductServiceInstance) CreateProduct(product *dtos.CreateProductDTO, m
 		Price:        product.Price,
 		Photos:       product.Photos,
 		AffiliateURL: product.AffiliateURL,
-		CategoryID:   &product.CategoryID,
+		CategoryID:   product.CategoryID,
 		MerchantID:   merchantID,
 	}
 
@@ -74,6 +75,18 @@ func (s *ProductServiceInstance) GetProductByID(productID string) (*models.Produ
 	}
 
 	return product, nil
+}
+
+// Get products by merchant username
+// This function retrieves all products associated with a specific merchant username
+// It returns a slice of products and an error if any
+func (s *ProductServiceInstance) GetProductsByMerchantUsername(username string) ([]*models.Product, *errors.AppError) {
+	products, err := s.ProductRepository.FindProductsByMerchantUsername(username)
+	if err != nil {
+		return nil, errors.NewAppError(404, fmt.Sprintf("Products not found for merchant username %s: %v", username, err.Error()))
+	}
+
+	return products, nil
 }
 
 // Get products by merchant ID

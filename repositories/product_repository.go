@@ -12,6 +12,7 @@ type ProductRepository interface {
 	StoreProduct(product *models.Product) (*models.Product, error)
 	FindProductByID(productID string) (*models.Product, error)
 	FindProductsByMerchantID(merchantID string) ([]*models.Product, error)
+	FindProductsByMerchantUsername(username string) ([]*models.Product, error)
 	FindAllProducts(params *query.QueryParams) ([]*models.Product, int64, error)
 	FindMerchantByProductID(productID string) (*models.Merchant, error)
 	UpdateProduct(updatedProduct *models.Product) (*models.Product, error)
@@ -62,6 +63,27 @@ func (r *ProductRepositoryInstance) FindProductsByMerchantID(merchantID string) 
 	products := make([]*models.Product, 0)
 
 	if err := r.DB.Where("merchant_id = ?", merchantID).Find(&products).Error; err != nil {
+		return nil, err
+	}
+
+	return products, nil
+}
+
+// Get products by merchant username
+// This function retrieves all products associated with a specific merchant username
+// It takes a merchant username as a parameter
+// It returns a slice of products and an error if any
+func (r *ProductRepositoryInstance) FindProductsByMerchantUsername(username string) ([]*models.Product, error) {
+	products := make([]*models.Product, 0)
+
+	if err := r.DB.Table("products").
+		Select("products.*").
+		Joins("JOIN merchants ON products.merchant_id = merchants.id").
+		Where("merchants.username = ?", username).
+		Find(&products).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, gorm.ErrRecordNotFound
+		}
 		return nil, err
 	}
 

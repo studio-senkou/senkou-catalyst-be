@@ -22,9 +22,8 @@ func InitMerchantRoutes(app *fiber.App, merchantController *controllers.Merchant
 		merchantController.GetUserMerchants,
 	)
 	app.Get(
-		"/merchants/:id",
-		middlewares.JWTProtected,
-		merchantController.GetMerchantByID,
+		"/merchants/:username",
+		merchantController.GetMerchantByUsername,
 	)
 
 	// Merchant overview

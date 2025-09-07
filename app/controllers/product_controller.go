@@ -249,20 +249,20 @@ func (h *ProductController) GetAllProducts(c *fiber.Ctx) error {
 // @Tags Products
 // @Accept json
 // @Produce json
-// @Param merchantID path string true "Merchant ID"
+// @Param Username path string true "Merchant ID"
 // @Success 200 {object} fiber.Map{message=string,data=fiber.Map{products=[]models.Product}}
 // @Failure 400 {object} fiber.Map{error=string,details=any}
 // @Failure 404 {object} fiber.Map{error=string,details=any}
 // @Failure 500 {object} fiber.Map{error=string,details=any}
-// @Router /merchants/{merchantID}/products [get]
-func (h *ProductController) GetProductByMerchant(c *fiber.Ctx) error {
-	merchantID := c.Params("merchantID")
+// @Router /merchants/{username}/products [get]
+func (h *ProductController) GetProductByMerchantUsername(c *fiber.Ctx) error {
+	username := c.Params("username")
 
-	if merchantID == "" {
-		return response.BadRequest(c, "Cannot continue to retrieve products", "Merchant ID is required")
+	if username == "" {
+		return response.BadRequest(c, "Cannot continue to retrieve products", "Merchant username is required")
 	}
 
-	products, appError := h.ProductService.GetProductsByMerchantID(merchantID)
+	products, appError := h.ProductService.GetProductsByMerchantUsername(username)
 
 	if appError != nil {
 		switch appError.Code {

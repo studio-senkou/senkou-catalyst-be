@@ -14,8 +14,8 @@ import (
 
 type MerchantService interface {
 	CreateMerchant(merchant *dtos.CreateMerchantRequestDTO, userID uint32) (*models.Merchant, *errors.AppError)
-	GetUserMerchants(userID uint32) ([]*models.Merchant, *errors.AppError)
 	GetMerchantByID(merchantID string) (*models.Merchant, *errors.AppError)
+	GetUserMerchants(userID uint32) ([]*models.Merchant, *errors.AppError)
 	GetMerchantOverview(merchantID string) (*dtos.MerchantOverview, *errors.AppError)
 	GetMerchantByUsername(username string) (*models.Merchant, *errors.AppError)
 	UpdateMerchantByID(merchantID string, updateData *dtos.UpdateMerchantRequestDTO) (*models.Merchant, *errors.AppError)
@@ -79,6 +79,9 @@ func (s *MerchantServiceInstance) GetMerchantByID(merchantID string) (*models.Me
 	return merchant, nil
 }
 
+// Get merchant's overview
+// This function retrieves an overview of a specific merchant by its ID
+// It returns the merchant overview or an error if the retrieval fails
 func (s *MerchantServiceInstance) GetMerchantOverview(merchantID string) (*dtos.MerchantOverview, *errors.AppError) {
 	overview, err := s.MerchantRepository.FindOverview(merchantID)
 
