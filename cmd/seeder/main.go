@@ -57,8 +57,8 @@ func register(c *SeederContext) {
 	c.Register("subscription_seeder", seeder.SeedSubscriptions)
 
 	seederPool := []SeederClosure{
-		seeder.SeedUsers,
 		seeder.SeedSubscriptions,
+		seeder.SeedUsers,
 	}
 
 	c.Register("all", func(db *gorm.DB) error {

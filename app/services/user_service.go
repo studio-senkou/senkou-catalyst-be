@@ -43,7 +43,7 @@ func (s *UserServiceInstance) Create(user *models.User, merchant *models.Merchan
 
 	user.Password = hashedPassword
 
-	if user, err := s.UserRepository.FindByEmail(user.Email); err != nil || user != nil {
+	if _, err := s.UserRepository.FindByEmail(user.Email); err != nil {
 		if !stderr.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errors.NewAppError(400, "User already exists")
 		}
@@ -52,6 +52,13 @@ func (s *UserServiceInstance) Create(user *models.User, merchant *models.Merchan
 	createdUser, err := s.UserRepository.Create(user)
 	if err != nil {
 		return nil, errors.NewAppError(500, "Failed to create user")
+	}
+
+	// If merchant is nil, skip creating merchant
+	// This asume that the user is not a merchant
+	// Otherwise, create the merchant and link it to the user
+	if merchant == nil {
+		return createdUser, nil
 	}
 
 	merchant.OwnerID = createdUser.ID
@@ -83,6 +90,8 @@ func (s *UserServiceInstance) GetAll(params *query.QueryParams) (*[]models.User,
 	return users, pagination, nil
 }
 
+// Verify user credentials during login
+// Returns the user ID if credentials are valid, or an error if invalid
 func (s *UserServiceInstance) VerifyCredentials(email, password string) (uint32, *errors.AppError) {
 	user, err := s.UserRepository.FindByEmail(email)
 
