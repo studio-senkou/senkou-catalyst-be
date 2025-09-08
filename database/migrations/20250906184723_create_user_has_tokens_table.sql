@@ -1,5 +1,5 @@
 -- migrate:up
-CREATE TABLE user_has_tokens (
+CREATE TABLE IF NOT EXISTS user_has_tokens (
     id SERIAL PRIMARY KEY,
     user_id INT NOT NULL,
     token VARCHAR(255) NOT NULL,

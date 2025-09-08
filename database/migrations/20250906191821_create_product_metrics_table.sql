@@ -1,5 +1,5 @@
 -- migrate:up
-CREATE TABLE product_metrics (
+CREATE TABLE IF NOT EXISTS product_metrics (
     id SERIAL PRIMARY KEY,
     product_id UUID NOT NULL,
     origin VARCHAR(20) NOT NULL,

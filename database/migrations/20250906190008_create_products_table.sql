@@ -1,5 +1,5 @@
 -- migrate:up
-CREATE TABLE products (
+CREATE TABLE IF NOT EXISTS products (
     id UUID PRIMARY KEY,
     merchant_id CHAR(16) NOT NULL,
     category_id INT,
@@ -34,11 +34,8 @@ ALTER TABLE products
 ALTER TABLE products
     DROP CONSTRAINT IF EXISTS fk_products_category;
 
-ALTER TABLE products
-    DROP INDEX IF EXISTS idx_products_merchant_id;
-
-ALTER TABLE products
-    DROP INDEX IF EXISTS idx_products_category_id;
+DROP INDEX IF EXISTS idx_products_merchant_id;
+DROP INDEX IF EXISTS idx_products_category_id;
 
 DROP TABLE IF EXISTS products;
 

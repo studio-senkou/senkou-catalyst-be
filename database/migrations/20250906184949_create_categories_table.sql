@@ -1,5 +1,5 @@
 -- migrate:up
-CREATE TABLE categories (
+CREATE TABLE IF NOT EXISTS categories (
     id SERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     merchant_id CHAR(16) NOT NULL,
@@ -20,7 +20,6 @@ CREATE INDEX idx_categories_merchant_id ON categories(merchant_id);
 ALTER TABLE categories
     DROP CONSTRAINT IF EXISTS fk_categories_merchant;
 
-ALTER TABLE categories
-    DROP INDEX IF EXISTS idx_categories_merchant_id;
+DROP INDEX IF EXISTS idx_categories_merchant_id;
 
 DROP TABLE IF EXISTS categories;

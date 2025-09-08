@@ -1,5 +1,5 @@
 -- migrate:up
-CREATE TABLE subscription_orders (
+CREATE TABLE IF NOT EXISTS subscription_orders (
     id UUID PRIMARY KEY,
     user_id INT NOT NULL,
     subscription_id INT NOT NULL,

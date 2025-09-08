@@ -1,5 +1,5 @@
 -- migrate:up
-CREATE TABLE payment_transactions (
+CREATE TABLE IF NOT EXISTS payment_transactions (
     id UUID PRIMARY KEY,
     payment_type VARCHAR(50) NOT NULL,
     payment_channel VARCHAR(50) NOT NULL,

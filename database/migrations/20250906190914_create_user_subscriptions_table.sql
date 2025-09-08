@@ -1,5 +1,5 @@
 -- migrate:up
-CREATE TABLE user_subscriptions (
+CREATE TABLE IF NOT EXISTS user_subscriptions (
     id SERIAL PRIMARY KEY,
     user_id INT NOT NULL,
     sub_id INT NOT NULL,
@@ -33,10 +33,8 @@ ALTER TABLE user_subscriptions
 ALTER TABLE user_subscriptions
     DROP CONSTRAINT IF EXISTS fk_user_subscriptions_user;
 
-ALTER TABLE user_subscriptions
-    DROP INDEX IF EXISTS idx_user_subscriptions_sub_id;
+DROP INDEX IF EXISTS idx_user_subscriptions_sub_id;
 
-ALTER TABLE user_subscriptions
-    DROP INDEX IF EXISTS idx_user_subscriptions_user_id;
+DROP INDEX IF EXISTS idx_user_subscriptions_user_id;
 
 DROP TABLE IF EXISTS user_subscriptions;

@@ -1,5 +1,5 @@
 -- migrate:up
-CREATE TABLE merchants (
+CREATE TABLE IF NOT EXISTS merchants (
     id CHAR(16) PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     username VARCHAR(100) UNIQUE NOT NULL,
@@ -19,9 +19,8 @@ CREATE INDEX idx_merchants_owner_id ON merchants(owner_id);
 
 -- migrate:down
 ALTER TABLE merchants 
-    DROP CONSTRAINT fk_merchant_owner;
+    DROP CONSTRAINT IF EXISTS fk_merchant_owner;
 
-ALTER TABLE merchants
-    DROP INDEX IF EXISTS idx_merchants_owner_id;
+DROP INDEX IF EXISTS idx_merchants_owner_id;
 
 DROP TABLE IF EXISTS merchants;

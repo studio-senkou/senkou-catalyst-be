@@ -1,5 +1,5 @@
 -- migrate:up
-CREATE TABLE predefined_categories (
+CREATE TABLE IF NOT EXISTS predefined_categories (
     id SERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL UNIQUE,
     description TEXT,
