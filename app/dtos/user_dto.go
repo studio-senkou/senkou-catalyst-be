@@ -29,3 +29,7 @@ func (dto *RegisterUserDTO) ErrorMessages() map[string]string {
 		"PasswordConfirmation.min":      "Password confirmation must be at least 8 characters",
 	}
 }
+
+type AccountActivationDTO struct {
+	Token string `json:"token" validate:"required"`
+}

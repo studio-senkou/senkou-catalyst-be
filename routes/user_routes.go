@@ -12,6 +12,10 @@ func InitUserRoutes(app *fiber.App, userController *controllers.UserController) 
 		"/users",
 		userController.CreateUser,
 	)
+	app.Post(
+		"/users/activate",
+		userController.ActivateAccount,
+	)
 	app.Get(
 		"/users",
 		middlewares.JWTProtected,

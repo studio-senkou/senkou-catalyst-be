@@ -29,3 +29,12 @@ func (u *User) HashPassword() ([]byte, error) {
 func (u *User) CheckPassword(password string) bool {
 	return bcrypt.CompareHashAndPassword(u.Password, []byte(password)) == nil
 }
+
+func (u *User) VerifyEmail() {
+	now := time.Now()
+	u.EmailVerifiedAt = &now
+}
+
+func (u *User) MustVerifyEmail() bool {
+	return u.EmailVerifiedAt != nil
+}
