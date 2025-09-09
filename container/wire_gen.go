@@ -230,7 +230,7 @@ func InitializeContainer() (*Container, error) {
 
 var DatabaseSet = wire.NewSet(config.GetDB)
 
-var RepositorySet = wire.NewSet(repositories.NewUserRepository, repositories.NewMerchantRepository, repositories.NewProductRepository, repositories.NewProductInteractionRepository, repositories.NewCategoryRepository, repositories.NewPredefinedCategoryRepository, repositories.NewAuthRepository, repositories.NewSubscriptionRepository, repositories.NewSubscriptionPlanRepository, repositories.NewSubscriptionOrderRepository, repositories.NewPaymentTransactionRepository)
+var RepositorySet = wire.NewSet(repositories.NewUserRepository, repositories.NewMerchantRepository, repositories.NewEmailActivationRepository, repositories.NewProductRepository, repositories.NewProductInteractionRepository, repositories.NewCategoryRepository, repositories.NewPredefinedCategoryRepository, repositories.NewAuthRepository, repositories.NewSubscriptionRepository, repositories.NewSubscriptionPlanRepository, repositories.NewSubscriptionOrderRepository, repositories.NewPaymentTransactionRepository)
 
 var ServiceSet = wire.NewSet(services.NewUserService, services.NewMerchantService, services.NewProductService, services.NewProductInteractionService, services.NewCategoryService, services.NewPredefinedCategoryService, services.NewAuthService, services.NewSubscriptionService, services.NewSubscriptionOrderService, services.NewPaymentMethodsService, services.NewPaymentService)
 

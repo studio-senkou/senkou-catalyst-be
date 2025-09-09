@@ -48,6 +48,42 @@ ALTER SEQUENCE public.categories_id_seq OWNED BY public.categories.id;
 
 
 --
+-- Name: email_activation_tokens; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.email_activation_tokens (
+    id integer NOT NULL,
+    user_id integer NOT NULL,
+    token character varying(255) NOT NULL,
+    expires_at timestamp without time zone NOT NULL,
+    used_at timestamp without time zone,
+    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    deleted_at timestamp without time zone
+);
+
+
+--
+-- Name: email_activation_tokens_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.email_activation_tokens_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: email_activation_tokens_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.email_activation_tokens_id_seq OWNED BY public.email_activation_tokens.id;
+
+
+--
 -- Name: merchants; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -351,7 +387,8 @@ CREATE TABLE public.users (
     role character varying(20) DEFAULT 'user'::character varying NOT NULL,
     created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
     updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
-    deleted_at timestamp without time zone
+    deleted_at timestamp without time zone,
+    email_verified_at timestamp without time zone
 );
 
 
@@ -380,6 +417,13 @@ ALTER SEQUENCE public.users_id_seq OWNED BY public.users.id;
 --
 
 ALTER TABLE ONLY public.categories ALTER COLUMN id SET DEFAULT nextval('public.categories_id_seq'::regclass);
+
+
+--
+-- Name: email_activation_tokens id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.email_activation_tokens ALTER COLUMN id SET DEFAULT nextval('public.email_activation_tokens_id_seq'::regclass);
 
 
 --
@@ -437,6 +481,22 @@ ALTER TABLE ONLY public.users ALTER COLUMN id SET DEFAULT nextval('public.users_
 
 ALTER TABLE ONLY public.categories
     ADD CONSTRAINT categories_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: email_activation_tokens email_activation_tokens_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.email_activation_tokens
+    ADD CONSTRAINT email_activation_tokens_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: email_activation_tokens email_activation_tokens_token_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.email_activation_tokens
+    ADD CONSTRAINT email_activation_tokens_token_key UNIQUE (token);
 
 
 --
@@ -729,6 +789,14 @@ CREATE INDEX idx_users_deleted_at ON public.users USING btree (deleted_at);
 
 
 --
+-- Name: email_activation_tokens fk_activation_user; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.email_activation_tokens
+    ADD CONSTRAINT fk_activation_user FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
+
+
+--
 -- Name: categories fk_categories_merchant; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -894,4 +962,6 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20250906191449'),
     ('20250906191821'),
     ('20250907031532'),
-    ('20250908155233');
+    ('20250908155233'),
+    ('20250909022807'),
+    ('20250909025514');
