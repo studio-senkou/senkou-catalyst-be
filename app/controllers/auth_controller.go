@@ -52,6 +52,14 @@ func (h *AuthController) Login(c *fiber.Ctx) error {
 		return response.BadRequest(c, "Invalid email or password", nil)
 	}
 
+	emailVerified, err := h.UserService.IsEmailVerified(userID)
+
+	if err != nil {
+		return response.InternalError(c, "Failed to verify email status", err.Details)
+	} else if !emailVerified {
+		return response.Forbidden(c, "Email not verified. Please verify your email to proceed.")
+	}
+
 	accessToken, refreshToken, appError := h.AuthService.GenerateToken(userID)
 
 	if appError != nil {

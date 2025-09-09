@@ -23,6 +23,7 @@ type UserService interface {
 	Create(user *models.User, merchant *models.Merchant) (*models.User, *errors.AppError)
 	GetAll(params *query.QueryParams) (*[]models.User, *query.PaginationResponse, *errors.AppError)
 	GetUserDetail(userID uint32) (*models.User, *errors.AppError)
+	IsEmailVerified(userID uint32) (bool, *errors.AppError)
 	SendEmailActivation(user *models.User) *errors.AppError
 	VerifyCredentials(email, password string) (uint32, *errors.AppError)
 	VerifyIsAnAdministrator(userID uint32) (bool, *errors.AppError)
@@ -140,6 +141,22 @@ func (s *UserServiceInstance) VerifyIsAnAdministrator(userID uint32) (bool, *err
 	return user.Role == "admin", nil
 }
 
+// Check if the user's email is verified
+// Returns true if the email is verified, false otherwise, or an error if any
+func (s *UserServiceInstance) IsEmailVerified(userID uint32) (bool, *errors.AppError) {
+	user, err := s.UserRepository.FindByID(userID)
+
+	if err != nil {
+		return false, errors.NewAppError(500, "Failed to find user by ID")
+	}
+
+	emailVerified := user.MustVerifyEmail()
+
+	return emailVerified, nil
+}
+
+// Send email activation to the user
+// Returns an error if any
 func (s *UserServiceInstance) SendEmailActivation(user *models.User) *errors.AppError {
 	secret := config.MustGetEnv("AUTH_SECRET")
 	tokenManager, err := auth.NewJWTManager(secret)
@@ -189,6 +206,8 @@ func (s *UserServiceInstance) SendEmailActivation(user *models.User) *errors.App
 	return nil
 }
 
+// Activate user account using the provided token
+// Returns an error if any
 func (s *UserServiceInstance) Activate(token string) *errors.AppError {
 
 	activation, err := s.EmailActivationRepository.FindByToken(token)
