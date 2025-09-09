@@ -2,33 +2,43 @@ package services
 
 import (
 	stderr "errors"
+	"fmt"
 	"senkou-catalyst-be/app/models"
 	"senkou-catalyst-be/platform/errors"
 	"senkou-catalyst-be/repositories"
+	"senkou-catalyst-be/utils/auth"
+	"senkou-catalyst-be/utils/config"
+	"senkou-catalyst-be/utils/mailer"
 	"senkou-catalyst-be/utils/query"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
 type UserService interface {
+	Activate(token string) *errors.AppError
 	Create(user *models.User, merchant *models.Merchant) (*models.User, *errors.AppError)
 	GetAll(params *query.QueryParams) (*[]models.User, *query.PaginationResponse, *errors.AppError)
 	GetUserDetail(userID uint32) (*models.User, *errors.AppError)
+	SendEmailActivation(user *models.User) *errors.AppError
 	VerifyCredentials(email, password string) (uint32, *errors.AppError)
 	VerifyIsAnAdministrator(userID uint32) (bool, *errors.AppError)
 }
 
 type UserServiceInstance struct {
-	UserRepository     repositories.UserRepository
-	MerchantRepository repositories.MerchantRepository
+	UserRepository            repositories.UserRepository
+	EmailActivationRepository repositories.EmailActivationRepository
+	MerchantRepository        repositories.MerchantRepository
 }
 
-func NewUserService(userRepository repositories.UserRepository, merchantRepository repositories.MerchantRepository) UserService {
+func NewUserService(userRepository repositories.UserRepository, merchantRepository repositories.MerchantRepository, emailActivationRepo repositories.EmailActivationRepository) UserService {
 	return &UserServiceInstance{
-		UserRepository:     userRepository,
-		MerchantRepository: merchantRepository,
+		UserRepository:            userRepository,
+		EmailActivationRepository: emailActivationRepo,
+		MerchantRepository:        merchantRepository,
 	}
 }
 
@@ -128,4 +138,101 @@ func (s *UserServiceInstance) VerifyIsAnAdministrator(userID uint32) (bool, *err
 	}
 
 	return user.Role == "admin", nil
+}
+
+func (s *UserServiceInstance) SendEmailActivation(user *models.User) *errors.AppError {
+	secret := config.MustGetEnv("AUTH_SECRET")
+	tokenManager, err := auth.NewJWTManager(secret)
+	if err != nil {
+		return errors.NewAppError(500, "Failed to create token manager")
+	}
+
+	verificationClaims := map[string]any{
+		"user_id": user.ID,
+		"email":   user.Email,
+		"type":    "account-activation",
+	}
+	verificationToken, err := tokenManager.GenerateToken(verificationClaims, time.Now().Add(24*time.Hour))
+	if err != nil {
+		return errors.NewAppError(500, "Failed to generate verification token")
+	}
+
+	mail, err := mailer.NewMailFromTemplate(user.Email, "Catalyst - Account activation", "account-activation.html", map[string]any{
+		"ActivationLink": config.MustGetEnv("APP_FE_URL") + "/verify?token=" + verificationToken.Token,
+	})
+	if err != nil {
+		return errors.NewAppError(500, "Failed to create email")
+	}
+
+	if err := mail.Send(); err != nil {
+		return errors.NewAppError(500, "Failed to send email")
+	}
+
+	tokenExpiresAtUnix, err := strconv.ParseInt(verificationToken.ExpiresAt, 10, 64)
+	if err != nil {
+		fmt.Println(err.Error())
+		return errors.NewAppError(500, "Failed to parse expiration time")
+	}
+
+	tokenExpiresAt := time.Unix(tokenExpiresAtUnix, 0)
+
+	activation := &models.EmailActivationToken{
+		UserID:    user.ID,
+		Token:     verificationToken.Token,
+		ExpiresAt: tokenExpiresAt,
+	}
+
+	if _, err := s.EmailActivationRepository.Create(activation); err != nil {
+		return errors.NewAppError(500, "Failed to store email activation token")
+	}
+
+	return nil
+}
+
+func (s *UserServiceInstance) Activate(token string) *errors.AppError {
+
+	activation, err := s.EmailActivationRepository.FindByToken(token)
+	if err != nil {
+		return errors.NewAppError(400, "Invalid or expired activation token")
+	} else if activation == nil {
+		return errors.NewAppError(404, "Activation token not found")
+	}
+
+	if time.Now().After(activation.ExpiresAt) || activation.UsedAt != nil {
+		return errors.NewAppError(400, "Activation token has expired")
+	}
+
+	// Validate token claims to ensure it matches the activation record
+	secret := config.MustGetEnv("AUTH_SECRET")
+	tokenManager, err := auth.NewJWTManager(secret)
+	if err != nil {
+		return errors.NewAppError(500, "Failed to create token manager")
+	}
+
+	claims, err := tokenManager.ValidateToken(token)
+	if err != nil {
+		return errors.NewAppError(400, "Invalid activation token")
+	}
+
+	payload := claims["payload"].(map[string]interface{})
+
+	if payload["type"] != "account-activation" || uint32(payload["user_id"].(float64)) != activation.UserID {
+		return errors.NewAppError(400, "Invalid activation token")
+	}
+
+	now := time.Now()
+	activation.UsedAt = &now
+
+	if _, err := s.EmailActivationRepository.Update(activation); err != nil {
+		return errors.NewAppError(500, "Failed to update email activation token")
+	}
+
+	if _, err := s.UserRepository.Update(&models.User{
+		ID:              activation.UserID,
+		EmailVerifiedAt: &now,
+	}); err != nil {
+		return errors.NewAppError(500, "Failed to activate user account")
+	}
+
+	return nil
 }

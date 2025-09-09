@@ -12,6 +12,7 @@ type UserRepository interface {
 	FindAll(params *query.QueryParams) (*[]models.User, int64, error)
 	FindByEmail(email string) (*models.User, error)
 	FindByID(userID uint32) (*models.User, error)
+	Update(user *models.User) (*models.User, error)
 }
 
 type userRepository struct {
@@ -79,6 +80,16 @@ func (r *userRepository) FindByID(userID uint32) (*models.User, error) {
 			return nil, err
 		}
 
+		return nil, err
+	}
+
+	return user, nil
+}
+
+// Update a user in the database
+// Returns the updated user or an error if any
+func (r *userRepository) Update(user *models.User) (*models.User, error) {
+	if err := r.db.Model(user).Updates(user).Error; err != nil {
 		return nil, err
 	}
 

@@ -23,6 +23,7 @@ var DatabaseSet = wire.NewSet(
 var RepositorySet = wire.NewSet(
 	repositories.NewUserRepository,
 	repositories.NewMerchantRepository,
+	repositories.NewEmailActivationRepository,
 	repositories.NewProductRepository,
 	repositories.NewProductInteractionRepository,
 	repositories.NewCategoryRepository,

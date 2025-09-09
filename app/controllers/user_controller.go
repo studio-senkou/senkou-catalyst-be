@@ -85,6 +85,10 @@ func (h *UserController) CreateUser(c *fiber.Ctx) error {
 		}
 	}
 
+	if err := h.userService.SendEmailActivation(newUser); err != nil {
+		return response.InternalError(c, "Failed to send email activation", err.Details)
+	}
+
 	if err := h.subService.AssignFreeTierSubscription(newUser.ID); err != nil {
 		return response.InternalError(c, "Failed to assign free tier subscription", err.Details)
 	}
@@ -94,6 +98,43 @@ func (h *UserController) CreateUser(c *fiber.Ctx) error {
 		"data": fiber.Map{
 			"user": newUser,
 		},
+	})
+}
+
+// @Summary Activate account
+// @Description Activate a user account using the provided activation token
+// @Tags Users
+// @Accept json
+// @Produce json
+// @Param activation body dtos.AccountActivationDTO true "Account Activation"
+// @Success 200 {object} fiber.Map{message=string}
+// @Failure 400 {object} fiber.Map{message=string, error=string}
+// @Failure 500 {object} fiber.Map{message=string, error=string}
+// @Router /users/activate [post]
+func (h *UserController) ActivateAccount(c *fiber.Ctx) error {
+	accountActivationDTO := new(dtos.AccountActivationDTO)
+
+	if err := validator.Validate(c, accountActivationDTO); err != nil {
+		if vErr, ok := err.(*validator.ValidationError); ok {
+			return response.ValidationError(c, "Bad request", vErr.Errors)
+		}
+
+		return response.InternalError(c, "Internal server error", fmt.Sprintf("Could not process your request due to an error: %v", err.Error()))
+	}
+
+	if err := h.userService.Activate(accountActivationDTO.Token); err != nil {
+		switch err.Code {
+		case fiber.StatusBadRequest:
+			return response.BadRequest(c, "Invalid or expired activation token", err.Details)
+		case fiber.StatusNotFound:
+			return response.NotFound(c, "Activation token not found")
+		default:
+			return response.InternalError(c, "Failed to activate account", err.Details)
+		}
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"message": "Account activated successfully",
 	})
 }
 
