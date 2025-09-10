@@ -16,6 +16,7 @@ import (
 	"senkou-catalyst-be/utils/auth"
 	config2 "senkou-catalyst-be/utils/config"
 	"senkou-catalyst-be/utils/mailer"
+	"senkou-catalyst-be/utils/queue"
 )
 
 // Injectors from wire.go:
@@ -25,7 +26,11 @@ func InitializeUserController() (*controllers.UserController, error) {
 	userRepository := repositories.NewUserRepository(db)
 	merchantRepository := repositories.NewMerchantRepository(db)
 	emailActivationRepository := repositories.NewEmailActivationRepository(db)
-	userService := services.NewUserService(userRepository, merchantRepository, emailActivationRepository)
+	queueService, err := ProvideQueueService()
+	if err != nil {
+		return nil, err
+	}
+	userService := services.NewUserService(userRepository, merchantRepository, emailActivationRepository, queueService)
 	productRepository := repositories.NewProductRepository(db)
 	categoryRepository := repositories.NewCategoryRepository(db)
 	merchantService := services.NewMerchantService(merchantRepository, productRepository, categoryRepository)
@@ -55,7 +60,11 @@ func InitializeProductController() (*controllers.ProductController, error) {
 	productService := services.NewProductService(productRepository, userRepository)
 	merchantRepository := repositories.NewMerchantRepository(db)
 	emailActivationRepository := repositories.NewEmailActivationRepository(db)
-	userService := services.NewUserService(userRepository, merchantRepository, emailActivationRepository)
+	queueService, err := ProvideQueueService()
+	if err != nil {
+		return nil, err
+	}
+	userService := services.NewUserService(userRepository, merchantRepository, emailActivationRepository, queueService)
 	productInteractionRepository := repositories.NewProductInteractionRepository(db)
 	productInteractionService := services.NewProductInteractionService(productInteractionRepository)
 	productController := controllers.NewProductController(productService, userService, productInteractionService)
@@ -89,7 +98,11 @@ func InitializeAuthController() (*controllers.AuthController, error) {
 	userRepository := repositories.NewUserRepository(db)
 	merchantRepository := repositories.NewMerchantRepository(db)
 	emailActivationRepository := repositories.NewEmailActivationRepository(db)
-	userService := services.NewUserService(userRepository, merchantRepository, emailActivationRepository)
+	queueService, err := ProvideQueueService()
+	if err != nil {
+		return nil, err
+	}
+	userService := services.NewUserService(userRepository, merchantRepository, emailActivationRepository, queueService)
 	authController := controllers.NewAuthController(authService, userService)
 	return authController, nil
 }
@@ -99,7 +112,11 @@ func InitializeSubscriptionController() (*controllers.SubscriptionController, er
 	userRepository := repositories.NewUserRepository(db)
 	merchantRepository := repositories.NewMerchantRepository(db)
 	emailActivationRepository := repositories.NewEmailActivationRepository(db)
-	userService := services.NewUserService(userRepository, merchantRepository, emailActivationRepository)
+	queueService, err := ProvideQueueService()
+	if err != nil {
+		return nil, err
+	}
+	userService := services.NewUserService(userRepository, merchantRepository, emailActivationRepository, queueService)
 	subscriptionRepository := repositories.NewSubscriptionRepository(db)
 	subscriptionPlanRepository := repositories.NewSubscriptionPlanRepository(db)
 	subscriptionService := services.NewSubscriptionService(subscriptionRepository, subscriptionPlanRepository)
@@ -138,7 +155,11 @@ func InitializeUserService() (services.UserService, func(), error) {
 	userRepository := repositories.NewUserRepository(db)
 	merchantRepository := repositories.NewMerchantRepository(db)
 	emailActivationRepository := repositories.NewEmailActivationRepository(db)
-	userService := services.NewUserService(userRepository, merchantRepository, emailActivationRepository)
+	queueService, err := ProvideQueueService()
+	if err != nil {
+		return nil, nil, err
+	}
+	userService := services.NewUserService(userRepository, merchantRepository, emailActivationRepository, queueService)
 	return userService, func() {
 	}, nil
 }
@@ -191,7 +212,11 @@ func InitializeContainer() (*Container, error) {
 	userRepository := repositories.NewUserRepository(db)
 	merchantRepository := repositories.NewMerchantRepository(db)
 	emailActivationRepository := repositories.NewEmailActivationRepository(db)
-	userService := services.NewUserService(userRepository, merchantRepository, emailActivationRepository)
+	queueService, err := ProvideQueueService()
+	if err != nil {
+		return nil, err
+	}
+	userService := services.NewUserService(userRepository, merchantRepository, emailActivationRepository, queueService)
 	productRepository := repositories.NewProductRepository(db)
 	categoryRepository := repositories.NewCategoryRepository(db)
 	merchantService := services.NewMerchantService(merchantRepository, productRepository, categoryRepository)
@@ -229,7 +254,7 @@ func InitializeContainer() (*Container, error) {
 	paymentMethodsController := controllers.NewPaymentMethodsController(paymentMethodsService)
 	paymentController := controllers.NewPaymentController(paymentService)
 	storageController := controllers.NewStorageController()
-	container := NewContainer(userController, merchantController, productController, categoryController, predefinedCategoryController, authController, subscriptionController, paymentMethodsController, paymentController, storageController, userService, productService)
+	container := NewContainer(userController, merchantController, productController, categoryController, predefinedCategoryController, authController, subscriptionController, paymentMethodsController, paymentController, storageController, userService, productService, queueService)
 	return container, nil
 }
 
@@ -265,6 +290,15 @@ var MidtransSet = wire.NewSet(
 	ProvideMidtransBuilder,
 )
 
+func ProvideQueueService() (*queue.QueueService, error) {
+	cfg := queue.DefaultQueueConfig()
+	return queue.NewQueueService(cfg)
+}
+
+var QueueSet = wire.NewSet(
+	ProvideQueueService,
+)
+
 func NewContainer(
 	userController *controllers.UserController,
 	merchantController *controllers.MerchantController,
@@ -278,6 +312,7 @@ func NewContainer(
 	storageController *controllers.StorageController,
 	userService services.UserService,
 	productService services.ProductService,
+	queueService *queue.QueueService,
 ) *Container {
 	return &Container{
 		UserController:               userController,
@@ -292,5 +327,6 @@ func NewContainer(
 		StorageController:            storageController,
 		UserService:                  userService,
 		ProductService:               productService,
+		QueueService:                 queueService,
 	}
 }

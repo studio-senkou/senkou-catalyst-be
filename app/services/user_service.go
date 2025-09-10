@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	stderr "errors"
 	"fmt"
 	"senkou-catalyst-be/app/models"
@@ -8,8 +9,8 @@ import (
 	"senkou-catalyst-be/repositories"
 	"senkou-catalyst-be/utils/auth"
 	"senkou-catalyst-be/utils/config"
-	"senkou-catalyst-be/utils/mailer"
 	"senkou-catalyst-be/utils/query"
+	"senkou-catalyst-be/utils/queue"
 	"strconv"
 	"strings"
 	"time"
@@ -33,13 +34,15 @@ type UserServiceInstance struct {
 	UserRepository            repositories.UserRepository
 	EmailActivationRepository repositories.EmailActivationRepository
 	MerchantRepository        repositories.MerchantRepository
+	QueueService              *queue.QueueService
 }
 
-func NewUserService(userRepository repositories.UserRepository, merchantRepository repositories.MerchantRepository, emailActivationRepo repositories.EmailActivationRepository) UserService {
+func NewUserService(userRepository repositories.UserRepository, merchantRepository repositories.MerchantRepository, emailActivationRepo repositories.EmailActivationRepository, queueService *queue.QueueService) UserService {
 	return &UserServiceInstance{
 		UserRepository:            userRepository,
 		EmailActivationRepository: emailActivationRepo,
 		MerchantRepository:        merchantRepository,
+		QueueService:              queueService,
 	}
 }
 
@@ -158,6 +161,11 @@ func (s *UserServiceInstance) IsEmailVerified(userID uint32) (bool, *errors.Cust
 // Send email activation to the user
 // Returns an error if any
 func (s *UserServiceInstance) SendEmailActivation(user *models.User) *errors.CustomError {
+
+	if s.QueueService == nil {
+		return errors.Internal("Queue service is not available", "Queue service is nil")
+	}
+
 	secret := config.MustGetEnv("AUTH_SECRET")
 	tokenManager, err := auth.NewJWTManager(secret)
 	if err != nil {
@@ -174,28 +182,7 @@ func (s *UserServiceInstance) SendEmailActivation(user *models.User) *errors.Cus
 		return errors.Internal("Failed to generate verification token", err.Error())
 	}
 
-	mailerService, err := mailer.NewMailerService()
-	if err != nil {
-		return errors.Internal("Failed to initialize mailer service", err.Error())
-	}
-
-	if !mailerService.TemplateExists("account-activation.html") {
-		return errors.Internal("Email template not found", "account-activation.html template is missing")
-	}
-
-	err = mailerService.SendTemplate(
-		user.Email,
-		"Catalyst - Account activation",
-		"account-activation.html",
-		map[string]any{
-			"ActivationLink": config.MustGetEnv("APP_FE_URL") + "/verify?token=" + verificationToken.Token,
-			"SupportEmail":   config.GetEnv("SUPPORT_EMAIL", "support@catalyst.com"),
-		},
-	)
-	if err != nil {
-		return errors.Internal("Failed to send email", err.Error())
-	}
-
+	// Store the activation token first
 	tokenExpiresAtUnix, err := strconv.ParseInt(verificationToken.ExpiresAt, 10, 64)
 	if err != nil {
 		fmt.Println(err.Error())
@@ -212,6 +199,29 @@ func (s *UserServiceInstance) SendEmailActivation(user *models.User) *errors.Cus
 
 	if _, err := s.EmailActivationRepository.Create(activation); err != nil {
 		return errors.Internal("Failed to store email activation token", err.Error())
+	}
+
+	// Enqueue the email sending task
+	emailPayload := map[string]interface{}{
+		"user_id":          user.ID,
+		"email":            user.Email,
+		"activation_token": verificationToken.Token,
+		"user_name":        user.Name,
+		"activation_link":  config.MustGetEnv("APP_FE_URL") + "/verify?token=" + verificationToken.Token,
+		"support_email":    config.GetEnv("SUPPORT_EMAIL", "support@catalyst.com"),
+	}
+
+	job := s.QueueService.NewJobBuilder("email:send_activation").
+		WithPayload(emailPayload).
+		WithPriority(queue.PriorityHigh).
+		WithMaxRetry(3).
+		WithTimeout(60 * time.Second).
+		WithQueue("high")
+
+	ctx := context.Background()
+	_, err = job.Enqueue(ctx)
+	if err != nil {
+		return errors.Internal("Failed to queue activation email", err.Error())
 	}
 
 	return nil

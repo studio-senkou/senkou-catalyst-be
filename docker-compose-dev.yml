@@ -14,6 +14,18 @@ services:
     networks:
       - catalyst-dev-network
 
+  redis:
+    image: redis:7-alpine
+    container_name: senkou-catalyst-redis-dev
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data_dev:/data
+    networks:
+      - catalyst-dev-network
+
   minio:
     image: minio/minio:latest
     container_name: senkou-catalyst-minio-dev
@@ -37,6 +49,8 @@ networks:
 
 volumes:
   postgres_data_dev:
+    driver: local
+  redis_data_dev:
     driver: local
   minio_data_dev:
     driver: local

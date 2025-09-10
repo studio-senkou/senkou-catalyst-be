@@ -38,6 +38,9 @@ func main() {
 		log.Fatalf("Failed to initialize dependencies: %v", err)
 	}
 
+	// Start the queue service with email handlers
+	deps.StartQueueService()
+
 	routes.InitRoutes(app, deps)
 
 	err = app.Listen(fmt.Sprintf(":%s", environment.GetEnv("APP_PORT", "8080")))
