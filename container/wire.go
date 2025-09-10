@@ -12,6 +12,7 @@ import (
 
 	authUtil "senkou-catalyst-be/utils/auth"
 	configUtil "senkou-catalyst-be/utils/config"
+	mailerUtil "senkou-catalyst-be/utils/mailer"
 
 	"github.com/google/wire"
 )
@@ -47,6 +48,7 @@ var ServiceSet = wire.NewSet(
 	services.NewSubscriptionOrderService,
 	services.NewPaymentMethodsService,
 	services.NewPaymentService,
+	mailerUtil.NewMailerService,
 )
 
 var ControllerSet = wire.NewSet(

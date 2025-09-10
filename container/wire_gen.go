@@ -15,6 +15,7 @@ import (
 	"senkou-catalyst-be/repositories"
 	"senkou-catalyst-be/utils/auth"
 	config2 "senkou-catalyst-be/utils/config"
+	"senkou-catalyst-be/utils/mailer"
 )
 
 // Injectors from wire.go:
@@ -238,7 +239,7 @@ var DatabaseSet = wire.NewSet(config.GetDB)
 
 var RepositorySet = wire.NewSet(repositories.NewUserRepository, repositories.NewMerchantRepository, repositories.NewEmailActivationRepository, repositories.NewProductRepository, repositories.NewProductInteractionRepository, repositories.NewCategoryRepository, repositories.NewPredefinedCategoryRepository, repositories.NewAuthRepository, repositories.NewSubscriptionRepository, repositories.NewSubscriptionPlanRepository, repositories.NewSubscriptionOrderRepository, repositories.NewPaymentTransactionRepository)
 
-var ServiceSet = wire.NewSet(services.NewUserService, services.NewMerchantService, services.NewProductService, services.NewProductInteractionService, services.NewCategoryService, services.NewPredefinedCategoryService, services.NewAuthService, services.NewSubscriptionService, services.NewSubscriptionOrderService, services.NewPaymentMethodsService, services.NewPaymentService)
+var ServiceSet = wire.NewSet(services.NewUserService, services.NewMerchantService, services.NewProductService, services.NewProductInteractionService, services.NewCategoryService, services.NewPredefinedCategoryService, services.NewAuthService, services.NewSubscriptionService, services.NewSubscriptionOrderService, services.NewPaymentMethodsService, services.NewPaymentService, mailer.NewMailerService)
 
 var ControllerSet = wire.NewSet(controllers.NewUserController, controllers.NewMerchantController, controllers.NewProductController, controllers.NewCategoryController, controllers.NewPredefinedCategoryController, controllers.NewAuthController, controllers.NewSubscriptionController, controllers.NewPaymentMethodsController, controllers.NewPaymentController, controllers.NewStorageController)
 

@@ -1,23 +1,20 @@
 package mailer
 
 import (
-	"bytes"
 	"crypto/tls"
 	"errors"
 	"fmt"
-	"html/template"
-	"senkou-catalyst-be/utils/config"
-	"strconv"
 
 	"gopkg.in/gomail.v2"
 )
 
 type Mail struct {
-	To       string
-	Subject  string
-	Body     string
-	HTMLBody string
-	IsHTML   bool
+	To         string
+	Subject    string
+	Body       string
+	HTMLBody   string
+	IsHTML     bool
+	buildError error
 }
 
 func NewMail(to, subject, body string) *Mail {
@@ -38,68 +35,61 @@ func NewHTMLMail(to, subject, htmlBody string) *Mail {
 	}
 }
 
-func NewMailFromTemplate(to, subject, templatePath string, data interface{}) (*Mail, error) {
-	htmlContent, err := parseTemplate(templatePath, data)
-	if err != nil {
-		return nil, err
-	}
-
-	return &Mail{
-		To:       to,
-		Subject:  subject,
-		HTMLBody: htmlContent,
-		IsHTML:   true,
-	}, nil
+func NewMailFromTemplate(to, subject, templateName string, data interface{}) (*Mail, error) {
+	return NewMailBuilder().
+		To(to).
+		Subject(subject).
+		Template(templateName, data).
+		Build()
 }
 
-func parseTemplate(templatePath string, data interface{}) (string, error) {
-	tmpl, err := template.ParseFiles(fmt.Sprintf("utils/mailer/templates/%s", templatePath))
-	if err != nil {
-		return "", fmt.Errorf("failed to parse template: %w", err)
+func (m *Mail) validate() error {
+	if m.To == "" {
+		return errors.New("recipient email cannot be empty")
 	}
-
-	var buf bytes.Buffer
-	if err := tmpl.Execute(&buf, data); err != nil {
-		return "", fmt.Errorf("failed to execute template: %w", err)
+	if m.Subject == "" {
+		return errors.New("subject cannot be empty")
 	}
-
-	return buf.String(), nil
+	if !m.IsHTML && m.Body == "" {
+		return errors.New("plain text body cannot be empty")
+	}
+	if m.IsHTML && m.HTMLBody == "" {
+		return errors.New("HTML body cannot be empty")
+	}
+	return nil
 }
 
 func (m *Mail) Send() error {
-	host := config.GetEnv("MAILER_HOST", "smtp.gmail.com")
-	port := config.GetEnv("MAILER_PORT", "587")
-	username := config.GetEnv("MAILER_USERNAME", "")
-	password := config.GetEnv("MAILER_PASSWORD", "")
-
-	if host == "" || port == "" || username == "" || password == "" {
-		return errors.New("SMTP configuration is not set")
-	}
-
-	parsedPort, err := strconv.Atoi(port)
+	config, err := NewSMTPConfig()
 	if err != nil {
-		return errors.New("invalid SMTP_PORT value")
+		return fmt.Errorf("SMTP configuration error: %w", err)
 	}
 
-	d := gomail.NewDialer(host, parsedPort, username, password)
+	if err := config.Validate(); err != nil {
+		return fmt.Errorf("SMTP configuration validation error: %w", err)
+	}
+
+	return m.SendWithConfig(config)
+}
+
+func (m *Mail) SendWithConfig(config *SMTPConfig) error {
+	if err := config.Validate(); err != nil {
+		return fmt.Errorf("SMTP configuration validation error: %w", err)
+	}
+
+	return m.sendWithConfig(config)
+}
+
+func (m *Mail) sendWithConfig(config *SMTPConfig) error {
+	if err := m.validate(); err != nil {
+		return fmt.Errorf("mail validation error: %w", err)
+	}
+
+	d := gomail.NewDialer(config.Host, config.Port, config.Username, config.Password)
 	d.TLSConfig = &tls.Config{InsecureSkipVerify: true}
 
 	mail := gomail.NewMessage()
-
-	// Validation
-	if m.To == "" || m.Subject == "" {
-		return errors.New("to and subject fields cannot be empty")
-	}
-
-	if !m.IsHTML && m.Body == "" {
-		return errors.New("body field cannot be empty")
-	}
-
-	if m.IsHTML && m.HTMLBody == "" {
-		return errors.New("HTML body field cannot be empty")
-	}
-
-	mail.SetHeader("From", username)
+	mail.SetHeader("From", config.Username)
 	mail.SetHeader("To", m.To)
 	mail.SetHeader("Subject", m.Subject)
 

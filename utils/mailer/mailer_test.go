@@ -26,19 +26,44 @@ func TestNewMailFromTemplate_InvalidPath(t *testing.T) {
 	}
 }
 
-func TestParseTemplate_Valid(t *testing.T) {
-	// Create a temp template file
-	tmplPath := "test-template.html"
-	tmplContent := "Hello, {{.Name}}!"
-	os.WriteFile("utils/mailer/templates/"+tmplPath, []byte(tmplContent), 0644)
-	defer os.Remove("utils/mailer/templates/" + tmplPath)
-
-	result, err := parseTemplate(tmplPath, map[string]string{"Name": "World"})
-	if err != nil {
-		t.Errorf("parseTemplate failed: %v", err)
+func TestNewMailFromTemplate_ValidTemplate(t *testing.T) {
+	data := map[string]interface{}{
+		"ActivationLink": "https://example.com/activate",
+		"SupportEmail":   "support@example.com",
 	}
-	if result != "Hello, World!" {
-		t.Errorf("parseTemplate output wrong: %s", result)
+
+	mail, err := NewMailFromTemplate("to@example.com", "Subject", "account-activation.html", data)
+	if err != nil {
+		t.Errorf("NewMailFromTemplate failed: %v", err)
+	}
+
+	if mail.To != "to@example.com" {
+		t.Errorf("Expected To: to@example.com, got: %s", mail.To)
+	}
+
+	if !mail.IsHTML {
+		t.Error("Mail should be HTML")
+	}
+
+	if mail.HTMLBody == "" {
+		t.Error("HTMLBody should not be empty")
+	}
+}
+
+func TestEmbeddedTemplateManagerParsing(t *testing.T) {
+	tm := NewTemplateManager()
+
+	data := map[string]interface{}{
+		"ActivationLink": "https://example.com/activate",
+		"SupportEmail":   "support@example.com",
+	}
+
+	result, err := tm.ParseTemplate("account-activation.html", data)
+	if err != nil {
+		t.Errorf("ParseTemplate failed: %v", err)
+	}
+	if result == "" {
+		t.Error("ParseTemplate returned empty result")
 	}
 }
 

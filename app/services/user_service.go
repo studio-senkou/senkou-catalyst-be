@@ -174,14 +174,25 @@ func (s *UserServiceInstance) SendEmailActivation(user *models.User) *errors.Cus
 		return errors.Internal("Failed to generate verification token", err.Error())
 	}
 
-	mail, err := mailer.NewMailFromTemplate(user.Email, "Catalyst - Account activation", "account-activation.html", map[string]any{
-		"ActivationLink": config.MustGetEnv("APP_FE_URL") + "/verify?token=" + verificationToken.Token,
-	})
+	mailerService, err := mailer.NewMailerService()
 	if err != nil {
-		return errors.Internal("Failed to create email from template", err.Error())
+		return errors.Internal("Failed to initialize mailer service", err.Error())
 	}
 
-	if err := mail.Send(); err != nil {
+	if !mailerService.TemplateExists("account-activation.html") {
+		return errors.Internal("Email template not found", "account-activation.html template is missing")
+	}
+
+	err = mailerService.SendTemplate(
+		user.Email,
+		"Catalyst - Account activation",
+		"account-activation.html",
+		map[string]any{
+			"ActivationLink": config.MustGetEnv("APP_FE_URL") + "/verify?token=" + verificationToken.Token,
+			"SupportEmail":   config.GetEnv("SUPPORT_EMAIL", "support@catalyst.com"),
+		},
+	)
+	if err != nil {
 		return errors.Internal("Failed to send email", err.Error())
 	}
 
