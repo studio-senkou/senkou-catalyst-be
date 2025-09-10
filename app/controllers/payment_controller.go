@@ -7,6 +7,7 @@ import (
 	"senkou-catalyst-be/app/services"
 	"senkou-catalyst-be/integrations/midtrans"
 	"senkou-catalyst-be/utils/converter"
+	"senkou-catalyst-be/utils/response"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -69,10 +70,7 @@ func (p *PaymentController) PaymentNotifications(c *fiber.Ctx) error {
 	}
 
 	if err := p.PaymentService.UpdatePayment(midtransNotification.TransactionID, updatedPaymentTransaction); err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"status":  "error",
-			"message": "Failed to update payment transaction: " + err.Error(),
-		})
+		return response.InternalError(c, "Failed to update payment transaction", err.Error())
 	}
 
 	return c.Status(200).JSON(fiber.Map{

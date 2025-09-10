@@ -9,9 +9,9 @@ import (
 )
 
 type AuthService interface {
-	GenerateToken(userID uint32) (*dtos.GeneratedToken, *dtos.GeneratedToken, *errors.AppError)
-	ValidateRefreshToken(token string) (uint32, *errors.AppError)
-	InvalidateSession(userID uint32) *errors.AppError
+	GenerateToken(userID uint32) (*dtos.GeneratedToken, *dtos.GeneratedToken, *errors.CustomError)
+	ValidateRefreshToken(token string) (uint32, *errors.CustomError)
+	InvalidateSession(userID uint32) *errors.CustomError
 }
 
 type AuthServiceInstance struct {
@@ -29,19 +29,19 @@ func NewAuthService(authRepository repositories.AuthRepository, jwtManager *auth
 // Generate token and refresh token for the user
 // This function generates a JWT token and a refresh token for the user
 // It stores the refresh token in the database for later validation
-func (s *AuthServiceInstance) GenerateToken(userID uint32) (*dtos.GeneratedToken, *dtos.GeneratedToken, *errors.AppError) {
+func (s *AuthServiceInstance) GenerateToken(userID uint32) (*dtos.GeneratedToken, *dtos.GeneratedToken, *errors.CustomError) {
 	token, err := s.JwtManager.GenerateToken(userID, time.Now().Add(24*time.Hour))
 	if err != nil {
-		return nil, nil, errors.NewAppError(500, "Failed to generate token")
+		return nil, nil, errors.Internal("Failed to generate token", err.Error())
 	}
 
 	refreshToken, err := s.JwtManager.GenerateToken(userID, time.Now().Add(30*24*time.Hour))
 	if err != nil {
-		return nil, nil, errors.NewAppError(500, "Failed to generate refresh token")
+		return nil, nil, errors.Internal("Failed to generate refresh token", err.Error())
 	}
 
 	if err := s.AuthRepository.StoreSession(userID, refreshToken.Token); err != nil {
-		return nil, nil, errors.NewAppError(500, "Failed to store session")
+		return nil, nil, errors.Internal("Failed to store session", err.Error())
 	}
 
 	return token, refreshToken, nil
@@ -50,15 +50,15 @@ func (s *AuthServiceInstance) GenerateToken(userID uint32) (*dtos.GeneratedToken
 // Validate the refresh token
 // This function checks if the provided refresh token exists in the database
 // It returns the userID if the token is valid, otherwise it returns an error
-func (s *AuthServiceInstance) ValidateRefreshToken(token string) (uint32, *errors.AppError) {
+func (s *AuthServiceInstance) ValidateRefreshToken(token string) (uint32, *errors.CustomError) {
 	session, err := s.AuthRepository.FindSessionByToken(token)
 
 	if err != nil {
-		return 0, errors.NewAppError(500, "Failed to validate refresh token")
+		return 0, errors.Internal("Failed to validate refresh token", err.Error())
 	}
 
 	if session == nil {
-		return 0, errors.NewAppError(401, "Invalid refresh token")
+		return 0, errors.Unauthorized("Invalid refresh token")
 	}
 
 	return session.UserID, nil
@@ -68,9 +68,9 @@ func (s *AuthServiceInstance) ValidateRefreshToken(token string) (uint32, *error
 // This function deletes the user's session from the database
 // It is used to log out the user by removing their refresh token
 // If the session is successfully deleted, it returns nil, otherwise it returns an error
-func (s *AuthServiceInstance) InvalidateSession(userID uint32) *errors.AppError {
+func (s *AuthServiceInstance) InvalidateSession(userID uint32) *errors.CustomError {
 	if err := s.AuthRepository.DeleteUserSession(userID); err != nil {
-		return errors.NewAppError(500, "Failed to invalidate session")
+		return errors.Internal("Failed to invalidate session", err.Error())
 	}
 
 	return nil

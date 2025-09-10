@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"senkou-catalyst-be/app/services"
+	"senkou-catalyst-be/utils/response"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -26,10 +27,7 @@ func NewPaymentMethodsController(paymentMethodsService services.PaymentMethodsSe
 func (pc *PaymentMethodsController) GetAllAvailablePaymentMethods(c *fiber.Ctx) error {
 	methods, err := pc.PaymentMethodsService.GetAllAvailablePaymentMethods()
 	if err != nil {
-		return c.Status(500).JSON(fiber.Map{
-			"success": false,
-			"error":   err.Error(),
-		})
+		return response.InternalError(c, "Failed to retrieve payment methods", err.Error())
 	}
 
 	return c.JSON(fiber.Map{
@@ -53,10 +51,7 @@ func (pc *PaymentMethodsController) GetPaymentMethodsByType(c *fiber.Ctx) error 
 
 	methods, err := pc.PaymentMethodsService.GetPaymentMethodsByType(paymentType)
 	if err != nil {
-		return c.Status(500).JSON(fiber.Map{
-			"success": false,
-			"error":   err.Error(),
-		})
+		return response.InternalError(c, "Failed to retrieve payment methods by type", err.Error())
 	}
 
 	return c.JSON(fiber.Map{
@@ -77,10 +72,7 @@ func (pc *PaymentMethodsController) GetPaymentMethodsByType(c *fiber.Ctx) error 
 func (pc *PaymentMethodsController) GetPaymentMethodTypes(c *fiber.Ctx) error {
 	types, err := pc.PaymentMethodsService.GetPaymentMethodTypes()
 	if err != nil {
-		return c.Status(500).JSON(fiber.Map{
-			"success": false,
-			"error":   err.Error(),
-		})
+		return response.InternalError(c, "Failed to retrieve payment method types", err.Error())
 	}
 
 	return c.JSON(fiber.Map{

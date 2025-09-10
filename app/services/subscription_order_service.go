@@ -3,16 +3,16 @@ package services
 import (
 	"senkou-catalyst-be/app/dtos"
 	"senkou-catalyst-be/app/models"
-	appError "senkou-catalyst-be/platform/errors"
+	"senkou-catalyst-be/platform/errors"
 	"senkou-catalyst-be/repositories"
 
 	"github.com/google/uuid"
 )
 
 type SubscriptionOrderService interface {
-	CreateNewSubscriptionOrder(userID uint32, subID uint32, request *dtos.CreateSubscriptionOrderDTO) *appError.AppError
-	GetOrderByUserAndSubscription(orderID uint32, userID uint32) (*models.SubscriptionOrder, *appError.AppError)
-	UpdateSubscriptionOrder(orderID string, request *dtos.UpdateSubscriptionOrderDTO) *appError.AppError
+	CreateNewSubscriptionOrder(userID uint32, subID uint32, request *dtos.CreateSubscriptionOrderDTO) *errors.CustomError
+	GetOrderByUserAndSubscription(orderID uint32, userID uint32) (*models.SubscriptionOrder, *errors.CustomError)
+	UpdateSubscriptionOrder(orderID string, request *dtos.UpdateSubscriptionOrderDTO) *errors.CustomError
 }
 
 type SubscriptionOrderServiceInstance struct {
@@ -28,7 +28,7 @@ func NewSubscriptionOrderService(
 	}
 }
 
-func (s *SubscriptionOrderServiceInstance) CreateNewSubscriptionOrder(userID uint32, subID uint32, request *dtos.CreateSubscriptionOrderDTO) *appError.AppError {
+func (s *SubscriptionOrderServiceInstance) CreateNewSubscriptionOrder(userID uint32, subID uint32, request *dtos.CreateSubscriptionOrderDTO) *errors.CustomError {
 
 	orderID := uuid.New()
 
@@ -39,22 +39,22 @@ func (s *SubscriptionOrderServiceInstance) CreateNewSubscriptionOrder(userID uin
 	}
 
 	if err := s.SubscriptionOrderRepository.StoreNewSubscriptionOrder(newOrder); err != nil {
-		return appError.NewAppError(500, "Failed to create subscription order: "+err.Error())
+		return errors.Internal("Failed to create subscription order", err.Error())
 	}
 
 	return nil
 }
 
-func (s *SubscriptionOrderServiceInstance) GetOrderByUserAndSubscription(orderID uint32, userID uint32) (*models.SubscriptionOrder, *appError.AppError) {
+func (s *SubscriptionOrderServiceInstance) GetOrderByUserAndSubscription(orderID uint32, userID uint32) (*models.SubscriptionOrder, *errors.CustomError) {
 	subscriptionOrder, err := s.SubscriptionOrderRepository.FindOrderByUserAndSubscription(userID, orderID)
 	if err != nil {
-		return nil, appError.NewAppError(404, "Subscription order not found: "+err.Error())
+		return nil, errors.NotFound("Subscription order not found")
 	}
 
 	return subscriptionOrder, nil
 }
 
-func (s *SubscriptionOrderServiceInstance) UpdateSubscriptionOrder(orderID string, request *dtos.UpdateSubscriptionOrderDTO) *appError.AppError {
+func (s *SubscriptionOrderServiceInstance) UpdateSubscriptionOrder(orderID string, request *dtos.UpdateSubscriptionOrderDTO) *errors.CustomError {
 
 	return nil
 }

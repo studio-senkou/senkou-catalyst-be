@@ -19,14 +19,14 @@ import (
 )
 
 type UserService interface {
-	Activate(token string) *errors.AppError
-	Create(user *models.User, merchant *models.Merchant) (*models.User, *errors.AppError)
-	GetAll(params *query.QueryParams) (*[]models.User, *query.PaginationResponse, *errors.AppError)
-	GetUserDetail(userID uint32) (*models.User, *errors.AppError)
-	IsEmailVerified(userID uint32) (bool, *errors.AppError)
-	SendEmailActivation(user *models.User) *errors.AppError
-	VerifyCredentials(email, password string) (uint32, *errors.AppError)
-	VerifyIsAnAdministrator(userID uint32) (bool, *errors.AppError)
+	Activate(token string) *errors.CustomError
+	Create(user *models.User, merchant *models.Merchant) (*models.User, *errors.CustomError)
+	GetAll(params *query.QueryParams) (*[]models.User, *query.PaginationResponse, *errors.CustomError)
+	GetUserDetail(userID uint32) (*models.User, *errors.CustomError)
+	IsEmailVerified(userID uint32) (bool, *errors.CustomError)
+	SendEmailActivation(user *models.User) *errors.CustomError
+	VerifyCredentials(email, password string) (uint32, *errors.CustomError)
+	VerifyIsAnAdministrator(userID uint32) (bool, *errors.CustomError)
 }
 
 type UserServiceInstance struct {
@@ -45,24 +45,24 @@ func NewUserService(userRepository repositories.UserRepository, merchantReposito
 
 // Create a new user in the database
 // Returns the created user or an error if any
-func (s *UserServiceInstance) Create(user *models.User, merchant *models.Merchant) (*models.User, *errors.AppError) {
+func (s *UserServiceInstance) Create(user *models.User, merchant *models.Merchant) (*models.User, *errors.CustomError) {
 	hashedPassword, err := user.HashPassword()
 
 	if err != nil {
-		return nil, errors.NewAppError(500, "Failed to hash password")
+		return nil, errors.Internal("Failed to hash password", err.Error())
 	}
 
 	user.Password = hashedPassword
 
 	if _, err := s.UserRepository.FindByEmail(user.Email); err != nil {
 		if !stderr.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.NewAppError(400, "User already exists")
+			return nil, errors.Conflict("User already exists", err.Error())
 		}
 	}
 
 	createdUser, err := s.UserRepository.Create(user)
 	if err != nil {
-		return nil, errors.NewAppError(500, "Failed to create user")
+		return nil, errors.Internal("Failed to create user", err.Error())
 	}
 
 	// If merchant is nil, skip creating merchant
@@ -80,7 +80,7 @@ func (s *UserServiceInstance) Create(user *models.User, merchant *models.Merchan
 
 	createdMerchant, err := s.MerchantRepository.Create(merchant)
 	if err != nil {
-		return nil, errors.NewAppError(500, "Failed to create merchant")
+		return nil, errors.Internal("Failed to create merchant", err.Error())
 	}
 
 	createdUser.Merchants = append(createdUser.Merchants, createdMerchant)
@@ -90,10 +90,10 @@ func (s *UserServiceInstance) Create(user *models.User, merchant *models.Merchan
 
 // Get all users from the database
 // Returns a slice of User models or an error if the operation fails
-func (s *UserServiceInstance) GetAll(params *query.QueryParams) (*[]models.User, *query.PaginationResponse, *errors.AppError) {
+func (s *UserServiceInstance) GetAll(params *query.QueryParams) (*[]models.User, *query.PaginationResponse, *errors.CustomError) {
 	users, total, err := s.UserRepository.FindAll(params)
 	if err != nil {
-		return nil, nil, errors.NewAppError(500, "Failed to retrieve users")
+		return nil, nil, errors.Internal("Failed to retrieve users", err.Error())
 	}
 
 	pagination := query.CalculatePagination(params.Page, params.Limit, total)
@@ -103,15 +103,15 @@ func (s *UserServiceInstance) GetAll(params *query.QueryParams) (*[]models.User,
 
 // Verify user credentials during login
 // Returns the user ID if credentials are valid, or an error if invalid
-func (s *UserServiceInstance) VerifyCredentials(email, password string) (uint32, *errors.AppError) {
+func (s *UserServiceInstance) VerifyCredentials(email, password string) (uint32, *errors.CustomError) {
 	user, err := s.UserRepository.FindByEmail(email)
 
 	if err != nil {
-		return 0, errors.NewAppError(500, "Failed to find user by email")
+		return 0, errors.Internal("Failed to find user by email", err.Error())
 	}
 
 	if !user.CheckPassword(password) {
-		return 0, errors.NewAppError(400, "invalid email or password")
+		return 0, errors.BadRequest("Invalid email or password", nil)
 	}
 
 	return user.ID, nil
@@ -119,11 +119,11 @@ func (s *UserServiceInstance) VerifyCredentials(email, password string) (uint32,
 
 // Get user detail by its ID
 // Returns the user model or an error if any
-func (s *UserServiceInstance) GetUserDetail(userID uint32) (*models.User, *errors.AppError) {
+func (s *UserServiceInstance) GetUserDetail(userID uint32) (*models.User, *errors.CustomError) {
 	user, err := s.UserRepository.FindByID(userID)
 
 	if err != nil {
-		return nil, errors.NewAppError(500, "Failed to find user by ID")
+		return nil, errors.Internal("Failed to find user by ID", err.Error())
 	}
 
 	return user, nil
@@ -131,11 +131,11 @@ func (s *UserServiceInstance) GetUserDetail(userID uint32) (*models.User, *error
 
 // Verify if the user is an administrator
 // Returns true if the user is an administrator, false otherwise, or an error if any
-func (s *UserServiceInstance) VerifyIsAnAdministrator(userID uint32) (bool, *errors.AppError) {
+func (s *UserServiceInstance) VerifyIsAnAdministrator(userID uint32) (bool, *errors.CustomError) {
 	user, err := s.UserRepository.FindByID(userID)
 
 	if err != nil {
-		return false, errors.NewAppError(500, "Failed to find user by ID")
+		return false, errors.Internal("Failed to find user by ID", err.Error())
 	}
 
 	return user.Role == "admin", nil
@@ -143,11 +143,11 @@ func (s *UserServiceInstance) VerifyIsAnAdministrator(userID uint32) (bool, *err
 
 // Check if the user's email is verified
 // Returns true if the email is verified, false otherwise, or an error if any
-func (s *UserServiceInstance) IsEmailVerified(userID uint32) (bool, *errors.AppError) {
+func (s *UserServiceInstance) IsEmailVerified(userID uint32) (bool, *errors.CustomError) {
 	user, err := s.UserRepository.FindByID(userID)
 
 	if err != nil {
-		return false, errors.NewAppError(500, "Failed to find user by ID")
+		return false, errors.Internal("Failed to find user by ID", err.Error())
 	}
 
 	emailVerified := user.MustVerifyEmail()
@@ -157,11 +157,11 @@ func (s *UserServiceInstance) IsEmailVerified(userID uint32) (bool, *errors.AppE
 
 // Send email activation to the user
 // Returns an error if any
-func (s *UserServiceInstance) SendEmailActivation(user *models.User) *errors.AppError {
+func (s *UserServiceInstance) SendEmailActivation(user *models.User) *errors.CustomError {
 	secret := config.MustGetEnv("AUTH_SECRET")
 	tokenManager, err := auth.NewJWTManager(secret)
 	if err != nil {
-		return errors.NewAppError(500, "Failed to create token manager")
+		return errors.Internal("Failed to create token manager", err.Error())
 	}
 
 	verificationClaims := map[string]any{
@@ -171,24 +171,24 @@ func (s *UserServiceInstance) SendEmailActivation(user *models.User) *errors.App
 	}
 	verificationToken, err := tokenManager.GenerateToken(verificationClaims, time.Now().Add(24*time.Hour))
 	if err != nil {
-		return errors.NewAppError(500, "Failed to generate verification token")
+		return errors.Internal("Failed to generate verification token", err.Error())
 	}
 
 	mail, err := mailer.NewMailFromTemplate(user.Email, "Catalyst - Account activation", "account-activation.html", map[string]any{
 		"ActivationLink": config.MustGetEnv("APP_FE_URL") + "/verify?token=" + verificationToken.Token,
 	})
 	if err != nil {
-		return errors.NewAppError(500, "Failed to create email")
+		return errors.Internal("Failed to create email from template", err.Error())
 	}
 
 	if err := mail.Send(); err != nil {
-		return errors.NewAppError(500, "Failed to send email")
+		return errors.Internal("Failed to send email", err.Error())
 	}
 
 	tokenExpiresAtUnix, err := strconv.ParseInt(verificationToken.ExpiresAt, 10, 64)
 	if err != nil {
 		fmt.Println(err.Error())
-		return errors.NewAppError(500, "Failed to parse expiration time")
+		return errors.Internal("Failed to parse expiration time", err.Error())
 	}
 
 	tokenExpiresAt := time.Unix(tokenExpiresAtUnix, 0)
@@ -200,7 +200,7 @@ func (s *UserServiceInstance) SendEmailActivation(user *models.User) *errors.App
 	}
 
 	if _, err := s.EmailActivationRepository.Create(activation); err != nil {
-		return errors.NewAppError(500, "Failed to store email activation token")
+		return errors.Internal("Failed to store email activation token", err.Error())
 	}
 
 	return nil
@@ -208,49 +208,49 @@ func (s *UserServiceInstance) SendEmailActivation(user *models.User) *errors.App
 
 // Activate user account using the provided token
 // Returns an error if any
-func (s *UserServiceInstance) Activate(token string) *errors.AppError {
+func (s *UserServiceInstance) Activate(token string) *errors.CustomError {
 
 	activation, err := s.EmailActivationRepository.FindByToken(token)
 	if err != nil {
-		return errors.NewAppError(400, "Invalid or expired activation token")
+		return errors.BadRequest("Invalid or expired activation token", err.Error())
 	} else if activation == nil {
-		return errors.NewAppError(404, "Activation token not found")
+		return errors.NotFound("Activation token not found")
 	}
 
 	if time.Now().After(activation.ExpiresAt) || activation.UsedAt != nil {
-		return errors.NewAppError(400, "Activation token has expired")
+		return errors.BadRequest("Activation token has expired", nil)
 	}
 
 	// Validate token claims to ensure it matches the activation record
 	secret := config.MustGetEnv("AUTH_SECRET")
 	tokenManager, err := auth.NewJWTManager(secret)
 	if err != nil {
-		return errors.NewAppError(500, "Failed to create token manager")
+		return errors.Internal("Failed to create token manager", err.Error())
 	}
 
 	claims, err := tokenManager.ValidateToken(token)
 	if err != nil {
-		return errors.NewAppError(400, "Invalid activation token")
+		return errors.BadRequest("Invalid activation token", err.Error())
 	}
 
 	payload := claims["payload"].(map[string]interface{})
 
 	if payload["type"] != "account-activation" || uint32(payload["user_id"].(float64)) != activation.UserID {
-		return errors.NewAppError(400, "Invalid activation token")
+		return errors.BadRequest("Invalid activation token", nil)
 	}
 
 	now := time.Now()
 	activation.UsedAt = &now
 
 	if _, err := s.EmailActivationRepository.Update(activation); err != nil {
-		return errors.NewAppError(500, "Failed to update email activation token")
+		return errors.Internal("Failed to update email activation token", err.Error())
 	}
 
 	if _, err := s.UserRepository.Update(&models.User{
 		ID:              activation.UserID,
 		EmailVerifiedAt: &now,
 	}); err != nil {
-		return errors.NewAppError(500, "Failed to activate user account")
+		return errors.Internal("Failed to activate user account", err.Error())
 	}
 
 	return nil

@@ -15,10 +15,7 @@ func OwnershipMiddleware(productService services.ProductService, userService ser
 		userID, err := strconv.ParseUint(userIDStr, 10, 64)
 
 		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-				"message": "Failed to parse user ID",
-				"error":   err.Error(),
-			})
+			return response.InternalError(c, "Failed to parse user ID", err.Error())
 		}
 
 		productID := c.Params("productID")

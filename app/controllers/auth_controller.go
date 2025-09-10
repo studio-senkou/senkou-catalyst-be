@@ -63,10 +63,7 @@ func (h *AuthController) Login(c *fiber.Ctx) error {
 	accessToken, refreshToken, appError := h.AuthService.GenerateToken(userID)
 
 	if appError != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"message": "Failed to generate token",
-			"error":   appError.Details,
-		})
+		return response.InternalError(c, "Failed to generate token", appError.Details)
 	}
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
@@ -127,10 +124,7 @@ func (h *AuthController) RefreshToken(c *fiber.Ctx) error {
 	accessToken, refreshToken, tokenError := h.AuthService.GenerateToken(userID)
 
 	if tokenError != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"message": "Failed to generate token",
-			"error":   tokenError.Details,
-		})
+		return response.InternalError(c, "Failed to generate token", tokenError.Details)
 	}
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{

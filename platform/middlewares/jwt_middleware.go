@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"senkou-catalyst-be/utils/auth"
 	"senkou-catalyst-be/utils/config"
+	"senkou-catalyst-be/utils/response"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -48,10 +49,7 @@ var JWTProtected fiber.Handler = func(c *fiber.Ctx) error {
 	jwtManager, managerError := auth.NewJWTManager(string(jwtSecret))
 
 	if managerError != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"message": "Internal server error",
-			"error":   fmt.Sprintf("Failed to initialize JWT manager: %s", managerError.Error()),
-		})
+		return response.InternalError(c, "Failed to initialize JWT manager", managerError.Error())
 	}
 
 	// Validate the token and claims or extract the payload inside the token

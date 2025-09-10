@@ -26,9 +26,7 @@ func SubscriptionMiddleware(plans ...constants.SubscriptionPlan) fiber.Handler {
 
 		user, err := userRepo.FindByID(uint32(userID))
 		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-				"error": "Failed to retrieve user",
-			})
+			return response.InternalError(c, "Failed to retrieve user", err.Error())
 		} else if user != nil && user.Role == "admin" {
 			return c.Next()
 		}
@@ -37,9 +35,7 @@ func SubscriptionMiddleware(plans ...constants.SubscriptionPlan) fiber.Handler {
 
 		sub, err := subsRepo.FindActiveSubscriptionByUserID(uint32(userID))
 		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-				"error": "Failed to retrieve subscription",
-			})
+			return response.InternalError(c, "Failed to retrieve subscription", err.Error())
 		} else if len(sub.Plans) == 0 {
 			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
 				"error": "User does not have an active subscription",

@@ -1,7 +1,6 @@
 package services
 
 import (
-	"fmt"
 	"senkou-catalyst-be/app/dtos"
 	"senkou-catalyst-be/app/models"
 	"senkou-catalyst-be/platform/errors"
@@ -10,14 +9,14 @@ import (
 )
 
 type SubscriptionService interface {
-	CreateNewSubscription(request *dtos.CreateSubscriptionDTO) (*models.Subscription, *errors.AppError)
-	SubscribeUserToSubscription(userID, subID uint32) *errors.AppError
-	CreateSubscriptionPlan(request *dtos.CreateSubscriptionPlanDTO, subID uint32) *errors.AppError
-	GetAllSubscriptions() ([]*models.Subscription, *errors.AppError)
-	GetSubscriptionByID(subID uint32) (*models.Subscription, *errors.AppError)
-	AssignFreeTierSubscription(userID uint32) *errors.AppError
-	UpdateSubscription(request *dtos.UpdateSubscriptionDTO, subID uint32) *errors.AppError
-	DeleteSubscription(subID uint32) *errors.AppError
+	CreateNewSubscription(request *dtos.CreateSubscriptionDTO) (*models.Subscription, *errors.CustomError)
+	SubscribeUserToSubscription(userID, subID uint32) *errors.CustomError
+	CreateSubscriptionPlan(request *dtos.CreateSubscriptionPlanDTO, subID uint32) *errors.CustomError
+	GetAllSubscriptions() ([]*models.Subscription, *errors.CustomError)
+	GetSubscriptionByID(subID uint32) (*models.Subscription, *errors.CustomError)
+	AssignFreeTierSubscription(userID uint32) *errors.CustomError
+	UpdateSubscription(request *dtos.UpdateSubscriptionDTO, subID uint32) *errors.CustomError
+	DeleteSubscription(subID uint32) *errors.CustomError
 }
 
 type SubscriptionServiceInstance struct {
@@ -38,7 +37,7 @@ func NewSubscriptionService(
 // Create a new subscription
 // This function will create a new subscription and return the created subscription
 // It returns an error if the subscription could not be created
-func (s *SubscriptionServiceInstance) CreateNewSubscription(request *dtos.CreateSubscriptionDTO) (*models.Subscription, *errors.AppError) {
+func (s *SubscriptionServiceInstance) CreateNewSubscription(request *dtos.CreateSubscriptionDTO) (*models.Subscription, *errors.CustomError) {
 	subscription := &models.Subscription{
 		Name:        request.Name,
 		Description: request.Description,
@@ -49,7 +48,7 @@ func (s *SubscriptionServiceInstance) CreateNewSubscription(request *dtos.Create
 	subscription, err := s.SubscriptionRepository.StoreNewSubscription(subscription)
 
 	if err != nil {
-		return nil, errors.NewAppError(500, fmt.Sprintf("Failed to create subscription: %s", err.Error()))
+		return nil, errors.Internal("Failed to create subscription", err.Error())
 	}
 
 	return subscription, nil
@@ -58,14 +57,14 @@ func (s *SubscriptionServiceInstance) CreateNewSubscription(request *dtos.Create
 // Subscribe a user to a subscription
 // This function will subscribe a user to a subscription by userID and subID
 // It returns an error if the subscription does not exist or if the user could not be subscribed
-func (s *SubscriptionServiceInstance) SubscribeUserToSubscription(userID, subID uint32) *errors.AppError {
+func (s *SubscriptionServiceInstance) SubscribeUserToSubscription(userID, subID uint32) *errors.CustomError {
 	subscription, err := s.SubscriptionRepository.FindByID(subID)
 	if err != nil || subscription == nil {
-		return errors.NewAppError(404, "Subscription not found")
+		return errors.NotFound("Subscription not found")
 	}
 
 	if exist, err := s.SubscriptionRepository.VerifyUserHasActiveSubscription(userID, subID); err != nil || exist {
-		return errors.NewAppError(400, "User already has an active subscription")
+		return errors.BadRequest("User already has an active subscription", nil)
 	}
 
 	sub := &models.UserSubscription{
@@ -76,7 +75,7 @@ func (s *SubscriptionServiceInstance) SubscribeUserToSubscription(userID, subID 
 	}
 
 	if err := s.SubscriptionRepository.SubscribeUser(sub); err != nil {
-		return errors.NewAppError(500, fmt.Sprintf("Failed to subscribe user to subscription: %s", err.Error()))
+		return errors.Internal("Failed to subscribe user to subscription", err.Error())
 	}
 
 	return nil
@@ -85,10 +84,10 @@ func (s *SubscriptionServiceInstance) SubscribeUserToSubscription(userID, subID 
 // Assign a free tier subscription to a user
 // This function will assign a free tier subscription to a user by userID
 // It returns an error if the user could not be assigned the subscription
-func (s *SubscriptionServiceInstance) AssignFreeTierSubscription(userID uint32) *errors.AppError {
+func (s *SubscriptionServiceInstance) AssignFreeTierSubscription(userID uint32) *errors.CustomError {
 	freeTierSub, err := s.SubscriptionRepository.FindFreeTierSubscription()
 	if err != nil || freeTierSub == nil {
-		return errors.NewAppError(404, "Free tier subscription not found")
+		return errors.NotFound("Free tier subscription not found")
 	}
 
 	if err := s.SubscriptionRepository.SubscribeUser(&models.UserSubscription{
@@ -99,7 +98,7 @@ func (s *SubscriptionServiceInstance) AssignFreeTierSubscription(userID uint32) 
 		IsActive:      true,
 		PaymentStatus: "settled",
 	}); err != nil {
-		return errors.NewAppError(500, fmt.Sprintf("Failed to assign free tier subscription: %s", err.Error()))
+		return errors.Internal("Failed to assign free tier subscription", err.Error())
 	}
 
 	return nil
@@ -107,9 +106,9 @@ func (s *SubscriptionServiceInstance) AssignFreeTierSubscription(userID uint32) 
 
 // Create a new subscription plan
 // This function will create a new subscription plan and return error if it already exists
-func (s *SubscriptionServiceInstance) CreateSubscriptionPlan(request *dtos.CreateSubscriptionPlanDTO, subID uint32) *errors.AppError {
+func (s *SubscriptionServiceInstance) CreateSubscriptionPlan(request *dtos.CreateSubscriptionPlanDTO, subID uint32) *errors.CustomError {
 	if exists, err := s.SubscriptionPlanRepository.IsPlanExists(subID, request.Name); err != nil || exists {
-		return errors.NewAppError(400, "Subscription plan already exists")
+		return errors.Conflict("Subscription plan already exists", nil)
 	}
 
 	plan := &models.SubscriptionPlan{
@@ -119,7 +118,7 @@ func (s *SubscriptionServiceInstance) CreateSubscriptionPlan(request *dtos.Creat
 	}
 
 	if err := s.SubscriptionPlanRepository.StoreNewPlan(plan); err != nil {
-		return errors.NewAppError(500, fmt.Sprintf("Failed to create subscription plan: %s", err.Error()))
+		return errors.Internal("Failed to create subscription plan", err.Error())
 	}
 
 	return nil
@@ -128,20 +127,20 @@ func (s *SubscriptionServiceInstance) CreateSubscriptionPlan(request *dtos.Creat
 // Get all subscriptions
 // This function retrieves all subscription from the database
 // It returns a slice of subscription and an error if any
-func (s *SubscriptionServiceInstance) GetAllSubscriptions() ([]*models.Subscription, *errors.AppError) {
+func (s *SubscriptionServiceInstance) GetAllSubscriptions() ([]*models.Subscription, *errors.CustomError) {
 	subscriptions, err := s.SubscriptionRepository.FindAllSubscriptions()
 	if err != nil {
-		return nil, errors.NewAppError(500, fmt.Sprintf("Failed to retrieve subscriptions: %s", err.Error()))
+		return nil, errors.Internal("Failed to retrieve subscriptions", err.Error())
 	}
 
 	return subscriptions, nil
 }
 
-func (s *SubscriptionServiceInstance) GetSubscriptionByID(subID uint32) (*models.Subscription, *errors.AppError) {
+func (s *SubscriptionServiceInstance) GetSubscriptionByID(subID uint32) (*models.Subscription, *errors.CustomError) {
 	subscription, err := s.SubscriptionRepository.FindByID(subID)
 
 	if err != nil || subscription == nil {
-		return nil, errors.NewAppError(404, "Subscription not found")
+		return nil, errors.NotFound("Subscription not found")
 	}
 
 	return subscription, nil
@@ -150,10 +149,10 @@ func (s *SubscriptionServiceInstance) GetSubscriptionByID(subID uint32) (*models
 // Update an existing subscription
 // This function updates an existing subscription with the provided request data
 // It returns an error if the subscription does not exist as if the update fails
-func (s *SubscriptionServiceInstance) UpdateSubscription(request *dtos.UpdateSubscriptionDTO, subID uint32) *errors.AppError {
+func (s *SubscriptionServiceInstance) UpdateSubscription(request *dtos.UpdateSubscriptionDTO, subID uint32) *errors.CustomError {
 
 	if subscription, err := s.SubscriptionRepository.FindByID(subID); err != nil || subscription == nil {
-		return errors.NewAppError(404, "Subscription not found")
+		return errors.NotFound("Subscription not found")
 	}
 
 	updatedSubscription := &models.Subscription{
@@ -165,7 +164,7 @@ func (s *SubscriptionServiceInstance) UpdateSubscription(request *dtos.UpdateSub
 	}
 
 	if _, err := s.SubscriptionRepository.UpdateSubscription(updatedSubscription); err != nil {
-		return errors.NewAppError(500, fmt.Sprintf("Failed to update subscription: %s", err.Error()))
+		return errors.Internal("Failed to update subscription", err.Error())
 	}
 
 	return nil
@@ -174,15 +173,15 @@ func (s *SubscriptionServiceInstance) UpdateSubscription(request *dtos.UpdateSub
 // Delete a subscription
 // This function deletes a subscription by its ID
 // It returns an error if the subscription does not exist or if the deletion fails
-func (s *SubscriptionServiceInstance) DeleteSubscription(subID uint32) *errors.AppError {
+func (s *SubscriptionServiceInstance) DeleteSubscription(subID uint32) *errors.CustomError {
 	if subscription, err := s.SubscriptionRepository.FindByID(subID); err != nil || subscription == nil {
-		return errors.NewAppError(404, "Subscription not found")
+		return errors.NotFound("Subscription not found")
 	}
 
 	subscription := &models.Subscription{ID: subID}
 
 	if err := s.SubscriptionRepository.DeleteSubscription(subscription); err != nil {
-		return errors.NewAppError(500, fmt.Sprintf("Failed to delete subscription: %s", err.Error()))
+		return errors.Internal("Failed to delete subscription", err.Error())
 	}
 
 	return nil

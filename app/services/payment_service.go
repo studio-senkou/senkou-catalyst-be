@@ -3,16 +3,16 @@ package services
 import (
 	"senkou-catalyst-be/app/models"
 	"senkou-catalyst-be/integrations/midtrans"
+	"senkou-catalyst-be/platform/errors"
 	"senkou-catalyst-be/repositories"
 	"time"
 
-	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 )
 
 type PaymentService interface {
-	CreatePayment(user *models.User, pm *midtrans.PaymentMethodConfig, amount float64) (any, error)
-	UpdatePayment(transactionID string, updateData *models.PaymentTransaction) error
+	CreatePayment(user *models.User, pm *midtrans.PaymentMethodConfig, amount float64) (any, *errors.CustomError)
+	UpdatePayment(transactionID string, updateData *models.PaymentTransaction) *errors.CustomError
 }
 
 type PaymentServiceInstance struct {
@@ -29,7 +29,7 @@ func NewPaymentService(client *midtrans.MidtransClient, transactionRepository re
 	}
 }
 
-func (s *PaymentServiceInstance) CreatePayment(user *models.User, pm *midtrans.PaymentMethodConfig, amount float64) (any, error) {
+func (s *PaymentServiceInstance) CreatePayment(user *models.User, pm *midtrans.PaymentMethodConfig, amount float64) (any, *errors.CustomError) {
 	orderID := uuid.New().String()
 
 	if err := s.validateInputs(user, pm, amount); err != nil {
@@ -38,18 +38,18 @@ func (s *PaymentServiceInstance) CreatePayment(user *models.User, pm *midtrans.P
 
 	chargeReq, err := s.Builder.BuildChargeRequest(user, *pm, amount, orderID)
 	if err != nil {
-		return nil, fiber.NewError(fiber.StatusInternalServerError, "Failed to build charge request: "+err.Error())
+		return nil, errors.Internal("Failed to build charge request", err.Error())
 	}
 
 	transactionID, err := uuid.Parse(orderID)
 	if err != nil {
-		return nil, fiber.NewError(fiber.StatusBadRequest, "Invalid order ID format: "+err.Error())
+		return nil, errors.BadRequest("Invalid order ID format", err.Error())
 	}
 
 	coreAPI := s.Client.GetCoreAPIClient()
 	chargeResp, chargeRequestError := coreAPI.ChargeTransaction(chargeReq)
 	if chargeRequestError != nil {
-		return nil, fiber.NewError(fiber.StatusInternalServerError, "Failed to charge transaction: "+chargeRequestError.Error())
+		return nil, errors.Internal("Failed to charge transaction", chargeRequestError.Error())
 	}
 
 	var transactionTimePtr *time.Time
@@ -82,36 +82,36 @@ func (s *PaymentServiceInstance) CreatePayment(user *models.User, pm *midtrans.P
 	}
 
 	if err := s.TransactionRepository.CreateTransaction(transaction); err != nil {
-		return nil, fiber.NewError(fiber.StatusInternalServerError, "Failed to create payment transaction: "+err.Error())
+		return nil, errors.Internal("Failed to create payment transaction", err.Error())
 	}
 
 	return chargeResp, nil
 }
 
-func (s *PaymentServiceInstance) validateInputs(user *models.User, pm *midtrans.PaymentMethodConfig, amount float64) error {
+func (s *PaymentServiceInstance) validateInputs(user *models.User, pm *midtrans.PaymentMethodConfig, amount float64) *errors.CustomError {
 	if user == nil {
-		return fiber.ErrBadRequest
+		return errors.BadRequest("User is required", nil)
 	}
 	if user.Name == "" || user.Email == "" || user.Phone == "" {
-		return fiber.ErrBadRequest
+		return errors.BadRequest("User name, email, and phone are required", nil)
 	}
 	if pm == nil {
-		return fiber.ErrBadRequest
+		return errors.BadRequest("Payment method is required", nil)
 	}
 	if amount <= 0 {
-		return fiber.ErrBadRequest
+		return errors.BadRequest("Amount must be greater than 0", nil)
 	}
 	return nil
 }
 
-func (s *PaymentServiceInstance) UpdatePayment(transactionID string, updateData *models.PaymentTransaction) error {
+func (s *PaymentServiceInstance) UpdatePayment(transactionID string, updateData *models.PaymentTransaction) *errors.CustomError {
 	if updateData == nil {
-		return fiber.ErrBadRequest
+		return errors.BadRequest("Update data is required", nil)
 	}
 
 	existingTransaction, err := s.TransactionRepository.FindByID(transactionID)
 	if err != nil {
-		return fiber.NewError(fiber.StatusNotFound, "Transaction not found: "+err.Error())
+		return errors.NotFound("Transaction not found")
 	}
 
 	if updateData.Status != "" {
@@ -136,5 +136,9 @@ func (s *PaymentServiceInstance) UpdatePayment(transactionID string, updateData 
 		existingTransaction.SettledAt = updateData.SettledAt
 	}
 
-	return s.TransactionRepository.Update(existingTransaction)
+	if err := s.TransactionRepository.Update(existingTransaction); err != nil {
+		return errors.Internal("Failed to update transaction", err.Error())
+	}
+
+	return nil
 }

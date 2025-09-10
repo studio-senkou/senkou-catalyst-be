@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"senkou-catalyst-be/utils/response"
 	"senkou-catalyst-be/utils/storage"
 
 	"github.com/gofiber/fiber/v2"
@@ -32,11 +33,7 @@ func (s *StorageController) GetFromStorage(c *fiber.Ctx) error {
 
 	file, contentType, err := storage.DownloadFileFromStorage(filename)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"status":  "fail",
-			"message": "Failed to download file from storage",
-			"error":   err.Error(),
-		})
+		return response.InternalError(c, "Failed to download file from storage", err.Error())
 	}
 
 	c.Set("Content-Type", contentType)

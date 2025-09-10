@@ -13,13 +13,13 @@ import (
 )
 
 type MerchantService interface {
-	CreateMerchant(merchant *dtos.CreateMerchantRequestDTO, userID uint32) (*models.Merchant, *errors.AppError)
-	GetMerchantByID(merchantID string) (*models.Merchant, *errors.AppError)
-	GetUserMerchants(userID uint32) ([]*models.Merchant, *errors.AppError)
-	GetMerchantOverview(merchantID string) (*dtos.MerchantOverview, *errors.AppError)
-	GetMerchantByUsername(username string) (*models.Merchant, *errors.AppError)
-	UpdateMerchantByID(merchantID string, updateData *dtos.UpdateMerchantRequestDTO) (*models.Merchant, *errors.AppError)
-	DeleteMerchantByID(merchantID string) *errors.AppError
+	CreateMerchant(merchant *dtos.CreateMerchantRequestDTO, userID uint32) (*models.Merchant, *errors.CustomError)
+	GetMerchantByID(merchantID string) (*models.Merchant, *errors.CustomError)
+	GetUserMerchants(userID uint32) ([]*models.Merchant, *errors.CustomError)
+	GetMerchantOverview(merchantID string) (*dtos.MerchantOverview, *errors.CustomError)
+	GetMerchantByUsername(username string) (*models.Merchant, *errors.CustomError)
+	UpdateMerchantByID(merchantID string, updateData *dtos.UpdateMerchantRequestDTO) (*models.Merchant, *errors.CustomError)
+	DeleteMerchantByID(merchantID string) *errors.CustomError
 }
 
 type MerchantServiceInstance struct {
@@ -39,7 +39,7 @@ func NewMerchantService(merchantRepository repositories.MerchantRepository, prod
 // Create a new merchant
 // This function creates a new merchant for the user
 // It returns the created merchant or an error if the creation fails
-func (s *MerchantServiceInstance) CreateMerchant(merchant *dtos.CreateMerchantRequestDTO, userID uint32) (*models.Merchant, *errors.AppError) {
+func (s *MerchantServiceInstance) CreateMerchant(merchant *dtos.CreateMerchantRequestDTO, userID uint32) (*models.Merchant, *errors.CustomError) {
 	createdMerchant, err := s.MerchantRepository.Create(&models.Merchant{
 		ID:      uuid.New().String(),
 		Name:    merchant.Name,
@@ -47,7 +47,7 @@ func (s *MerchantServiceInstance) CreateMerchant(merchant *dtos.CreateMerchantRe
 	})
 
 	if err != nil {
-		return nil, errors.NewAppError(500, "Failed to create merchant")
+		return nil, errors.Internal("Failed to create merchant", err.Error())
 	}
 
 	return createdMerchant, nil
@@ -56,11 +56,11 @@ func (s *MerchantServiceInstance) CreateMerchant(merchant *dtos.CreateMerchantRe
 // Get user merchants
 // This function retrieves all merchants associated with a user
 // It returns a slice of merchants or an error if the retrieval fails
-func (s *MerchantServiceInstance) GetUserMerchants(userID uint32) ([]*models.Merchant, *errors.AppError) {
+func (s *MerchantServiceInstance) GetUserMerchants(userID uint32) ([]*models.Merchant, *errors.CustomError) {
 	merchants, err := s.MerchantRepository.FindByUserID(userID)
 
 	if err != nil {
-		return nil, errors.NewAppError(500, "Failed to retrieve merchants")
+		return nil, errors.Internal("Failed to retrieve merchants", err.Error())
 	}
 
 	return merchants, nil
@@ -69,11 +69,11 @@ func (s *MerchantServiceInstance) GetUserMerchants(userID uint32) ([]*models.Mer
 // Get merchant by ID
 // This function retrieves a merchant by its ID
 // It returns the merchant or an error if the retrieval fails
-func (s *MerchantServiceInstance) GetMerchantByID(merchantID string) (*models.Merchant, *errors.AppError) {
+func (s *MerchantServiceInstance) GetMerchantByID(merchantID string) (*models.Merchant, *errors.CustomError) {
 	merchant, err := s.MerchantRepository.FindByID(merchantID)
 
 	if err != nil {
-		return nil, errors.NewAppError(500, "Failed to retrieve merchant")
+		return nil, errors.Internal("Failed to retrieve merchant", err.Error())
 	}
 
 	return merchant, nil
@@ -82,11 +82,11 @@ func (s *MerchantServiceInstance) GetMerchantByID(merchantID string) (*models.Me
 // Get merchant's overview
 // This function retrieves an overview of a specific merchant by its ID
 // It returns the merchant overview or an error if the retrieval fails
-func (s *MerchantServiceInstance) GetMerchantOverview(merchantID string) (*dtos.MerchantOverview, *errors.AppError) {
+func (s *MerchantServiceInstance) GetMerchantOverview(merchantID string) (*dtos.MerchantOverview, *errors.CustomError) {
 	overview, err := s.MerchantRepository.FindOverview(merchantID)
 
 	if err != nil {
-		return nil, errors.NewAppError(500, "Failed to retrieve merchant overview")
+		return nil, errors.Internal("Failed to retrieve merchant overview", err.Error())
 	}
 
 	return overview, nil
@@ -95,16 +95,16 @@ func (s *MerchantServiceInstance) GetMerchantOverview(merchantID string) (*dtos.
 // Get merchant by username
 // This function retrieves a merchant by its username
 // It returns the merchant or an error if the retrieval fails
-func (s *MerchantServiceInstance) GetMerchantByUsername(username string) (*models.Merchant, *errors.AppError) {
+func (s *MerchantServiceInstance) GetMerchantByUsername(username string) (*models.Merchant, *errors.CustomError) {
 	merchant, err := s.MerchantRepository.FindByUsername(username)
 
 	if err != nil {
 
 		if stderrors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.NewAppError(404, "Merchant not found")
+			return nil, errors.NotFound("Merchant not found")
 		}
 
-		return nil, errors.NewAppError(500, "Failed to retrieve merchant by username")
+		return nil, errors.Internal("Failed to retrieve merchant by username", err.Error())
 	}
 
 	return merchant, nil
@@ -113,13 +113,13 @@ func (s *MerchantServiceInstance) GetMerchantByUsername(username string) (*model
 // Update merchant by ID
 // This function updates an existing merchant with the provided data
 // It returns the updated merchant or an error if the update fails
-func (s *MerchantServiceInstance) UpdateMerchantByID(merchantID string, updateData *dtos.UpdateMerchantRequestDTO) (*models.Merchant, *errors.AppError) {
+func (s *MerchantServiceInstance) UpdateMerchantByID(merchantID string, updateData *dtos.UpdateMerchantRequestDTO) (*models.Merchant, *errors.CustomError) {
 	updatedMerchant, err := s.MerchantRepository.UpdateMerchant(merchantID, &models.Merchant{
 		Name: updateData.Name,
 	})
 
 	if err != nil {
-		return nil, errors.NewAppError(500, "Failed to update merchant")
+		return nil, errors.Internal("Failed to update merchant", err.Error())
 	}
 
 	return updatedMerchant, nil
@@ -128,11 +128,11 @@ func (s *MerchantServiceInstance) UpdateMerchantByID(merchantID string, updateDa
 // Delete merchant by ID
 // This function deletes a merchant by its ID
 // It returns an error if the deletion fails
-func (s *MerchantServiceInstance) DeleteMerchantByID(merchantID string) *errors.AppError {
+func (s *MerchantServiceInstance) DeleteMerchantByID(merchantID string) *errors.CustomError {
 	err := s.MerchantRepository.DeleteMerchant(merchantID)
 
 	if err != nil {
-		return errors.NewAppError(500, "Failed to delete merchant")
+		return errors.Internal("Failed to delete merchant", err.Error())
 	}
 
 	return nil

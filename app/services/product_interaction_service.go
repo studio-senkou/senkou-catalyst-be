@@ -12,8 +12,8 @@ import (
 )
 
 type ProductInteractionService interface {
-	StoreLog(productID uuid.UUID, request *dtos.SendProductInteractionDTO) *errors.AppError
-	GetProductMetrics(merchantID string, params *query.QueryParams) (*dtos.OverallProductMetrics, *errors.AppError)
+	StoreLog(productID uuid.UUID, request *dtos.SendProductInteractionDTO) *errors.CustomError
+	GetProductMetrics(merchantID string, params *query.QueryParams) (*dtos.OverallProductMetrics, *errors.CustomError)
 }
 
 type ProductInteractionServiceInstance struct {
@@ -26,7 +26,7 @@ func NewProductInteractionService(piRepo repositories.ProductInteractionReposito
 	}
 }
 
-func (s *ProductInteractionServiceInstance) StoreLog(productID uuid.UUID, request *dtos.SendProductInteractionDTO) *errors.AppError {
+func (s *ProductInteractionServiceInstance) StoreLog(productID uuid.UUID, request *dtos.SendProductInteractionDTO) *errors.CustomError {
 	userAgent := models.UserAgent{
 		Browser: request.Browser,
 		OS:      request.OS,
@@ -40,21 +40,21 @@ func (s *ProductInteractionServiceInstance) StoreLog(productID uuid.UUID, reques
 	}
 
 	if err := s.PIRepo.StoreProductInteractionLog(productInteraction); err != nil {
-		return errors.NewAppError(500, "failed to store product interaction log")
+		return errors.Internal("Failed to store product interaction log", err.Error())
 	}
 
 	return nil
 }
 
-func (s *ProductInteractionServiceInstance) GetProductMetrics(merchantID string, params *query.QueryParams) (*dtos.OverallProductMetrics, *errors.AppError) {
+func (s *ProductInteractionServiceInstance) GetProductMetrics(merchantID string, params *query.QueryParams) (*dtos.OverallProductMetrics, *errors.CustomError) {
 	merchantProductsStat, err := s.PIRepo.GetMerchantProductsMetric(merchantID, params)
 	if err != nil {
-		return nil, errors.NewAppError(500, "failed to get product metrics")
+		return nil, errors.Internal("Failed to get product metrics", err.Error())
 	}
 
 	overallStats, err := s.PIRepo.GetMerchantProductsMetricStats(merchantID, params)
 	if err != nil {
-		return nil, errors.NewAppError(500, "failed to get merchant products stats")
+		return nil, errors.Internal("Failed to get merchant products stats", err.Error())
 	}
 
 	result := &dtos.OverallProductMetrics{
