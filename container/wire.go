@@ -13,6 +13,7 @@ import (
 	authUtil "senkou-catalyst-be/utils/auth"
 	configUtil "senkou-catalyst-be/utils/config"
 	mailerUtil "senkou-catalyst-be/utils/mailer"
+	"senkou-catalyst-be/utils/queue"
 
 	"github.com/google/wire"
 )
@@ -86,12 +87,22 @@ var MidtransSet = wire.NewSet(
 	ProvideMidtransBuilder,
 )
 
+func ProvideQueueService() (*queue.QueueService, error) {
+	cfg := queue.DefaultQueueConfig()
+	return queue.NewQueueService(cfg)
+}
+
+var QueueSet = wire.NewSet(
+	ProvideQueueService,
+)
+
 func InitializeUserController() (*controllers.UserController, error) {
 	wire.Build(
 		DatabaseSet,
 		RepositorySet,
 		ServiceSet,
 		ControllerSet,
+		QueueSet,
 	)
 	return nil, nil
 }
@@ -112,6 +123,7 @@ func InitializeProductController() (*controllers.ProductController, error) {
 		RepositorySet,
 		ServiceSet,
 		ControllerSet,
+		QueueSet,
 	)
 	return nil, nil
 }
@@ -143,6 +155,7 @@ func InitializeAuthController() (*controllers.AuthController, error) {
 		ServiceSet,
 		ControllerSet,
 		UtilSet,
+		QueueSet,
 	)
 	return nil, nil
 }
@@ -154,6 +167,7 @@ func InitializeSubscriptionController() (*controllers.SubscriptionController, er
 		ServiceSet,
 		ControllerSet,
 		MidtransSet,
+		QueueSet,
 	)
 	return nil, nil
 }
@@ -182,6 +196,7 @@ func InitializeUserService() (services.UserService, func(), error) {
 		DatabaseSet,
 		RepositorySet,
 		ServiceSet,
+		QueueSet,
 	)
 	return nil, nil, nil
 }
@@ -238,6 +253,7 @@ func InitializeContainer() (*Container, error) {
 		ControllerSet,
 		UtilSet,
 		MidtransSet,
+		QueueSet,
 		NewContainer,
 	)
 	return nil, nil
@@ -256,6 +272,7 @@ func NewContainer(
 	storageController *controllers.StorageController,
 	userService services.UserService,
 	productService services.ProductService,
+	queueService *queue.QueueService,
 ) *Container {
 	return &Container{
 		UserController:               userController,
@@ -270,5 +287,6 @@ func NewContainer(
 		StorageController:            storageController,
 		UserService:                  userService,
 		ProductService:               productService,
+		QueueService:                 queueService,
 	}
 }
