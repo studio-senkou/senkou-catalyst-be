@@ -15,6 +15,7 @@ type ProductRepository interface {
 	FindProductsByMerchantUsername(username string) ([]*models.Product, error)
 	FindAllProducts(params *query.QueryParams) ([]*models.Product, int64, error)
 	FindMerchantByProductID(productID string) (*models.Merchant, error)
+	FindRecentProducts(username string) ([]*models.Product, error)
 	UpdateProduct(updatedProduct *models.Product) (*models.Product, error)
 	DeleteProduct(productID string) error
 }
@@ -135,6 +136,25 @@ func (r *ProductRepositoryInstance) FindMerchantByProductID(productID string) (*
 	}
 
 	return merchant, nil
+}
+
+func (r *ProductRepositoryInstance) FindRecentProducts(username string) ([]*models.Product, error) {
+	products := make([]*models.Product, 0)
+
+	query := `
+		SELECT p.*
+		FROM products p
+		JOIN merchants m ON p.merchant_id = m.id
+		WHERE m.username = ?
+		ORDER BY p.created_at DESC
+		LIMIT 10
+	`
+
+	if err := r.DB.Raw(query, username).Scan(&products).Error; err != nil {
+		return nil, err
+	}
+
+	return products, nil
 }
 
 // Update a product

@@ -43,6 +43,14 @@ func InitProductRoutes(app *fiber.App, deps ProductRouteDependencies) {
 		deps.ProductController.GetProductByID,
 	)
 	app.Get(
+		"/merchants/:username/popular-products",
+		deps.ProductController.PopularProducts,
+	)
+	app.Get(
+		"/merchants/:username/recent-products",
+		deps.ProductController.RecentProducts,
+	)
+	app.Get(
 		"/merchants/:username/products",
 		deps.ProductController.GetProductByMerchantUsername,
 	)

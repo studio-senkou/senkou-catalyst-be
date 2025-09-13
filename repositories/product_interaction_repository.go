@@ -14,6 +14,7 @@ type ProductInteractionRepository interface {
 	StoreProductInteractionLog(interaction *models.ProductMetric) error
 	GetMerchantProductsMetric(merchantID string, params *query.QueryParams) ([]dtos.ProductReport, error)
 	GetMerchantProductsMetricStats(merchantID string, params *query.QueryParams) (*dtos.ProductMetricStats, error)
+	GetPopularProductsByMerchant(merchantID string) ([]*models.Product, error)
 }
 
 type ProductInteractionRepositoryInstance struct {
@@ -91,4 +92,29 @@ func (r *ProductInteractionRepositoryInstance) GetMerchantProductsMetricStats(me
 	}
 
 	return productMetricStats, nil
+}
+
+func (r *ProductInteractionRepositoryInstance) GetPopularProductsByMerchant(merchantID string) ([]*models.Product, error) {
+
+	query := `
+		SELECT
+			p.*,
+			COALESCE(SUM(CASE WHEN pm.interaction = 'view' THEN 1 ELSE 0 END), 0) AS total_views,
+			COALESCE(SUM(CASE WHEN pm.interaction = 'click' THEN 1 ELSE 0 END), 0) AS total_clicks
+		FROM products p
+			LEFT JOIN product_metrics pm ON pm.product_id = p.id
+			LEFT JOIN merchants m ON m.id = p.merchant_id
+		WHERE m.username = ?
+		GROUP BY p.id, p.title
+		ORDER BY total_clicks DESC, total_views DESC
+		LIMIT 10;
+	`
+
+	products := make([]*models.Product, 0)
+
+	if err := r.db.Raw(query, merchantID).Scan(&products).Error; err != nil {
+		return nil, err
+	}
+
+	return products, nil
 }

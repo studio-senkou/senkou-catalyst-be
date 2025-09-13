@@ -7,6 +7,15 @@ definitions:
     required:
     - token
     type: object
+  dtos.CreateCategoryByMerchantUsernameDTO:
+    properties:
+      name:
+        maxLength: 100
+        minLength: 3
+        type: string
+    required:
+    - name
+    type: object
   dtos.CreateCategoryDTO:
     properties:
       name:
@@ -200,6 +209,15 @@ definitions:
         type: number
     required:
     - name
+    type: object
+  dtos.ValidateMerchantUsernameRequestDTO:
+    properties:
+      username:
+        maxLength: 100
+        minLength: 3
+        type: string
+    required:
+    - username
     type: object
   fiber.Map:
     additionalProperties: true
@@ -1063,6 +1081,71 @@ paths:
       summary: Get merchant by it's username
       tags:
       - Merchant
+  /merchants/{username}/popular-products:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve popular products for a specific merchant
+      parameters:
+      - description: Merchant username
+        in: path
+        name: Username
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/fiber.Map'
+            - properties:
+                data:
+                  allOf:
+                  - $ref: '#/definitions/fiber.Map'
+                  - properties:
+                      products:
+                        items:
+                          $ref: '#/definitions/models.Product'
+                        type: array
+                    type: object
+                message:
+                  type: string
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/fiber.Map'
+            - properties:
+                details: {}
+                error:
+                  type: string
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            allOf:
+            - $ref: '#/definitions/fiber.Map'
+            - properties:
+                details: {}
+                error:
+                  type: string
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/fiber.Map'
+            - properties:
+                details: {}
+                error:
+                  type: string
+              type: object
+      summary: Get popular products
+      tags:
+      - Products
   /merchants/{username}/products:
     get:
       consumes:
@@ -1128,6 +1211,181 @@ paths:
       summary: Get products by merchant ID
       tags:
       - Products
+  /merchants/{username}/recent-products:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve the most recently added products for a specific merchant
+      parameters:
+      - description: Merchant username
+        in: path
+        name: Username
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/fiber.Map'
+            - properties:
+                data:
+                  allOf:
+                  - $ref: '#/definitions/fiber.Map'
+                  - properties:
+                      products:
+                        items:
+                          $ref: '#/definitions/models.Product'
+                        type: array
+                    type: object
+                message:
+                  type: string
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/fiber.Map'
+            - properties:
+                details: {}
+                error:
+                  type: string
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            allOf:
+            - $ref: '#/definitions/fiber.Map'
+            - properties:
+                details: {}
+                error:
+                  type: string
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/fiber.Map'
+            - properties:
+                details: {}
+                error:
+                  type: string
+              type: object
+      summary: Get recent products
+      tags:
+      - Products
+  /merchants/username/{username}/categories:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve all categories associated with a specific merchant using
+        the merchant's username
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/fiber.Map'
+            - properties:
+                data:
+                  allOf:
+                  - $ref: '#/definitions/fiber.Map'
+                  - properties:
+                      categories:
+                        items:
+                          $ref: '#/definitions/models.Category'
+                        type: array
+                    type: object
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/fiber.Map'
+            - properties:
+                message:
+                  type: string
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/fiber.Map'
+            - properties:
+                ' error':
+                  type: string
+                message:
+                  type: string
+              type: object
+      summary: Get all categories for a merchant by username
+      tags:
+      - Categories
+    post:
+      consumes:
+      - application/json
+      description: Create a new category for a merchant using the merchant's username
+      parameters:
+      - description: Merchant Username
+        in: path
+        name: username
+        required: true
+        type: string
+      - description: Create Category by Merchant Username DTO
+        in: body
+        name: CreateCategoryByMerchantUsernameDTO
+        required: true
+        schema:
+          $ref: '#/definitions/dtos.CreateCategoryByMerchantUsernameDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/fiber.Map'
+            - properties:
+                data:
+                  allOf:
+                  - $ref: '#/definitions/fiber.Map'
+                  - properties:
+                      category:
+                        $ref: '#/definitions/models.Category'
+                    type: object
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/fiber.Map'
+            - properties:
+                ' errors':
+                  items:
+                    type: string
+                  type: array
+                message:
+                  type: string
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/fiber.Map'
+            - properties:
+                ' error':
+                  type: string
+                message:
+                  type: string
+              type: object
+      security:
+      - BearerAuth: []
+      summary: Create a new category with merchant username
+      tags:
+      - Categories
   /payment-methods:
     get:
       description: Get all available payment methods
@@ -2319,6 +2577,64 @@ paths:
       summary: Get user detail
       tags:
       - Users
+  /validate-merchant-username:
+    post:
+      consumes:
+      - application/json
+      description: Check if a merchant username is available
+      parameters:
+      - description: Validate Merchant Username request
+        in: body
+        name: dtos.ValidateMerchantUsernameRequestDTO
+        required: true
+        schema:
+          $ref: '#/definitions/dtos.ValidateMerchantUsernameRequestDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/fiber.Map'
+            - properties:
+                data:
+                  allOf:
+                  - $ref: '#/definitions/fiber.Map'
+                  - properties:
+                      is_available:
+                        type: boolean
+                    type: object
+                message:
+                  type: string
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/fiber.Map'
+            - properties:
+                errors:
+                  items:
+                    type: string
+                  type: array
+                message:
+                  type: string
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            allOf:
+            - $ref: '#/definitions/fiber.Map'
+            - properties:
+                error:
+                  type: string
+                message:
+                  type: string
+              type: object
+      summary: Validate Merchant Username
+      tags:
+      - Merchant
 schemes:
 - http
 swagger: "2.0"

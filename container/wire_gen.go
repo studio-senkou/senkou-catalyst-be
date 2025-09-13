@@ -57,7 +57,8 @@ func InitializeProductController() (*controllers.ProductController, error) {
 	db := config.GetDB()
 	productRepository := repositories.NewProductRepository(db)
 	userRepository := repositories.NewUserRepository(db)
-	productService := services.NewProductService(productRepository, userRepository)
+	productInteractionRepository := repositories.NewProductInteractionRepository(db)
+	productService := services.NewProductService(productRepository, userRepository, productInteractionRepository)
 	merchantRepository := repositories.NewMerchantRepository(db)
 	emailActivationRepository := repositories.NewEmailActivationRepository(db)
 	queueService, err := ProvideQueueService()
@@ -65,7 +66,6 @@ func InitializeProductController() (*controllers.ProductController, error) {
 		return nil, err
 	}
 	userService := services.NewUserService(userRepository, merchantRepository, emailActivationRepository, queueService)
-	productInteractionRepository := repositories.NewProductInteractionRepository(db)
 	productInteractionService := services.NewProductInteractionService(productInteractionRepository)
 	productController := controllers.NewProductController(productService, userService, productInteractionService)
 	return productController, nil
@@ -171,7 +171,8 @@ func InitializeProductService() (services.ProductService, func(), error) {
 	db := config.GetDB()
 	productRepository := repositories.NewProductRepository(db)
 	userRepository := repositories.NewUserRepository(db)
-	productService := services.NewProductService(productRepository, userRepository)
+	productInteractionRepository := repositories.NewProductInteractionRepository(db)
+	productService := services.NewProductService(productRepository, userRepository, productInteractionRepository)
 	return productService, func() {
 	}, nil
 }
@@ -230,7 +231,7 @@ func InitializeContainer() (*Container, error) {
 	productInteractionRepository := repositories.NewProductInteractionRepository(db)
 	productInteractionService := services.NewProductInteractionService(productInteractionRepository)
 	merchantController := controllers.NewMerchantController(merchantService, productInteractionService)
-	productService := services.NewProductService(productRepository, userRepository)
+	productService := services.NewProductService(productRepository, userRepository, productInteractionRepository)
 	productController := controllers.NewProductController(productService, userService, productInteractionService)
 	categoryService := services.NewCategoryService(categoryRepository, merchantRepository)
 	categoryController := controllers.NewCategoryController(categoryService, merchantService)

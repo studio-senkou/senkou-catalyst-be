@@ -165,6 +165,78 @@ func (h *ProductController) UploadProductPhoto(c *fiber.Ctx) error {
 	})
 }
 
+// PopularProducts retrieves popular products based on interaction metrics
+// @Summary Get popular products
+// @Description Retrieve popular products for a specific merchant
+// @Tags Products
+// @Accept json
+// @Produce json
+// @Param Username path string true "Merchant username"
+// @Success 200 {object} fiber.Map{message=string,data=fiber.Map{products=[]models.Product}}
+// @Failure 400 {object} fiber.Map{error=string,details=any}
+// @Failure 404 {object} fiber.Map{error=string,details=any}
+// @Failure 500 {object} fiber.Map{error=string,details=any}
+// @Router /merchants/{username}/popular-products [get]
+func (h *ProductController) PopularProducts(c *fiber.Ctx) error {
+
+	username := c.Params("username")
+
+	if username == "" {
+		return response.BadRequest(c, "Cannot continue to retrieve products", "Merchant username is required")
+	}
+
+	products, appError := h.ProductService.GetPopularProducts(username)
+	if appError != nil {
+		switch appError.Code {
+		case fiber.StatusNotFound:
+			return response.NotFound(c, "No popular products found for the specified merchant")
+		case fiber.StatusInternalServerError:
+			return response.InternalError(c, "Failed to retrieve popular products", appError.Details)
+		}
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"message": "Popular products retrieved successfully",
+		"data": fiber.Map{
+			"products": products,
+		},
+	})
+}
+
+// RecentProducts retrieves the most recently added products
+// @Summary Get recent products
+// @Description Retrieve the most recently added products for a specific merchant
+// @Tags Products
+// @Accept json
+// @Produce json
+// @Param Username path string true "Merchant username"
+// @Success 200 {object} fiber.Map{message=string,data=fiber.Map{products=[]models.Product}}
+// @Failure 400 {object} fiber.Map{error=string,details=any}
+// @Failure 404 {object} fiber.Map{error=string,details=any}
+// @Failure 500 {object} fiber.Map{error=string,details=any}
+// @Router /merchants/{username}/recent-products [get]
+func (h *ProductController) RecentProducts(c *fiber.Ctx) error {
+
+	username := c.Params("username")
+
+	if username == "" {
+		return response.BadRequest(c, "Cannot continue to retrieve products", "Merchant username is required")
+	}
+
+	products, appError := h.ProductService.GetRecentProducts(username)
+
+	if appError != nil {
+		return response.InternalError(c, "Failed to retrieve recent products", appError.Details)
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"message": "Recent products retrieved successfully",
+		"data": fiber.Map{
+			"products": products,
+		},
+	})
+}
+
 // Delete product photo
 // @Summary Delete the product photo by it's file path
 // @Description Delete a photo for a specific product

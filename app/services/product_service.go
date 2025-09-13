@@ -18,6 +18,8 @@ type ProductService interface {
 	GetProductsByMerchantID(merchantID string) ([]*models.Product, *errors.CustomError)
 	GetAllProducts(params *query.QueryParams) ([]*models.Product, *query.PaginationResponse, *errors.CustomError)
 	GetProductsByMerchantUsername(username string) ([]*models.Product, *errors.CustomError)
+	GetPopularProducts(username string) ([]*models.Product, *errors.CustomError)
+	GetRecentProducts(username string) ([]*models.Product, *errors.CustomError)
 	UpdateProduct(updatedProduct *dtos.UpdateProductDTO, productID string) (*models.Product, *errors.CustomError)
 	UpdateProductPhotos(product *models.Product) *errors.CustomError
 	DeleteProduct(productID string) *errors.CustomError
@@ -25,14 +27,16 @@ type ProductService interface {
 }
 
 type ProductServiceInstance struct {
-	UserRepository    repositories.UserRepository
-	ProductRepository repositories.ProductRepository
+	UserRepository          repositories.UserRepository
+	ProductRepository       repositories.ProductRepository
+	ProductMetricRepository repositories.ProductInteractionRepository
 }
 
-func NewProductService(productRepository repositories.ProductRepository, userRepository repositories.UserRepository) ProductService {
+func NewProductService(productRepository repositories.ProductRepository, userRepository repositories.UserRepository, productMetricRepository repositories.ProductInteractionRepository) ProductService {
 	return &ProductServiceInstance{
-		ProductRepository: productRepository,
-		UserRepository:    userRepository,
+		ProductRepository:       productRepository,
+		UserRepository:          userRepository,
+		ProductMetricRepository: productMetricRepository,
 	}
 }
 
@@ -119,6 +123,34 @@ func (s *ProductServiceInstance) GetAllProducts(params *query.QueryParams) ([]*m
 	pagination := query.CalculatePagination(params.Page, params.Limit, total)
 
 	return products, pagination, nil
+}
+
+// Get popular products
+// This function retrieves popular products based on interaction metrics
+// It returns a slice of popular products and an error if any
+func (s *ProductServiceInstance) GetPopularProducts(username string) ([]*models.Product, *errors.CustomError) {
+
+	products, err := s.ProductMetricRepository.GetPopularProductsByMerchant(username)
+
+	if err != nil {
+		return nil, errors.Internal("Failed to retrieve popular products", err.Error())
+	}
+
+	return products, nil
+}
+
+// Get recent products
+// This function retrieves the most recently added products
+// It returns a slice of recent products and an error if any
+func (s *ProductServiceInstance) GetRecentProducts(username string) ([]*models.Product, *errors.CustomError) {
+
+	products, err := s.ProductRepository.FindRecentProducts(username)
+
+	if err != nil {
+		return nil, errors.Internal("Failed to retrieve recent products", err.Error())
+	}
+
+	return products, nil
 }
 
 // Update a product
