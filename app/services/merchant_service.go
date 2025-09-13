@@ -18,6 +18,7 @@ type MerchantService interface {
 	GetUserMerchants(userID uint32) ([]*models.Merchant, *errors.CustomError)
 	GetMerchantOverview(merchantID string) (*dtos.MerchantOverview, *errors.CustomError)
 	GetMerchantByUsername(username string) (*models.Merchant, *errors.CustomError)
+	IsMerchantUsernameAvailable(username string) (bool, *errors.CustomError)
 	UpdateMerchantByID(merchantID string, updateData *dtos.UpdateMerchantRequestDTO) (*models.Merchant, *errors.CustomError)
 	DeleteMerchantByID(merchantID string) *errors.CustomError
 }
@@ -108,6 +109,22 @@ func (s *MerchantServiceInstance) GetMerchantByUsername(username string) (*model
 	}
 
 	return merchant, nil
+}
+
+// Check if merchant username is available
+// This function checks if a merchant username is available
+// It returns true if available, false otherwise, along with any error encountered
+func (s *MerchantServiceInstance) IsMerchantUsernameAvailable(username string) (bool, *errors.CustomError) {
+	_, err := s.MerchantRepository.FindByUsername(username)
+
+	if err != nil {
+		if stderrors.Is(err, gorm.ErrRecordNotFound) {
+			return true, nil
+		}
+		return false, errors.Internal("Failed to check username availability", err.Error())
+	}
+
+	return false, nil
 }
 
 // Update merchant by ID

@@ -13,20 +13,25 @@ import (
 
 type CategoryService interface {
 	CreateNewCategory(category *dtos.CreateCategoryDTO, merchantID string) (*models.Category, *errors.CustomError)
+	CreateCategoryWithMerchantUsername(name, username string) (*models.Category, *errors.CustomError)
 	GetCategoryByName(name string, merchantID string) (*models.Category, *errors.CustomError)
 	GetCategoryByID(id string) (*models.Category, *errors.CustomError)
 	GetAllCategoriesByMerchantID(merchantID string) ([]*models.Category, *errors.CustomError)
+	GetAllCategoriesByMerchantUsername(username string) ([]*models.Category, *errors.CustomError)
+	IsCategoryExistsByMerchantUsername(name, username string) (bool, *errors.CustomError)
 	UpdateCategory(category *models.Category) (*models.Category, *errors.CustomError)
 	DeleteCategory(id uint32) *errors.CustomError
 }
 
 type CategoryServiceInstance struct {
 	CategoryRepository repositories.CategoryRepository
+	MerchantRepository repositories.MerchantRepository
 }
 
-func NewCategoryService(categoryRepository repositories.CategoryRepository) CategoryService {
+func NewCategoryService(categoryRepository repositories.CategoryRepository, merchantRepository repositories.MerchantRepository) CategoryService {
 	return &CategoryServiceInstance{
 		CategoryRepository: categoryRepository,
+		MerchantRepository: merchantRepository,
 	}
 }
 
@@ -41,6 +46,33 @@ func (s *CategoryServiceInstance) CreateNewCategory(category *dtos.CreateCategor
 
 	newCategory, err := s.CategoryRepository.StoreCategory(categoryModel)
 
+	if err != nil {
+		return nil, errors.Internal("Failed to create category", err.Error())
+	}
+
+	return newCategory, nil
+}
+
+// Create a new category using merchant username
+// This function first retrieves the merchant using the provided username.
+// If the merchant is found, it creates a new category associated with that merchant and stores it in the database.
+func (s *CategoryServiceInstance) CreateCategoryWithMerchantUsername(name, username string) (*models.Category, *errors.CustomError) {
+
+	merchant, err := s.MerchantRepository.FindByUsername(username)
+	if err != nil {
+		if stderror.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.NotFound("Merchant not found")
+		}
+
+		return nil, errors.Internal("Failed to find merchant by username", err.Error())
+	}
+
+	category := &models.Category{
+		Name:       name,
+		MerchantID: merchant.ID,
+	}
+
+	newCategory, err := s.CategoryRepository.StoreCategory(category)
 	if err != nil {
 		return nil, errors.Internal("Failed to create category", err.Error())
 	}
@@ -89,6 +121,30 @@ func (s *CategoryServiceInstance) GetAllCategoriesByMerchantID(merchantID string
 		return nil, errors.Internal("Failed to get categories by merchant ID", err.Error())
 	}
 	return categories, nil
+}
+
+// Getting all categories by its merchant username
+// This function will retrieve all categories associated with a specific merchant username.
+// It returns a slice of categories or an error if the operation fails.
+func (s *CategoryServiceInstance) GetAllCategoriesByMerchantUsername(username string) ([]*models.Category, *errors.CustomError) {
+	categories, err := s.CategoryRepository.FindAllCategoriesByMerchantUsername(username)
+	if err != nil {
+		return nil, errors.Internal("Failed to get categories by merchant username", err.Error())
+	}
+	return categories, nil
+}
+
+func (s *CategoryServiceInstance) IsCategoryExistsByMerchantUsername(name, username string) (bool, *errors.CustomError) {
+
+	if _, err := s.CategoryRepository.FindCategoryByNameAndMerchantUsername(name, username); err != nil {
+		if stderror.Is(err, gorm.ErrRecordNotFound) {
+			return true, nil
+		}
+
+		return false, errors.Internal("Failed to check category existence", err.Error())
+	}
+
+	return false, nil
 }
 
 // Update an existing category

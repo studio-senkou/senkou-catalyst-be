@@ -15,6 +15,11 @@ func InitMerchantRoutes(app *fiber.App, merchantController *controllers.Merchant
 		merchantController.CreateMerchant,
 	)
 
+	app.Post(
+		"/validate-merchant-username",
+		merchantController.ValidateMerchantUsername,
+	)
+
 	app.Get(
 		"/merchants",
 		middlewares.JWTProtected,

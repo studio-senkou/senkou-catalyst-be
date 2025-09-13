@@ -222,6 +222,44 @@ func (h *MerchantController) GetMerchantByUsername(c *fiber.Ctx) error {
 	})
 }
 
+// Validate merchant username
+// @Summary Validate Merchant Username
+// @Description Check if a merchant username is available
+// @Tags Merchant
+// @Accept json
+// @Produce json
+// @Param dtos.ValidateMerchantUsernameRequestDTO body dtos.ValidateMerchantUsernameRequestDTO true "Validate Merchant Username request"
+// @Success 200 {object} fiber.Map{data=fiber.Map{is_available=bool},message=string}
+// @Failure 400 {object} fiber.Map{message=string,errors=[]string}
+// @Failure 500 {object} fiber.Map{message=string,error=string}
+// @Router /validate-merchant-username [post]
+func (h *MerchantController) ValidateMerchantUsername(c *fiber.Ctx) error {
+	usernameValidationRequest := new(dtos.ValidateMerchantUsernameRequestDTO)
+
+	if err := validator.Validate(c, usernameValidationRequest); err != nil {
+		if vErr, ok := err.(*validator.ValidationError); ok {
+			return response.ValidationError(c, "Validation failed", vErr.Errors)
+		}
+
+		return response.InternalError(c, "Internal server error", map[string]any{
+			"error": err.Error(),
+		})
+	}
+
+	isAvailable, appError := h.MerchantService.IsMerchantUsernameAvailable(usernameValidationRequest.Username)
+
+	if appError != nil {
+		return response.InternalError(c, "Cannot validate merchant username due to internal error", appError.Details)
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"data": fiber.Map{
+			"is_available": isAvailable,
+		},
+		"message": "Merchant username validation successful",
+	})
+}
+
 // Update merchant
 // @Summary Update Merchant
 // @Description Update a merchant's details

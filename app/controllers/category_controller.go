@@ -13,12 +13,14 @@ import (
 )
 
 type CategoryController struct {
-	categoryService services.CategoryService
+	CategoryService services.CategoryService
+	MerchantService services.MerchantService
 }
 
-func NewCategoryController(categoryService services.CategoryService) *CategoryController {
+func NewCategoryController(categoryService services.CategoryService, merchantService services.MerchantService) *CategoryController {
 	return &CategoryController{
-		categoryService: categoryService,
+		CategoryService: categoryService,
+		MerchantService: merchantService,
 	}
 }
 
@@ -54,7 +56,7 @@ func (h *CategoryController) CreateCategory(c *fiber.Ctx) error {
 		})
 	}
 
-	if category, err := h.categoryService.GetCategoryByName(createCategoryDTO.Name, merchantID); err != nil {
+	if category, err := h.CategoryService.GetCategoryByName(createCategoryDTO.Name, merchantID); err != nil {
 		if err.Code == 500 {
 			return response.InternalError(c, "Cannot continue to create category due to internal error", err.Details)
 		}
@@ -62,16 +64,98 @@ func (h *CategoryController) CreateCategory(c *fiber.Ctx) error {
 		return response.BadRequest(c, "Cannot continue to create category due to conflict", "Category already exists with the same name for this merchant")
 	}
 
-	category, appError := h.categoryService.CreateNewCategory(createCategoryDTO, merchantID)
-
+	category, appError := h.CategoryService.CreateNewCategory(createCategoryDTO, merchantID)
 	if appError != nil {
-		return response.InternalError(c, "Cannot create the category errdue to internal error", appError.Details)
+		return response.InternalError(c, "Cannot create the category due to internal error", appError.Details)
 	}
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"message": "Category created successfully",
 		"data": fiber.Map{
 			"category": category,
+		},
+	})
+}
+
+// Create new category with merchant username
+// @Summary Create a new category with merchant username
+// @Description Create a new category for a merchant using the merchant's username
+// @Tags Categories
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param username path string true "Merchant Username"
+// @Param CreateCategoryByMerchantUsernameDTO body dtos.CreateCategoryByMerchantUsernameDTO true "Create Category by Merchant Username DTO"
+// @Success 200 {object} fiber.Map{data=fiber.Map{category=models.Category}}
+// @Failure 400 {object} fiber.Map{message=string, errors=[]string}
+// @Failure 500 {object} fiber.Map{message=string, error=string}
+// @Router /merchants/username/{username}/categories [post]
+func (h *CategoryController) CreateCategoryWithMerchantUsername(c *fiber.Ctx) error {
+	username := c.Params("username")
+	if username == "" {
+		return response.BadRequest(c, "Cannot continue to create category", "Invalid merchant username")
+	}
+
+	request := new(dtos.CreateCategoryByMerchantUsernameDTO)
+
+	if err := validator.Validate(c, request); err != nil {
+		if vErr, ok := err.(*validator.ValidationError); ok {
+			return response.ValidationError(c, "Validation failed", vErr.Errors)
+		}
+
+		return response.InternalError(c, "Internal server error", map[string]any{
+			"error": err.Error(),
+		})
+	}
+
+	if isExists, err := h.CategoryService.IsCategoryExistsByMerchantUsername(request.Name, username); isExists || err != nil {
+		if err.Code == 500 {
+			return response.InternalError(c, "Cannot continue to create category due to internal error", err.Details)
+		}
+
+		return response.BadRequest(c, "Cannot continue to create category due to conflict", "Category already exists with the same name for this merchant")
+	}
+
+	category, appError := h.CategoryService.CreateCategoryWithMerchantUsername(request.Name, username)
+	if appError != nil {
+		return response.InternalError(c, "Cannot create the category due to internal error", appError.Details)
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"message": "Category created successfully",
+		"data": fiber.Map{
+			"category": category,
+		},
+	})
+}
+
+// Get all categories for a merchant by username
+// @Summary Get all categories for a merchant by username
+// @Description Retrieve all categories associated with a specific merchant using the merchant's username
+// @Tags Categories
+// @Accept json
+// @Produce json
+// @Success 200 {object} fiber.Map{data=fiber.Map{categories=[]models.Category}}
+// @Failure 400 {object} fiber.Map{message=string}
+// @Failure 500 {object} fiber.Map{message=string, error=string}
+// @Router /merchants/username/{username}/categories [get]
+func (h *CategoryController) GetCategoriesByMerchantUsername(c *fiber.Ctx) error {
+	username := c.Params("username")
+
+	if username == "" {
+		return response.BadRequest(c, "Cannot continue to retrieve categories", "Invalid merchant username")
+	}
+
+	categories, appError := h.CategoryService.GetAllCategoriesByMerchantUsername(username)
+
+	if appError != nil {
+		return response.InternalError(c, "Cannot retrieve categories due to internal error", appError.Details)
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"message": "Categories retrieved successfully",
+		"data": fiber.Map{
+			"categories": categories,
 		},
 	})
 }
@@ -88,13 +172,13 @@ func (h *CategoryController) CreateCategory(c *fiber.Ctx) error {
 // @Failure 500 {object} fiber.Map{message=string, error=string}
 // @Router /merchants/{merchantID}/categories [get]
 func (h *CategoryController) GetCategories(c *fiber.Ctx) error {
-	merchantID := c.Params("merchantID")
+	username := c.Params("username")
 
-	if merchantID == "" {
+	if username == "" {
 		return response.BadRequest(c, "Cannot continue to retrieve categories", "Invalid merchant ID")
 	}
 
-	categories, appError := h.categoryService.GetAllCategoriesByMerchantID(merchantID)
+	categories, appError := h.CategoryService.GetAllCategoriesByMerchantUsername(username)
 
 	if appError != nil {
 		return response.InternalError(c, "Cannot retrieve categories due to internal error", appError.Details)
@@ -147,7 +231,7 @@ func (h *CategoryController) UpdateCategory(c *fiber.Ctx) error {
 		return response.InternalError(c, "Internal server error", err.Error())
 	}
 
-	updatedCategory, appError := h.categoryService.UpdateCategory(&models.Category{
+	updatedCategory, appError := h.CategoryService.UpdateCategory(&models.Category{
 		ID:         uint32(parsedCategoryID),
 		Name:       updateCategoryDTO.Name,
 		MerchantID: merchantID,
@@ -192,7 +276,7 @@ func (h *CategoryController) DeleteCategory(c *fiber.Ctx) error {
 		return response.BadRequest(c, "Cannot continue to delete category due to invalid ID", "Invalid category ID: "+err.Error())
 	}
 
-	if err := h.categoryService.DeleteCategory(uint32(parsedCategoryID)); err != nil {
+	if err := h.CategoryService.DeleteCategory(uint32(parsedCategoryID)); err != nil {
 		return response.InternalError(c, "Cannot delete category due to internal error", err.Details)
 	}
 

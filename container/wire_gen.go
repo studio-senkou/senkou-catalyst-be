@@ -74,8 +74,11 @@ func InitializeProductController() (*controllers.ProductController, error) {
 func InitializeCategoryController() (*controllers.CategoryController, error) {
 	db := config.GetDB()
 	categoryRepository := repositories.NewCategoryRepository(db)
-	categoryService := services.NewCategoryService(categoryRepository)
-	categoryController := controllers.NewCategoryController(categoryService)
+	merchantRepository := repositories.NewMerchantRepository(db)
+	categoryService := services.NewCategoryService(categoryRepository, merchantRepository)
+	productRepository := repositories.NewProductRepository(db)
+	merchantService := services.NewMerchantService(merchantRepository, productRepository, categoryRepository)
+	categoryController := controllers.NewCategoryController(categoryService, merchantService)
 	return categoryController, nil
 }
 
@@ -229,8 +232,8 @@ func InitializeContainer() (*Container, error) {
 	merchantController := controllers.NewMerchantController(merchantService, productInteractionService)
 	productService := services.NewProductService(productRepository, userRepository)
 	productController := controllers.NewProductController(productService, userService, productInteractionService)
-	categoryService := services.NewCategoryService(categoryRepository)
-	categoryController := controllers.NewCategoryController(categoryService)
+	categoryService := services.NewCategoryService(categoryRepository, merchantRepository)
+	categoryController := controllers.NewCategoryController(categoryService, merchantService)
 	predefinedCategoryRepository := repositories.NewPredefinedCategoryRepository(db)
 	predefinedCategoryService := services.NewPredefinedCategoryService(predefinedCategoryRepository)
 	predefinedCategoryController := controllers.NewPredefinedCategoryController(predefinedCategoryService)
