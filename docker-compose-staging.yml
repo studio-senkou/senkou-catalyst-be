@@ -11,12 +11,25 @@ services:
       - APP_PORT=5556
       - DB_HOST=postgres
       - DB_PORT=5432
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
       # - DB_USERNAME=${DB_USERNAME:-postgres}
       # - DB_PASSWORD=${DB_PASSWORD:-}
       # - DB_NAME=${DB_NAME:-senkou_catalyst_staging}
       # - AUTH_SECRET=${AUTH_SECRET:-}
     depends_on:
       - postgres
+      - redis
+      - minio
+    networks:
+      - catalyst-staging-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: senkou-catalyst-redis-staging
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
     networks:
       - catalyst-staging-network
 
@@ -40,6 +53,8 @@ services:
     container_name: senkou-catalyst-cloudflare-staging
     restart: unless-stopped
     command: tunnel --no-autoupdate --protocol http2 run --token ${TUNNEL_TOKEN:-}
+    depends_on:
+      - app
     networks:
       - catalyst-staging-network
 
@@ -66,6 +81,8 @@ networks:
 
 volumes:
   postgres_data_staging:
+    driver: local
+  redis_data_staging:
     driver: local
   minio_data_staging:
     driver: local
