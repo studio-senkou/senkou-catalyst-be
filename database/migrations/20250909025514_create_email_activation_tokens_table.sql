@@ -10,11 +10,22 @@ CREATE TABLE IF NOT EXISTS email_activation_tokens (
     deleted_at TIMESTAMP
 );
 
-ALTER TABLE email_activation_tokens
-    ADD CONSTRAINT fk_activation_user
-        FOREIGN KEY (user_id)
-        REFERENCES users(id)
-        ON DELETE CASCADE;
+DO $$
+    BEGIN
+        -- Verify user foreign key constraint is not exists
+        -- If already exists, skip the migration to avoid errors
+        IF NOT EXISTS (
+            SELECT 1
+            FROM pg_constraint
+            WHERE conname = 'fk_activation_user'
+        ) THEN
+            ALTER TABLE email_activation_tokens
+                ADD CONSTRAINT fk_activation_user
+                FOREIGN KEY (user_id) REFERENCES users(id)
+                ON DELETE CASCADE;
+        END IF;
+    END;
+$$;
 
 -- migrate:down
 ALTER TABLE email_activation_tokens

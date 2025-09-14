@@ -12,19 +12,56 @@ CREATE TABLE IF NOT EXISTS user_subscriptions (
     deleted_at TIMESTAMP
 );
 
-ALTER TABLE user_subscriptions
-    ADD CONSTRAINT fk_user_subscriptions_user
-    FOREIGN KEY (user_id) REFERENCES users(id)
-    ON DELETE CASCADE;
+DO $$
+    BEGIN
 
-ALTER TABLE user_subscriptions
-    ADD CONSTRAINT fk_user_subscriptions_subscription
-    FOREIGN KEY (sub_id) REFERENCES subscriptions(id)
-    ON DELETE CASCADE;
+        -- Verify user foreign key constraint is not exists
+        -- If already exists, skip the migration to avoid errors
+        IF NOT EXISTS (
+            SELECT 1
+            FROM pg_constraint
+            WHERE conname = 'fk_user_subscriptions_user'
+        ) THEN
+            ALTER TABLE user_subscriptions
+                ADD CONSTRAINT fk_user_subscriptions_user
+                FOREIGN KEY (user_id) REFERENCES users(id)
+                ON DELETE CASCADE;
+        END IF;
 
-CREATE INDEX idx_user_subscriptions_user_id ON user_subscriptions(user_id);
+        -- Verify subscription foreign key constraint is not exists
+        -- If already exists, skip the migration to avoid errors
+        IF NOT EXISTS (
+            SELECT 1
+            FROM pg_constraint
+            WHERE conname = 'fk_user_subscriptions_subscription'
+        ) THEN
+            ALTER TABLE user_subscriptions
+                ADD CONSTRAINT fk_user_subscriptions_subscription
+                FOREIGN KEY (sub_id) REFERENCES subscriptions(id)
+                ON DELETE CASCADE;
+        END IF;
 
-CREATE INDEX idx_user_subscriptions_sub_id ON user_subscriptions(sub_id);
+        -- Verify user index is not exists
+        -- If already exists, skip the migration to avoid errors
+        IF NOT EXISTS (
+            SELECT 1
+            FROM pg_indexes
+            WHERE indexname = 'idx_user_subscriptions_user_id'
+        ) THEN
+            CREATE INDEX idx_user_subscriptions_user_id ON user_subscriptions(user_id);
+        END IF;
+
+        -- Verify subscription index is not exists
+        -- If already exists, skip the migration to avoid errors
+        IF NOT EXISTS (
+            SELECT 1
+            FROM pg_indexes
+            WHERE indexname = 'idx_user_subscriptions_sub_id'
+        ) THEN
+            CREATE INDEX idx_user_subscriptions_sub_id ON user_subscriptions(sub_id);
+        END IF;
+    END;
+$$;
 
 -- migrate:down
 ALTER TABLE user_subscriptions

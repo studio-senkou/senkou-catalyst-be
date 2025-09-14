@@ -9,12 +9,33 @@ CREATE TABLE IF NOT EXISTS subscription_plans (
     deleted_at TIMESTAMP
 );
 
-ALTER TABLE subscription_plans
-    ADD CONSTRAINT fk_subscription_plans_subscription
-    FOREIGN KEY (sub_id) REFERENCES subscriptions(id)
-    ON DELETE CASCADE;
+DO $$
+    BEGIN
 
-CREATE INDEX idx_subscription_plans_sub_id ON subscription_plans(sub_id);
+        -- Verify subscription foreign key constraint is not exists
+        -- If already exists, skip the migration to avoid errors
+        IF NOT EXISTS (
+            SELECT 1
+            FROM pg_constraint
+            WHERE conname = 'fk_subscription_plans_subscription'
+        ) THEN
+            ALTER TABLE subscription_plans
+                ADD CONSTRAINT fk_subscription_plans_subscription
+                FOREIGN KEY (sub_id) REFERENCES subscriptions(id)
+                ON DELETE CASCADE;
+        END IF;
+
+        -- Verify subscription index is not exists
+        -- If already exists, skip the migration to avoid errors
+        IF NOT EXISTS (
+            SELECT 1
+            FROM pg_indexes
+            WHERE indexname = 'idx_subscription_plans_sub_id'
+        ) THEN
+            CREATE INDEX idx_subscription_plans_sub_id ON subscription_plans(sub_id);
+        END IF;
+    END;
+$$;
 
 -- migrate:down
 ALTER TABLE subscription_plans
