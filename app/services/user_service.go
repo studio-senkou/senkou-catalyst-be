@@ -4,6 +4,7 @@ import (
 	"context"
 	stderr "errors"
 	"fmt"
+	"senkou-catalyst-be/app/dtos"
 	"senkou-catalyst-be/app/models"
 	"senkou-catalyst-be/platform/errors"
 	"senkou-catalyst-be/repositories"
@@ -22,7 +23,9 @@ import (
 type UserService interface {
 	Activate(token string) *errors.CustomError
 	Create(user *models.User, merchant *models.Merchant) (*models.User, *errors.CustomError)
+	CreateOAuth(user *models.User, oauthAccount *dtos.CreateOAuthAccountDTO, merchant *models.Merchant) (*models.User, *errors.CustomError)
 	GetAll(params *query.QueryParams) (*[]models.User, *query.PaginationResponse, *errors.CustomError)
+	GetByEmail(email string) (*models.User, *errors.CustomError)
 	GetUserDetail(userID uint32) (*models.User, *errors.CustomError)
 	IsEmailVerified(userID uint32) (bool, *errors.CustomError)
 	SendEmailActivation(user *models.User) *errors.CustomError
@@ -32,14 +35,16 @@ type UserService interface {
 
 type UserServiceInstance struct {
 	UserRepository            repositories.UserRepository
+	OAuthAccountRepository    repositories.OAuthRepository
 	EmailActivationRepository repositories.EmailActivationRepository
 	MerchantRepository        repositories.MerchantRepository
 	QueueService              *queue.QueueService
 }
 
-func NewUserService(userRepository repositories.UserRepository, merchantRepository repositories.MerchantRepository, emailActivationRepo repositories.EmailActivationRepository, queueService *queue.QueueService) UserService {
+func NewUserService(userRepository repositories.UserRepository, oauthRepository repositories.OAuthRepository, merchantRepository repositories.MerchantRepository, emailActivationRepo repositories.EmailActivationRepository, queueService *queue.QueueService) UserService {
 	return &UserServiceInstance{
 		UserRepository:            userRepository,
+		OAuthAccountRepository:    oauthRepository,
 		EmailActivationRepository: emailActivationRepo,
 		MerchantRepository:        merchantRepository,
 		QueueService:              queueService,
@@ -91,6 +96,45 @@ func (s *UserServiceInstance) Create(user *models.User, merchant *models.Merchan
 	return createdUser, nil
 }
 
+func (s *UserServiceInstance) CreateOAuth(user *models.User, oauthRequest *dtos.CreateOAuthAccountDTO, merchant *models.Merchant) (*models.User, *errors.CustomError) {
+
+	createdUser, err := s.UserRepository.Create(user)
+	if err != nil {
+		return nil, errors.Internal("Failed to create user", err.Error())
+	}
+
+	merchant.OwnerID = createdUser.ID
+
+	oauthAccount := &models.OauthAccount{
+		UserID:       uint(createdUser.ID),
+		Provider:     oauthRequest.Provider,
+		AccessToken:  oauthRequest.AccessToken,
+		RefreshToken: &oauthRequest.RefreshToken,
+		TokenExpiry:  oauthRequest.ExpiresAt,
+	}
+
+	if _, err := s.OAuthAccountRepository.Store(oauthAccount); err != nil {
+		return nil, errors.Internal("Failed to create OAuth account", err.Error())
+	}
+
+	if merchant == nil {
+		return createdUser, nil
+	}
+
+	uuidStr := uuid.New().String()
+
+	merchant.ID = strings.ReplaceAll(uuidStr, "-", "")[:16]
+
+	createdMerchant, err := s.MerchantRepository.Create(merchant)
+	if err != nil {
+		return nil, errors.Internal("Failed to create merchant", err.Error())
+	}
+
+	createdUser.Merchants = append(createdUser.Merchants, createdMerchant)
+
+	return createdUser, nil
+}
+
 // Get all users from the database
 // Returns a slice of User models or an error if the operation fails
 func (s *UserServiceInstance) GetAll(params *query.QueryParams) (*[]models.User, *query.PaginationResponse, *errors.CustomError) {
@@ -102,6 +146,22 @@ func (s *UserServiceInstance) GetAll(params *query.QueryParams) (*[]models.User,
 	pagination := query.CalculatePagination(params.Page, params.Limit, total)
 
 	return users, pagination, nil
+}
+
+// Get user by email
+// Returns the user model or an error if any
+func (s *UserServiceInstance) GetByEmail(email string) (*models.User, *errors.CustomError) {
+
+	fmt.Println("Looking up user by email:", email)
+
+	user, err := s.UserRepository.FindByEmail(email)
+	if err != nil {
+		if stderr.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.NotFound("User not found")
+		}
+		return nil, errors.Internal("Failed to retrieve user by email", err.Error())
+	}
+	return user, nil
 }
 
 // Verify user credentials during login

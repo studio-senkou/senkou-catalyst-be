@@ -8,13 +8,34 @@ CREATE TABLE IF NOT EXISTS categories (
     deleted_at TIMESTAMP
 );
 
-ALTER TABLE categories
-    ADD CONSTRAINT fk_categories_merchant
-    FOREIGN KEY (merchant_id)
-    REFERENCES merchants(id)
-    ON DELETE CASCADE;
+DO $$
+    BEGIN
 
-CREATE INDEX idx_categories_merchant_id ON categories(merchant_id);
+        -- Verify merchant foreign key constraint is not exists
+        -- If already exists, skip the migration to avoid errors
+        IF NOT EXISTS (
+            SELECT 1
+            FROM pg_constraint
+            WHERE conname = 'fk_categories_merchant'
+        ) THEN
+            ALTER TABLE categories
+                ADD CONSTRAINT fk_categories_merchant
+                FOREIGN KEY (merchant_id)
+                REFERENCES merchants(id)
+                ON DELETE CASCADE;
+        END IF;
+
+        -- Verify merchant index is not exists
+        -- If already exists, skip the migration to avoid errors
+        IF NOT EXISTS (
+            SELECT 1
+            FROM pg_indexes
+            WHERE indexname = 'idx_categories_merchant_id'
+        ) THEN
+            CREATE INDEX idx_categories_merchant_id ON categories(merchant_id);
+        END IF;
+    END;
+$$;
 
 -- migrate:down
 ALTER TABLE categories

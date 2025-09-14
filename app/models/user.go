@@ -16,6 +16,7 @@ type User struct {
 	Phone           string         `json:"phone"        gorm:"type:varchar(20);unique;not null"`
 	Password        []byte         `json:"-"            gorm:"type:varchar(255);not null"`
 	Role            string         `json:"role"         gorm:"type:varchar(20);not null;default:user"`
+	IsOauth         bool           `json:"is_oauth"     gorm:"type:boolean;not null;default:false"`
 	EmailVerifiedAt *time.Time     `json:"email_verified_at" gorm:"type:timestamp;default:null"`
 	CreatedAt       time.Time      `json:"created_at"   gorm:"type:timestamp;default:CURRENT_TIMESTAMP"`
 	UpdatedAt       time.Time      `json:"updated_at"   gorm:"type:timestamp;default:CURRENT_TIMESTAMP"`

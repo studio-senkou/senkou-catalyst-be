@@ -31,6 +31,7 @@ var RepositorySet = wire.NewSet(
 	repositories.NewCategoryRepository,
 	repositories.NewPredefinedCategoryRepository,
 	repositories.NewAuthRepository,
+	repositories.NewOAuthRepository,
 	repositories.NewSubscriptionRepository,
 	repositories.NewSubscriptionPlanRepository,
 	repositories.NewSubscriptionOrderRepository,
@@ -59,6 +60,7 @@ var ControllerSet = wire.NewSet(
 	controllers.NewCategoryController,
 	controllers.NewPredefinedCategoryController,
 	controllers.NewAuthController,
+	controllers.NewOAuthController,
 	controllers.NewSubscriptionController,
 	controllers.NewPaymentMethodsController,
 	controllers.NewPaymentController,
@@ -155,6 +157,17 @@ func InitializeAuthController() (*controllers.AuthController, error) {
 		ServiceSet,
 		ControllerSet,
 		UtilSet,
+		QueueSet,
+	)
+	return nil, nil
+}
+
+func InitializeOAuthController() (*controllers.OAuthController, error) {
+	wire.Build(
+		DatabaseSet,
+		ControllerSet,
+		ServiceSet,
+		RepositorySet,
 		QueueSet,
 	)
 	return nil, nil
@@ -266,6 +279,7 @@ func NewContainer(
 	categoryController *controllers.CategoryController,
 	predefinedCategoryController *controllers.PredefinedCategoryController,
 	authController *controllers.AuthController,
+	oauthController *controllers.OAuthController,
 	subscriptionController *controllers.SubscriptionController,
 	paymentMethodsController *controllers.PaymentMethodsController,
 	paymentController *controllers.PaymentController,
@@ -281,6 +295,7 @@ func NewContainer(
 		CategoryController:           categoryController,
 		PredefinedCategoryController: predefinedCategoryController,
 		AuthController:               authController,
+		OAuthController:              oauthController,
 		SubscriptionController:       subscriptionController,
 		PaymentMethodsController:     paymentMethodsController,
 		PaymentController:            paymentController,

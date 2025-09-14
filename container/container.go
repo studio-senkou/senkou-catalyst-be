@@ -14,6 +14,7 @@ type Container struct {
 	CategoryController           *controllers.CategoryController
 	PredefinedCategoryController *controllers.PredefinedCategoryController
 	AuthController               *controllers.AuthController
+	OAuthController              *controllers.OAuthController
 	SubscriptionController       *controllers.SubscriptionController
 	PaymentMethodsController     *controllers.PaymentMethodsController
 	PaymentController            *controllers.PaymentController

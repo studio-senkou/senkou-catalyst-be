@@ -9,13 +9,34 @@ CREATE TABLE IF NOT EXISTS merchants (
     deleted_at TIMESTAMP
 );
 
-ALTER TABLE merchants 
-    ADD CONSTRAINT fk_merchant_owner
-        FOREIGN KEY (owner_id)
-        REFERENCES users(id)
-        ON DELETE SET NULL;
+DO $$
+    BEGIN 
 
-CREATE INDEX idx_merchants_owner_id ON merchants(owner_id);
+        -- Verify owner foreign key constraint is not exists
+        -- If already exists, skip the migration to avoid errors
+        IF NOT EXISTS (
+            SELECT 1
+            FROM pg_constraint
+            WHERE conname = 'fk_merchant_owner'
+        ) THEN
+            ALTER TABLE merchants 
+                ADD CONSTRAINT fk_merchant_owner
+                    FOREIGN KEY (owner_id)
+                    REFERENCES users(id)
+                    ON DELETE SET NULL;
+        END IF;
+
+        -- Verify owner index is not exists
+        -- If already exists, skip the migration to avoid errors
+        IF NOT EXISTS (
+            SELECT 1
+            FROM pg_indexes
+            WHERE indexname = 'idx_merchants_owner_id'
+        ) THEN
+            CREATE INDEX idx_merchants_owner_id ON merchants(owner_id);
+        END IF;
+    END;
+$$;
 
 -- migrate:down
 ALTER TABLE merchants 

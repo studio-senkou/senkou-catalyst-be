@@ -16,7 +16,7 @@ func SeedUsers(db *gorm.DB) error {
 	merchantRepository := repositories.NewMerchantRepository(db)
 	emailActivationRepo := repositories.NewEmailActivationRepository(db)
 
-	userService := services.NewUserService(userRepository, merchantRepository, emailActivationRepo, nil)
+	userService := services.NewUserService(userRepository, nil, merchantRepository, emailActivationRepo, nil)
 
 	adminPasswordStr := config.GetEnv("SEEDER_ADMIN_PASSWORD", "admin123")
 

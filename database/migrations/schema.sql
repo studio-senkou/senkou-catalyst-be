@@ -19,7 +19,7 @@ SET default_table_access_method = heap;
 --
 
 CREATE TABLE public.categories (
-    id integer NOT NULL,
+    id bigint NOT NULL,
     name character varying(100) NOT NULL,
     merchant_id character(16) NOT NULL,
     created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
@@ -33,7 +33,6 @@ CREATE TABLE public.categories (
 --
 
 CREATE SEQUENCE public.categories_id_seq
-    AS integer
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -91,12 +90,48 @@ ALTER SEQUENCE public.email_activation_tokens_id_seq OWNED BY public.email_activ
 CREATE TABLE public.merchants (
     id character(16) NOT NULL,
     name character varying(100) NOT NULL,
-    username character varying(100) NOT NULL,
-    owner_id integer,
+    owner_id integer NOT NULL,
     created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
     updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
-    deleted_at timestamp without time zone
+    deleted_at timestamp without time zone,
+    username character varying(100) DEFAULT NULL::character varying
 );
+
+
+--
+-- Name: oauth_accounts; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.oauth_accounts (
+    id integer NOT NULL,
+    user_id integer NOT NULL,
+    provider character varying(255) NOT NULL,
+    access_token text NOT NULL,
+    refresh_token text,
+    token_expiry timestamp without time zone,
+    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP
+);
+
+
+--
+-- Name: oauth_accounts_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.oauth_accounts_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: oauth_accounts_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.oauth_accounts_id_seq OWNED BY public.oauth_accounts.id;
 
 
 --
@@ -104,21 +139,21 @@ CREATE TABLE public.merchants (
 --
 
 CREATE TABLE public.payment_transactions (
-    id uuid NOT NULL,
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
     payment_type character varying(50) NOT NULL,
     payment_channel character varying(50) NOT NULL,
-    fraud_status character varying(20),
+    fraud_status character varying(20) DEFAULT 'pending'::character varying,
     amount numeric(15,2) NOT NULL,
-    currency character varying(10) NOT NULL,
-    status character varying(20) NOT NULL,
+    currency character varying(10) DEFAULT 'IDR'::character varying NOT NULL,
+    status character varying(20) DEFAULT 'pending'::character varying NOT NULL,
     transaction_id character varying(100),
     transaction_time timestamp without time zone,
     signature_key character varying(255),
     expired_at timestamp without time zone,
     settled_at timestamp without time zone,
-    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
-    updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
-    deleted_at timestamp without time zone
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    deleted_at timestamp with time zone
 );
 
 
@@ -127,12 +162,13 @@ CREATE TABLE public.payment_transactions (
 --
 
 CREATE TABLE public.predefined_categories (
-    id integer NOT NULL,
+    id bigint NOT NULL,
     name character varying(100) NOT NULL,
     description text,
-    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
-    updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
-    deleted_at timestamp without time zone
+    image_url text,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    deleted_at timestamp with time zone
 );
 
 
@@ -141,7 +177,6 @@ CREATE TABLE public.predefined_categories (
 --
 
 CREATE SEQUENCE public.predefined_categories_id_seq
-    AS integer
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -161,14 +196,14 @@ ALTER SEQUENCE public.predefined_categories_id_seq OWNED BY public.predefined_ca
 --
 
 CREATE TABLE public.product_metrics (
-    id integer NOT NULL,
-    product_id uuid NOT NULL,
-    origin character varying(20) NOT NULL,
+    id bigint NOT NULL,
+    product_id uuid,
+    origin character varying(20),
     ua_browser text,
     ua_os text,
     interaction text,
     created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
-    updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP
+    updated_at timestamp without time zone
 );
 
 
@@ -177,7 +212,6 @@ CREATE TABLE public.product_metrics (
 --
 
 CREATE SEQUENCE public.product_metrics_id_seq
-    AS integer
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -199,12 +233,12 @@ ALTER SEQUENCE public.product_metrics_id_seq OWNED BY public.product_metrics.id;
 CREATE TABLE public.products (
     id uuid NOT NULL,
     merchant_id character(16) NOT NULL,
-    category_id integer,
+    category_id bigint,
     title character varying(150) NOT NULL,
     price character varying(30) NOT NULL,
     description text,
     affiliate_url text NOT NULL,
-    photos json,
+    photos json DEFAULT '[]'::json,
     created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
     updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
     deleted_at timestamp without time zone
@@ -225,15 +259,15 @@ CREATE TABLE public.schema_migrations (
 --
 
 CREATE TABLE public.subscription_orders (
-    id uuid NOT NULL,
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
     user_id integer NOT NULL,
     subscription_id integer NOT NULL,
-    payment_transaction_id uuid NOT NULL,
-    amount numeric(10,2) NOT NULL,
-    status character varying(50) DEFAULT 'pending'::character varying,
-    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
-    updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
-    deleted_at timestamp without time zone
+    payment_transaction_id uuid,
+    amount numeric(15,2) NOT NULL,
+    status character varying(20) DEFAULT 'pending'::character varying,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    deleted_at timestamp with time zone
 );
 
 
@@ -245,10 +279,9 @@ CREATE TABLE public.subscription_plans (
     id integer NOT NULL,
     sub_id integer NOT NULL,
     name character varying(100) NOT NULL,
-    value text,
+    value text NOT NULL,
     created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
-    updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
-    deleted_at timestamp without time zone
+    updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP
 );
 
 
@@ -313,12 +346,11 @@ ALTER SEQUENCE public.subscriptions_id_seq OWNED BY public.subscriptions.id;
 --
 
 CREATE TABLE public.user_has_tokens (
-    id integer NOT NULL,
+    id bigint NOT NULL,
     user_id integer NOT NULL,
     token character varying(255) NOT NULL,
     created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
-    updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
-    deleted_at timestamp without time zone
+    updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP
 );
 
 
@@ -327,7 +359,6 @@ CREATE TABLE public.user_has_tokens (
 --
 
 CREATE SEQUENCE public.user_has_tokens_id_seq
-    AS integer
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -353,10 +384,9 @@ CREATE TABLE public.user_subscriptions (
     started_at timestamp without time zone NOT NULL,
     expired_at timestamp without time zone NOT NULL,
     is_active boolean DEFAULT false,
-    payment_status character varying(50) DEFAULT 'pending'::character varying,
+    payment_status character varying(50) DEFAULT 'pending'::character varying NOT NULL,
     created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
-    updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
-    deleted_at timestamp without time zone
+    updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP
 );
 
 
@@ -388,13 +418,14 @@ CREATE TABLE public.users (
     id integer NOT NULL,
     name character varying(100) NOT NULL,
     email character varying(100) NOT NULL,
-    phone character varying(15),
+    phone character varying(20) NOT NULL,
     password character varying(255) NOT NULL,
-    role character varying(50) NOT NULL,
+    role character varying(20) DEFAULT 'user'::character varying NOT NULL,
     created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
     updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
     deleted_at timestamp without time zone,
-    email_verified_at timestamp without time zone
+    email_verified_at timestamp without time zone,
+    is_oauth boolean DEFAULT false
 );
 
 
@@ -430,6 +461,13 @@ ALTER TABLE ONLY public.categories ALTER COLUMN id SET DEFAULT nextval('public.c
 --
 
 ALTER TABLE ONLY public.email_activation_tokens ALTER COLUMN id SET DEFAULT nextval('public.email_activation_tokens_id_seq'::regclass);
+
+
+--
+-- Name: oauth_accounts id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.oauth_accounts ALTER COLUMN id SET DEFAULT nextval('public.oauth_accounts_id_seq'::regclass);
 
 
 --
@@ -514,11 +552,19 @@ ALTER TABLE ONLY public.merchants
 
 
 --
--- Name: merchants merchants_username_key; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: oauth_accounts oauth_accounts_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY public.merchants
-    ADD CONSTRAINT merchants_username_key UNIQUE (username);
+ALTER TABLE ONLY public.oauth_accounts
+    ADD CONSTRAINT oauth_accounts_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: oauth_accounts oauth_accounts_user_id_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.oauth_accounts
+    ADD CONSTRAINT oauth_accounts_user_id_key UNIQUE (user_id);
 
 
 --
@@ -527,22 +573,6 @@ ALTER TABLE ONLY public.merchants
 
 ALTER TABLE ONLY public.payment_transactions
     ADD CONSTRAINT payment_transactions_pkey PRIMARY KEY (id);
-
-
---
--- Name: payment_transactions payment_transactions_transaction_id_key; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.payment_transactions
-    ADD CONSTRAINT payment_transactions_transaction_id_key UNIQUE (transaction_id);
-
-
---
--- Name: predefined_categories predefined_categories_name_key; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.predefined_categories
-    ADD CONSTRAINT predefined_categories_name_key UNIQUE (name);
 
 
 --
@@ -602,6 +632,38 @@ ALTER TABLE ONLY public.subscriptions
 
 
 --
+-- Name: merchants uni_merchants_owner_id; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.merchants
+    ADD CONSTRAINT uni_merchants_owner_id UNIQUE (owner_id);
+
+
+--
+-- Name: user_has_tokens uni_user_has_tokens_token; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.user_has_tokens
+    ADD CONSTRAINT uni_user_has_tokens_token UNIQUE (token);
+
+
+--
+-- Name: users uni_users_email; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.users
+    ADD CONSTRAINT uni_users_email UNIQUE (email);
+
+
+--
+-- Name: users uni_users_phone; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.users
+    ADD CONSTRAINT uni_users_phone UNIQUE (phone);
+
+
+--
 -- Name: user_has_tokens user_has_tokens_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -618,27 +680,18 @@ ALTER TABLE ONLY public.user_subscriptions
 
 
 --
--- Name: users users_email_key; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.users
-    ADD CONSTRAINT users_email_key UNIQUE (email);
-
-
---
--- Name: users users_phone_key; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.users
-    ADD CONSTRAINT users_phone_key UNIQUE (phone);
-
-
---
 -- Name: users users_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.users
     ADD CONSTRAINT users_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: idx_categories_deleted_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_categories_deleted_at ON public.categories USING btree (deleted_at);
 
 
 --
@@ -649,10 +702,52 @@ CREATE INDEX idx_categories_merchant_id ON public.categories USING btree (mercha
 
 
 --
+-- Name: idx_merchants_deleted_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_merchants_deleted_at ON public.merchants USING btree (deleted_at);
+
+
+--
 -- Name: idx_merchants_owner_id; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX idx_merchants_owner_id ON public.merchants USING btree (owner_id);
+
+
+--
+-- Name: idx_payment_transactions_created_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_payment_transactions_created_at ON public.payment_transactions USING btree (created_at);
+
+
+--
+-- Name: idx_payment_transactions_deleted_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_payment_transactions_deleted_at ON public.payment_transactions USING btree (deleted_at);
+
+
+--
+-- Name: idx_payment_transactions_status; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_payment_transactions_status ON public.payment_transactions USING btree (status);
+
+
+--
+-- Name: idx_payment_transactions_transaction_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_payment_transactions_transaction_id ON public.payment_transactions USING btree (transaction_id);
+
+
+--
+-- Name: idx_predefined_categories_deleted_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_predefined_categories_deleted_at ON public.predefined_categories USING btree (deleted_at);
 
 
 --
@@ -670,6 +765,13 @@ CREATE INDEX idx_products_category_id ON public.products USING btree (category_i
 
 
 --
+-- Name: idx_products_deleted_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_products_deleted_at ON public.products USING btree (deleted_at);
+
+
+--
 -- Name: idx_products_merchant_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -677,10 +779,24 @@ CREATE INDEX idx_products_merchant_id ON public.products USING btree (merchant_i
 
 
 --
+-- Name: idx_subscription_orders_deleted_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_subscription_orders_deleted_at ON public.subscription_orders USING btree (deleted_at);
+
+
+--
 -- Name: idx_subscription_orders_payment_transaction_id; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX idx_subscription_orders_payment_transaction_id ON public.subscription_orders USING btree (payment_transaction_id);
+
+
+--
+-- Name: idx_subscription_orders_status; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_subscription_orders_status ON public.subscription_orders USING btree (status);
 
 
 --
@@ -705,6 +821,13 @@ CREATE INDEX idx_subscription_plans_sub_id ON public.subscription_plans USING bt
 
 
 --
+-- Name: idx_subscriptions_deleted_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_subscriptions_deleted_at ON public.subscriptions USING btree (deleted_at);
+
+
+--
 -- Name: idx_user_subscriptions_sub_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -716,6 +839,13 @@ CREATE INDEX idx_user_subscriptions_sub_id ON public.user_subscriptions USING bt
 --
 
 CREATE INDEX idx_user_subscriptions_user_id ON public.user_subscriptions USING btree (user_id);
+
+
+--
+-- Name: idx_users_deleted_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_users_deleted_at ON public.users USING btree (deleted_at);
 
 
 --
@@ -743,6 +873,22 @@ ALTER TABLE ONLY public.merchants
 
 
 --
+-- Name: categories fk_merchants_categories; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.categories
+    ADD CONSTRAINT fk_merchants_categories FOREIGN KEY (merchant_id) REFERENCES public.merchants(id);
+
+
+--
+-- Name: subscription_orders fk_payment_transactions_subscription_order; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.subscription_orders
+    ADD CONSTRAINT fk_payment_transactions_subscription_order FOREIGN KEY (payment_transaction_id) REFERENCES public.payment_transactions(id);
+
+
+--
 -- Name: product_metrics fk_product; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -751,11 +897,27 @@ ALTER TABLE ONLY public.product_metrics
 
 
 --
+-- Name: product_metrics fk_product_metrics_product; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.product_metrics
+    ADD CONSTRAINT fk_product_metrics_product FOREIGN KEY (product_id) REFERENCES public.products(id);
+
+
+--
 -- Name: products fk_products_category; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.products
-    ADD CONSTRAINT fk_products_category FOREIGN KEY (category_id) REFERENCES public.categories(id) ON DELETE SET NULL;
+    ADD CONSTRAINT fk_products_category FOREIGN KEY (category_id) REFERENCES public.categories(id);
+
+
+--
+-- Name: product_metrics fk_products_interactions; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.product_metrics
+    ADD CONSTRAINT fk_products_interactions FOREIGN KEY (product_id) REFERENCES public.products(id);
 
 
 --
@@ -763,15 +925,7 @@ ALTER TABLE ONLY public.products
 --
 
 ALTER TABLE ONLY public.products
-    ADD CONSTRAINT fk_products_merchant FOREIGN KEY (merchant_id) REFERENCES public.merchants(id) ON DELETE CASCADE;
-
-
---
--- Name: subscription_orders fk_subscription_orders_payment_transaction; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.subscription_orders
-    ADD CONSTRAINT fk_subscription_orders_payment_transaction FOREIGN KEY (payment_transaction_id) REFERENCES public.payment_transactions(id) ON DELETE CASCADE;
+    ADD CONSTRAINT fk_products_merchant FOREIGN KEY (merchant_id) REFERENCES public.merchants(id);
 
 
 --
@@ -779,7 +933,7 @@ ALTER TABLE ONLY public.subscription_orders
 --
 
 ALTER TABLE ONLY public.subscription_orders
-    ADD CONSTRAINT fk_subscription_orders_subscription FOREIGN KEY (subscription_id) REFERENCES public.subscriptions(id) ON DELETE CASCADE;
+    ADD CONSTRAINT fk_subscription_orders_subscription FOREIGN KEY (subscription_id) REFERENCES public.subscriptions(id);
 
 
 --
@@ -787,7 +941,7 @@ ALTER TABLE ONLY public.subscription_orders
 --
 
 ALTER TABLE ONLY public.subscription_orders
-    ADD CONSTRAINT fk_subscription_orders_user FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
+    ADD CONSTRAINT fk_subscription_orders_user FOREIGN KEY (user_id) REFERENCES public.users(id);
 
 
 --
@@ -799,6 +953,14 @@ ALTER TABLE ONLY public.subscription_plans
 
 
 --
+-- Name: subscription_plans fk_subscriptions_plans; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.subscription_plans
+    ADD CONSTRAINT fk_subscriptions_plans FOREIGN KEY (sub_id) REFERENCES public.subscriptions(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
 -- Name: user_has_tokens fk_user_has_tokens; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -807,11 +969,27 @@ ALTER TABLE ONLY public.user_has_tokens
 
 
 --
--- Name: user_subscriptions fk_user_subscriptions_subscription; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: user_has_tokens fk_user_has_tokens_user; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.user_has_tokens
+    ADD CONSTRAINT fk_user_has_tokens_user FOREIGN KEY (user_id) REFERENCES public.users(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: oauth_accounts fk_user_oauth_accounts; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.oauth_accounts
+    ADD CONSTRAINT fk_user_oauth_accounts FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
+
+
+--
+-- Name: user_subscriptions fk_user_subscriptions_sub; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.user_subscriptions
-    ADD CONSTRAINT fk_user_subscriptions_subscription FOREIGN KEY (sub_id) REFERENCES public.subscriptions(id) ON DELETE CASCADE;
+    ADD CONSTRAINT fk_user_subscriptions_sub FOREIGN KEY (sub_id) REFERENCES public.subscriptions(id) ON UPDATE CASCADE ON DELETE CASCADE;
 
 
 --
@@ -819,7 +997,15 @@ ALTER TABLE ONLY public.user_subscriptions
 --
 
 ALTER TABLE ONLY public.user_subscriptions
-    ADD CONSTRAINT fk_user_subscriptions_user FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
+    ADD CONSTRAINT fk_user_subscriptions_user FOREIGN KEY (user_id) REFERENCES public.users(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: merchants fk_users_merchants; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.merchants
+    ADD CONSTRAINT fk_users_merchants FOREIGN KEY (owner_id) REFERENCES public.users(id);
 
 
 --
@@ -844,5 +1030,9 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20250906191449'),
     ('20250906191821'),
     ('20250907031532'),
+    ('20250908155233'),
     ('20250909022807'),
-    ('20250909025514');
+    ('20250909025514'),
+    ('20250914022649'),
+    ('20250914040119'),
+    ('20250914091132');

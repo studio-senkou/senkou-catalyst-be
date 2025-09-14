@@ -13,19 +13,56 @@ CREATE TABLE IF NOT EXISTS products (
     deleted_at TIMESTAMP
 );
 
-ALTER TABLE products
-    ADD CONSTRAINT fk_products_merchant
-    FOREIGN KEY (merchant_id) REFERENCES merchants(id)
-    ON DELETE CASCADE;
+DO $$
+    BEGIN
 
-ALTER TABLE products
-    ADD CONSTRAINT fk_products_category
-    FOREIGN KEY (category_id) REFERENCES categories(id)
-    ON DELETE SET NULL;
+        -- Verify merchant foreign key constraint is not exists
+        -- If already exists, skip the migration to avoid errors
+        IF NOT EXISTS (
+            SELECT 1
+            FROM pg_constraint
+            WHERE conname = 'fk_products_merchant'
+        ) THEN
+            ALTER TABLE products
+                ADD CONSTRAINT fk_products_merchant
+                FOREIGN KEY (merchant_id) REFERENCES merchants(id)
+                ON DELETE CASCADE;
+        END IF;
 
-CREATE INDEX idx_products_merchant_id ON products(merchant_id);
+        -- Verify category foreign key constraint is not exists
+        -- If already exists, skip the migration to avoid errors
+        IF NOT EXISTS (
+            SELECT 1
+            FROM pg_constraint
+            WHERE conname = 'fk_products_category'
+        ) THEN
+            ALTER TABLE products
+                ADD CONSTRAINT fk_products_category
+                FOREIGN KEY (category_id) REFERENCES categories(id)
+                ON DELETE SET NULL;
+        END IF;
 
-CREATE INDEX idx_products_category_id ON products(category_id);
+        -- Verify merchant index is not exists
+        -- If already exists, skip the migration to avoid errors
+        IF NOT EXISTS (
+            SELECT 1
+            FROM pg_indexes
+            WHERE indexname = 'idx_products_merchant_id'
+        ) THEN
+            CREATE INDEX idx_products_merchant_id ON products(merchant_id);
+        END IF;
+
+        -- Verify category index is not exists
+        -- If already exists, skip the migration to avoid errors
+        IF NOT EXISTS (
+            SELECT 1
+            FROM pg_indexes
+            WHERE indexname = 'idx_products_category_id'
+        ) THEN
+            CREATE INDEX idx_products_category_id ON products(category_id);
+        END IF;
+    END;
+$$;
 
 -- migrate:down
 ALTER TABLE products

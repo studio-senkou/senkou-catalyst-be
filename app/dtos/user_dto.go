@@ -7,6 +7,7 @@ type RegisterUserDTO struct {
 	Phone                string  `json:"phone" validate:"required,min=10,max=20"`
 	Password             string  `json:"password" validate:"required,min=8,max=100"`
 	PasswordConfirmation string  `json:"password_confirmation" validate:"required,eqfield=Password"`
+	IsOAuth              bool    `json:"is_oauth,omitempty"`
 }
 
 func (dto *RegisterUserDTO) ErrorMessages() map[string]string {

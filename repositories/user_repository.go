@@ -59,15 +59,15 @@ func (r *userRepository) Create(user *models.User) (*models.User, error) {
 // Find a user by its email
 // Returns the user model or an error if not found
 func (r *userRepository) FindByEmail(email string) (*models.User, error) {
-	var user models.User
+	user := new(models.User)
 
-	err := r.db.Where("email = ?", email).First(&user).Error
+	err := r.db.Where("email = ?", email).First(user).Error
 
 	if err != nil {
 		return nil, err
 	}
 
-	return &user, nil
+	return user, nil
 }
 
 // Find a user by its ID

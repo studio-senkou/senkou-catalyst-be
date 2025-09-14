@@ -7,6 +7,7 @@ import (
 	"senkou-catalyst-be/platform/config"
 	"senkou-catalyst-be/routes"
 
+	goth "senkou-catalyst-be/integrations/goth"
 	environment "senkou-catalyst-be/utils/config"
 
 	_ "senkou-catalyst-be/docs"
@@ -40,6 +41,9 @@ func main() {
 
 	// Start the queue service with email handlers
 	deps.StartQueueService()
+
+	// Initialize OAuth providers
+	goth.InitOAuthProviders()
 
 	routes.InitRoutes(app, deps)
 
