@@ -361,6 +361,8 @@ definitions:
         type: string
       id:
         type: integer
+      is_oauth:
+        type: boolean
       merchants:
         items:
           $ref: '#/definitions/models.Merchant'
@@ -389,6 +391,35 @@ info:
   title: Catalyst API Documentation
   version: "1.0"
 paths:
+  /auth/google/callback:
+    get:
+      consumes:
+      - application/json
+      description: Handles the callback from Google OAuth and creates a new user if
+        not exists
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/fiber.Map'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.User'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/fiber.Map'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/fiber.Map'
+      summary: Google OAuth Callback
+      tags:
+      - OAuth
   /auth/login:
     post:
       consumes:

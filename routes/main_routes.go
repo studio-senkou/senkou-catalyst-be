@@ -27,6 +27,7 @@ func InitRoutes(app *fiber.App, deps *container.Container) {
 
 	InitUserRoutes(app, deps.UserController)
 	InitAuthRoutes(app, deps.AuthController)
+	InitOAuthRoutes(app, deps.OAuthController)
 	InitMerchantRoutes(app, deps.MerchantController)
 	InitCategoryRoutes(app, deps.CategoryController)
 	InitPredefinedCategoryRoutes(app, deps.PredefinedCategoryController)

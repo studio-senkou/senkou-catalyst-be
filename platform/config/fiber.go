@@ -23,6 +23,9 @@ func InitFiberConfig() *fiber.Config {
 		EnableTrustedProxyCheck: true,
 		ErrorHandler: func(c *fiber.Ctx, err error) error {
 
+			log.Println("Error Handler Invoked")
+			log.Printf("Error: %v", err)
+
 			stackTrace := ""
 			if customErr, ok := err.(*errors.CustomError); ok && customErr.StatusCode() >= 500 {
 				stackTrace = string(debug.Stack())
