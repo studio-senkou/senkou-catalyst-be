@@ -7,8 +7,15 @@ import (
 	"senkou-catalyst-be/platform/config"
 	"strings"
 
+	"github.com/joho/godotenv"
 	"gorm.io/gorm"
 )
+
+func init() {
+	if err := godotenv.Load(); err != nil {
+		panic(fmt.Errorf("failed to load .env file: %w", err))
+	}
+}
 
 type SeederClosure func(*gorm.DB) error
 

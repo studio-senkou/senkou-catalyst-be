@@ -1,24 +1,30 @@
 package controllers
 
 import (
+	"encoding/hex"
 	"fmt"
 	"senkou-catalyst-be/app/dtos"
 	"senkou-catalyst-be/app/models"
 	"senkou-catalyst-be/app/services"
 	goth "senkou-catalyst-be/integrations/goth"
+	"senkou-catalyst-be/utils/config"
 	"senkou-catalyst-be/utils/response"
 	"strings"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/o1egl/paseto"
 )
 
 type OAuthController struct {
 	UserService services.UserService
+	AuthService services.AuthService
 }
 
-func NewOAuthController(userService services.UserService) *OAuthController {
+func NewOAuthController(userService services.UserService, authService services.AuthService) *OAuthController {
 	return &OAuthController{
 		UserService: userService,
+		AuthService: authService,
 	}
 }
 
@@ -46,8 +52,7 @@ func (c *OAuthController) GoogleCallback(ctx *fiber.Ctx) error {
 		}
 	}
 	if existingUser != nil {
-		fmt.Printf("User with email %s already exists", user.Email)
-		return response.BadRequest(ctx, "User with this email already exists", nil)
+		return loginAndRedirect(ctx, c.AuthService, existingUser)
 	}
 
 	username := strings.Split(user.Email, "@")[0]
@@ -78,8 +83,51 @@ func (c *OAuthController) GoogleCallback(ctx *fiber.Ctx) error {
 		return response.InternalError(ctx, "Failed to create user", createError)
 	}
 
-	return ctx.Status(fiber.StatusOK).JSON(fiber.Map{
-		"message": "User created successfully",
-		"data":    account,
-	})
+	return loginAndRedirect(ctx, c.AuthService, account)
+}
+
+func loginAndRedirect(ctx *fiber.Ctx, authService services.AuthService, user *models.User) error {
+	if redirectURI := config.MustGetEnv("GOOGLE_REDIRECT_URL"); redirectURI != "" {
+
+		appKeyStr := config.MustGetEnv("APP_KEY")
+		appKey, err := hex.DecodeString(appKeyStr)
+		if err != nil {
+			return response.InternalError(ctx, "Failed to decode app key", err)
+		}
+
+		if len(appKey) != 32 {
+			return response.InternalError(ctx, "Failed to generate user session", fmt.Sprintf("Invalid key length: got %d bytes, need 32 bytes", len(appKey)))
+		}
+
+		accessToken, refreshToken, appError := authService.GenerateToken(user.ID)
+		if appError != nil {
+			return response.InternalError(ctx, "Failed to generate user session", nil)
+		}
+
+		now := time.Now()
+		payload := fiber.Map{
+			"token":         accessToken,
+			"refresh_token": refreshToken,
+			"iss":           "catalyst-backend",
+			"sub":           user.ID,
+			"aud":           "catalyst-frontend",
+			"iat":           now.Unix(),
+			"exp":           now.Add(1 * time.Hour).Unix(),
+		}
+
+		token, err := paseto.NewV2().Encrypt(appKey, payload, nil)
+		if err != nil {
+			return response.InternalError(ctx, "Failed to encrypt token", err)
+		}
+
+		return ctx.Status(fiber.StatusPermanentRedirect).Redirect(
+			fmt.Sprintf("%s?token=%s", redirectURI, token),
+		)
+	}
+
+	errorPageURI := config.MustGetEnv("APP_FE_URL")
+
+	return ctx.Status(fiber.StatusPermanentRedirect).Redirect(
+		fmt.Sprintf("%s?error=%s", errorPageURI, "Failed to create user"),
+	)
 }

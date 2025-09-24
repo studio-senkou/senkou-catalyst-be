@@ -168,6 +168,7 @@ func InitializeOAuthController() (*controllers.OAuthController, error) {
 		ControllerSet,
 		ServiceSet,
 		RepositorySet,
+		UtilSet,
 		QueueSet,
 	)
 	return nil, nil

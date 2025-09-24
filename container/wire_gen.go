@@ -124,7 +124,13 @@ func InitializeOAuthController() (*controllers.OAuthController, error) {
 		return nil, err
 	}
 	userService := services.NewUserService(userRepository, oAuthRepository, merchantRepository, emailActivationRepository, queueService)
-	oAuthController := controllers.NewOAuthController(userService)
+	authRepository := repositories.NewAuthRepository(db)
+	jwtManager, err := ProvideJWTManager()
+	if err != nil {
+		return nil, err
+	}
+	authService := services.NewAuthService(authRepository, jwtManager)
+	oAuthController := controllers.NewOAuthController(userService, authService)
 	return oAuthController, nil
 }
 
@@ -266,7 +272,7 @@ func InitializeContainer() (*Container, error) {
 	}
 	authService := services.NewAuthService(authRepository, jwtManager)
 	authController := controllers.NewAuthController(authService, userService)
-	oAuthController := controllers.NewOAuthController(userService)
+	oAuthController := controllers.NewOAuthController(userService, authService)
 	subscriptionOrderRepository := repositories.NewSubscriptionOrderRepository(db)
 	subscriptionOrderService := services.NewSubscriptionOrderService(subscriptionOrderRepository)
 	midtransClient, err := ProvideMidtransClient()
