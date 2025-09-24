@@ -109,13 +109,13 @@ func loginAndRedirect(ctx *fiber.Ctx, authService services.AuthService, user *mo
 			"token":         accessToken,
 			"refresh_token": refreshToken,
 			"iss":           "catalyst-backend",
-			"sub":           user.ID,
+			"sub":           fmt.Sprintf("%v", user.ID),
 			"aud":           "catalyst-frontend",
-			"iat":           now.Unix(),
-			"exp":           now.Add(1 * time.Hour).Unix(),
+			"iat":           now.Format(time.RFC3339),
+			"exp":           now.Add(1 * time.Hour).Format(time.RFC3339),
 		}
 
-		token, err := paseto.NewV2().Encrypt(appKey, payload, nil)
+		token, err := paseto.NewV1().Encrypt(appKey, payload, nil)
 		if err != nil {
 			return response.InternalError(ctx, "Failed to encrypt token", err)
 		}
